@@ -1,2 +1,2 @@
-rootProject.name = "Archipelacraft"
+rootProject.name = "Voxeleers"
 

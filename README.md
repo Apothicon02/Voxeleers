@@ -1,18 +1,18 @@
-# Archipelacraft
+# Voxeleers
 
 ![img.png](img.png)
 
 # Getting Started
 - Do not run the jar directly. 
 - Open a cmd prompt in the folder of the jar. 
-- Paste this without the quotes: "java -jar Archipelacraft-0.1-SNAPSHOT-standalone.jar"
+- Paste this without the quotes: "java -jar Voxeleers-0.1-SNAPSHOT-standalone.jar"
 - Hit enter. 
 - Wait for the world to generate. 
 
 # Important Information
 - This is just a technical demo at the moment, do not expect gameplay yet. 
 - Non-nvidia gpus, linux, and mac have not been tested. 
-- To access save data, press WIN+R, paste this without the quotes "%appdata%/archipelacraft", and hit enter.
+- To access save data, press WIN+R, paste this without the quotes "%appdata%/voxeleers", and hit enter.
 
 # Keybinds 
 - Shift: Sprint

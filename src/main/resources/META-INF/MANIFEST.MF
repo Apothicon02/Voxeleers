@@ -1,2 +1,2 @@
 Manifest-Version: 1.0
-Main-Class: org.archipelacraft.Main
+Main-Class: org.voxeleers.Main

@@ -1,0 +1,14 @@
+package org.voxeleers.game.world.cover;
+
+import org.voxeleers.game.world.World;
+import org.joml.Vector2i;
+
+public class Plains {
+
+    public static void generate(Vector2i blockOn, int x, int y, int z) {
+        if (blockOn.x == 2) {
+            double flowerChance = World.worldType.rand().nextDouble();
+            World.setBlock(x, y + 1, z, 4 + (flowerChance > 0.95f ? (flowerChance > 0.97f ? 14 : 1) : 0), (int) (World.worldType.rand().nextDouble() * 3)); //make it not replace
+        }
+    }
+}

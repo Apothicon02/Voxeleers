@@ -1,0 +1,50 @@
+package org.voxeleers.game.world.trees.canopies;
+
+import org.voxeleers.engine.Utils;
+import org.voxeleers.game.blocks.types.BlockTypes;
+import org.voxeleers.game.world.World;
+import org.joml.Vector2i;
+import org.joml.Vector3i;
+
+import java.util.Map;
+
+import static org.voxeleers.game.world.World.*;
+
+public class BlobCanopy extends Canopy {
+
+    private static void addToMap(Map<Vector3i, Vector2i> map, Vector3i pos, int blockType, int blockSubType) {
+        map.put(pos, new Vector2i(blockType, blockSubType));
+    }
+
+    public static Map<Vector3i, Vector2i> generateCanopy(Map<Vector3i, Vector2i> blocks, int x, int y, int z, int blockType, int blockSubType, int radius, int height) {
+        Map<Vector3i, Vector2i> map = new java.util.HashMap<>(Map.of());
+        for (int lX = x - radius; lX <= x + radius; lX++) {
+            for (int lZ = z - radius; lZ <= z + radius; lZ++) {
+                if (inBounds(lX, y, lZ)) {
+                    int condensedPos = Utils.condensePos(lX, lZ);
+                    int surfaceY = heightmap[condensedPos];
+                    for (int lY = y - height; lY <= y + height; lY++) {
+                        int xDist = lX - x;
+                        int yDist = lY - y;
+                        int zDist = lZ - z;
+                        int dist = xDist * xDist + zDist * zDist + yDist * yDist;
+                        if (dist <= radius * 3) {
+                            addToMap(map, new Vector3i(lX, lY, lZ), blockType, blockSubType);
+                            heightmap[condensedPos] = (short) Math.max(heightmap[condensedPos], lY);
+                            for (int extraY = lY; extraY >= surfaceY; extraY--) {
+                                if (extraY == surfaceY) {
+                                    Vector3i abovePos = new Vector3i(lX, extraY+1, lZ);
+                                    if (BlockTypes.blockTypeMap.get(getBlock(lX, extraY, lZ).x).blockProperties.isSolid &&
+                                            !BlockTypes.blockTypeMap.get(getBlock(abovePos).x).blockProperties.isSolid && !blocks.containsKey(abovePos) && !map.containsKey(abovePos)) {
+                                        addToMap(map, abovePos, blockType, (int) Math.abs(World.worldType.rand().nextDouble() * 6) + 1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return map;
+    }
+}
