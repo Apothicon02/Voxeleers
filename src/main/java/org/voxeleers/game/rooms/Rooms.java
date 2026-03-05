@@ -1,6 +1,7 @@
 package org.voxeleers.game.rooms;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3i;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.world.World;
@@ -30,11 +31,32 @@ public class Rooms {
         max.min(new Vector3i(World.size-2, World.height-2, World.size-2));
         currentScan = new IntArrayList();
         if (scanCells(x, y, z) && !currentScan.isEmpty()) {
-
+            mergeRooms(currentScan);
             rooms.add(currentScan);
+        } else {
+            clearRooms(currentScan);
         }
         currentScan = null;
     }
+
+    private static void mergeRooms(IntArrayList mergedRoom) {
+        List<IntArrayList> roomsToRemove = new ArrayList<>();
+        for (IntArrayList room : rooms) {
+            for (int ogxyz : room) {
+                if (mergedRoom.contains(ogxyz)) {
+                    roomsToRemove.add(room);
+                    break;
+                }
+            }
+        }
+        rooms.removeIf(roomsToRemove::contains);
+    }
+    private static void clearRooms(IntArrayList area) {
+        for (int xyz : area) {
+            rooms.removeIf(room -> room.contains(xyz));
+        }
+    }
+
     public static boolean scanCells(int x, int y, int z) {
         if (x > min.x() && x < max.x() && y > min.y() && y < max.y() && z > min.z() && z < max.z()) {
             int packed = packCellPos(x, y, z);
