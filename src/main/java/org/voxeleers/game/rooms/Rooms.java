@@ -12,6 +12,19 @@ public class Rooms {
     public static int maxSize = 50;
     public static List<Room> rooms = new ArrayList<>();
     public static Room currentScan = new Room();
+
+    public static Room getRoom(Vector3i pos) {
+        int ogxyz = packCellPos(pos.x(), pos.y(), pos.z());
+        for (Room room : rooms) {
+            for (int xyz : room.cells.keySet()) {
+                if (xyz == ogxyz) {
+                    return room;
+                }
+            }
+        }
+        return null;
+    }
+
     public static void detectRooms(int x, int y, int z) {
         detectRoom(x, y, z);
         detectRoom(x+1, y, z);
@@ -31,7 +44,7 @@ public class Rooms {
             mergeRooms(currentScan);
             rooms.add(currentScan);
         } else {
-            clearRooms(currentScan);
+            //clearRooms(currentScan);
         }
         currentScan = null;
     }
@@ -41,6 +54,24 @@ public class Rooms {
         for (Room room : rooms) {
             for (int ogxyz : room.cells.keySet()) {
                 if (mergedRoom.cells.containsKey(ogxyz)) {
+                    for (int xyz : room.cells.keySet()) {
+                        Cell cell = room.cells.get(xyz);
+                        Cell mergedCell =  mergedRoom.cells.get(xyz);
+                        mergedCell.energy += cell.energy;
+                        for (Molecule molecule : cell.molecules) {
+                            boolean matched = false;
+                            for (Molecule mergedMolecule : mergedCell.molecules) {
+                                if (molecule.element == mergedMolecule.element) {
+                                    mergedMolecule.amount += molecule.amount;
+                                    matched = true;
+                                    break;
+                                }
+                            }
+                            if (!matched) {
+                                mergedCell.molecules.add(molecule);
+                            }
+                        }
+                    }
                     roomsToRemove.add(room);
                     break;
                 }
@@ -90,6 +121,9 @@ public class Rooms {
             }
         }
         return false;
+    }
+    public static int packCellPos(Vector3i pos) {
+        return (pos.x() << 20) | (pos.y() << 10) | pos.z();
     }
     public static int packCellPos(int x, int y, int z) {
         return (x << 20) | (y << 10) | z;

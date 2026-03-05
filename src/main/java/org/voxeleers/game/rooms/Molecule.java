@@ -5,6 +5,10 @@ public class Molecule {
     public int amount;
     public Molecule() {
         element = 0;
-        amount = 10;
+        amount = 1;
+    }
+    public Molecule(int element, int amount) {
+        this.element = (byte)(element);
+        this.amount = amount;
     }
 }

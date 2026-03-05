@@ -4,10 +4,16 @@ import org.voxeleers.Main;
 import org.voxeleers.engine.Engine;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.engine.Window;
+import org.voxeleers.game.elements.Element;
+import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.items.ItemTypes;
+import org.voxeleers.game.rooms.Cell;
+import org.voxeleers.game.rooms.Molecule;
+import org.voxeleers.game.rooms.Room;
+import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -81,6 +87,23 @@ public class GUI {
             drawText(0, 1, 2, -2 - charHeight, ((long) (Engine.avgMS) + "fps ").toCharArray());
             drawText(0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
             drawText(0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
+            Room room = Rooms.getRoom(Main.player.blockPos);
+            if (room != null) {
+                int xyz = Rooms.packCellPos(Main.player.blockPos);
+                Cell cell = room.cells.get(xyz);
+                int totalMass = 0;
+                float avgThermalDensity = 0.f;
+                int i = 0;
+                for (Molecule molecule : cell.molecules) {
+                    Element element = Elements.elementMap.get(molecule.element);
+                    avgThermalDensity += element.specificHeat;
+                    totalMass += molecule.amount;
+                    String str = element.name+":"+String.format("%.2f", molecule.amount/1000.f)+"mL";
+                    drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
+                }
+                avgThermalDensity/=i;
+                drawText(0, 1, 2, -2 - (charHeight * 4), ("Energy:"+cell.energy+" Temperature:"+String.format("%.2f", cell.energy/(totalMass*avgThermalDensity))+"K").toCharArray());
+            }
         }
     }
 

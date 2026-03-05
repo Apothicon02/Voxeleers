@@ -1,10 +1,13 @@
 package org.voxeleers.game.rooms;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Cell {
-    public int temperature;
-    public Molecule[] molecule;
+    public int energy;
+    public List<Molecule> molecules;
     public Cell() {
-        temperature = 300;
-        molecule = new Molecule[]{new Molecule()};
+        energy = 1000;
+        molecules = new ArrayList<>(List.of(new Molecule(), new Molecule(1, 18)));
     }
 }
