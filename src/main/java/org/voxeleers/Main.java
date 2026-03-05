@@ -12,6 +12,8 @@ import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemTypes;
 import org.voxeleers.game.rendering.Models;
+import org.voxeleers.game.rooms.Molecule;
+import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.LightHelper;
 import org.voxeleers.game.world.World;
 import org.voxeleers.game.noise.Noises;
@@ -130,6 +132,10 @@ public class Main {
                         }
                     } else if (wasCDown && !window.isKeyPressed(SDL_SCANCODE_C)) {
                         player.creative = !player.creative;
+                    } else if (wasGDown && !window.isKeyPressed(SDL_SCANCODE_G)) {
+                        Rooms.inject(Main.player.blockPos, new Molecule(0, 1000));
+                    } else if (wasEDown && !window.isKeyPressed(SDL_SCANCODE_E)) {
+                        Rooms.inject(Main.player.blockPos, 1000000);
                     }
                 } else if (window.isKeyPressed(SDL_SCANCODE_F4)) {
                     if (wasSDown && !window.isKeyPressed(SDL_SCANCODE_S)) {

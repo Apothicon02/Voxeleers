@@ -13,6 +13,33 @@ public class Rooms {
     public static List<Room> rooms = new ArrayList<>();
     public static Room currentScan = new Room();
 
+    public static void inject(Vector3i pos, Molecule molecule) {
+        Room room = getRoom(pos);
+        if (room != null) {
+            int xyz = packCellPos(pos);
+            Cell cell = room.cells.get(xyz);
+            boolean injected = false;
+            for (Molecule cellMolecule : cell.molecules) {
+                if (cellMolecule.element == molecule.element) {
+                    cellMolecule.amount += molecule.amount;
+                    injected = true;
+                    break;
+                }
+            }
+            if (!injected) {
+                cell.molecules.add(molecule);
+            }
+        }
+    }
+    public static void inject(Vector3i pos, int energy) {
+        Room room = getRoom(pos);
+        if (room != null) {
+            int xyz = packCellPos(pos);
+            Cell cell = room.cells.get(xyz);
+            cell.energy += energy;
+        }
+    }
+
     public static Room getRoom(Vector3i pos) {
         int ogxyz = packCellPos(pos.x(), pos.y(), pos.z());
         for (Room room : rooms) {
