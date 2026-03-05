@@ -18,14 +18,21 @@ public class Rooms {
             for (int xyz : room.cells.keySet()) {
                 Cell cell = room.cells.get(xyz);
                 Vector3i pos = unpackCellPos(xyz);
-                for (Cell nCell : new Cell[]{
-                        room.cells.get(packCellPos(pos.x() + 1, pos.y(), pos.z())),
-                        room.cells.get(packCellPos(pos.x() - 1, pos.y(), pos.z())),
-                        room.cells.get(packCellPos(pos.x(), pos.y() + 1, pos.z())),
-                        room.cells.get(packCellPos(pos.x(), pos.y() - 1, pos.z())),
-                        room.cells.get(packCellPos(pos.x(), pos.y(), pos.z() + 1)),
-                        room.cells.get(packCellPos(pos.x(), pos.y(), pos.z() - 1))
-                }) {
+
+                Vector3i[] neighbors = new Vector3i[]{
+                        (new Vector3i(pos.x() + 1, pos.y(), pos.z())),
+                        (new Vector3i(pos.x() - 1, pos.y(), pos.z())),
+                        (new Vector3i(pos.x(), pos.y() + 1, pos.z())),
+                        (new Vector3i(pos.x(), pos.y() - 1, pos.z())),
+                        (new Vector3i(pos.x(), pos.y(), pos.z() + 1)),
+                        (new Vector3i(pos.x(), pos.y(), pos.z() - 1))};
+                for (Vector3i nPos : neighbors) {
+                    Cell nCell = room.cells.get(packCellPos(nPos.x(), nPos.y(), nPos.z()));
+                    if (nCell == null) {
+                        if (World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z()) <= 0) {
+                            nCell = new Cell();
+                        }
+                    }
                     if (nCell != null) {
                         Cell maxCell = cell;
                         Cell minCell = nCell;
@@ -34,7 +41,7 @@ public class Rooms {
                             minCell = cell;
                         }
                         if (maxCell.energy != minCell.energy) {
-                            int flow = Math.min(10000, (maxCell.energy - minCell.energy) / 2);
+                            int flow = Math.min(200000, (maxCell.energy - minCell.energy) / 2);
                             maxCell.energy -= flow;
                             minCell.energy += flow;
                         }
@@ -58,7 +65,7 @@ public class Rooms {
                                 }
                             }
                             if (!foundMatch) {
-                                int flow = Math.min(10, molecule.amount / 2);
+                                int flow = Math.min(2000000, molecule.amount / 2);
                                 molecule.amount -= flow;
                                 nCell.molecules.add(new Molecule(molecule.element, flow));
                             }
@@ -126,7 +133,7 @@ public class Rooms {
             mergeRooms(currentScan);
             rooms.add(currentScan);
         } else {
-            clearRooms(currentScan);
+            //clearRooms(currentScan);
         }
         currentScan = null;
     }
