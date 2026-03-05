@@ -1,9 +1,6 @@
 package org.voxeleers.game.rooms;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3i;
-import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.world.World;
 
 import java.util.ArrayList;
@@ -13,8 +10,8 @@ public class Rooms {
     public static Vector3i min = new Vector3i();
     public static Vector3i max = new Vector3i();
     public static int maxSize = 50;
-    public static List<IntArrayList> rooms = new ArrayList<>();
-    public static IntArrayList currentScan = new IntArrayList();
+    public static List<Room> rooms = new ArrayList<>();
+    public static Room currentScan = new Room();
     public static void detectRooms(int x, int y, int z) {
         detectRoom(x, y, z);
         detectRoom(x+1, y, z);
@@ -29,8 +26,8 @@ public class Rooms {
         min.max(new Vector3i(1));
         max = new Vector3i(x+maxSize, y+maxSize, z+maxSize);
         max.min(new Vector3i(World.size-2, World.height-2, World.size-2));
-        currentScan = new IntArrayList();
-        if (scanCells(x, y, z) && !currentScan.isEmpty()) {
+        currentScan = new Room();
+        if (scanCells(x, y, z) && !currentScan.cells.isEmpty()) {
             mergeRooms(currentScan);
             rooms.add(currentScan);
         } else {
@@ -39,11 +36,11 @@ public class Rooms {
         currentScan = null;
     }
 
-    private static void mergeRooms(IntArrayList mergedRoom) {
-        List<IntArrayList> roomsToRemove = new ArrayList<>();
-        for (IntArrayList room : rooms) {
-            for (int ogxyz : room) {
-                if (mergedRoom.contains(ogxyz)) {
+    private static void mergeRooms(Room mergedRoom) {
+        List<Room> roomsToRemove = new ArrayList<>();
+        for (Room room : rooms) {
+            for (int ogxyz : room.cells.keySet()) {
+                if (mergedRoom.cells.containsKey(ogxyz)) {
                     roomsToRemove.add(room);
                     break;
                 }
@@ -51,9 +48,9 @@ public class Rooms {
         }
         rooms.removeIf(roomsToRemove::contains);
     }
-    private static void clearRooms(IntArrayList area) {
-        for (int xyz : area) {
-            rooms.removeIf(room -> room.contains(xyz));
+    private static void clearRooms(Room area) {
+        for (int xyz : area.cells.keySet()) {
+            rooms.removeIf(room -> room.cells.containsKey(xyz));
         }
     }
 
@@ -86,9 +83,9 @@ public class Rooms {
         }
     }
     public static boolean getCell(int x, int y, int z, int packed) {
-        if (!currentScan.contains(packed)) {
+        if (!currentScan.cells.containsKey(packed)) {
             if (World.getBlock(x, y, z).x() <= 0) {
-                currentScan.add(packed);
+                currentScan.cells.put(packed, new Cell());
                 return true;
             }
         }

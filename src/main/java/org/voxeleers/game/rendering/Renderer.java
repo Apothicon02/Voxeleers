@@ -6,6 +6,7 @@ import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.noise.Noises;
+import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
 import org.joml.*;
@@ -313,14 +314,14 @@ public class Renderer {
     public static void drawDebugRooms() {
         Random roomRand = new Random(911);
         int i = 0;
-        for (IntArrayList room : Rooms.rooms) {
+        for (Room room : Rooms.rooms) {
             Vector3f color = debugColors[i];
             i++;
             if (i >= debugColors.length) {
                 i = 0;
             }
             glUniform4f(raster.uniforms.get("color"), color.x(), color.y(), color.z(), 1.f);
-            for (int xyz : room) {
+            for (int xyz : room.cells.keySet()) {
                 Vector3i cellPos = Rooms.unpackCellPos(xyz);
                 try (MemoryStack stack = MemoryStack.stackPush()) {
                     glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x()+roomRand.nextFloat(), cellPos.y()+roomRand.nextFloat(), cellPos.z()+roomRand.nextFloat()).scale(0.125f).get(stack.mallocFloat(16)));
