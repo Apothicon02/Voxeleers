@@ -219,6 +219,10 @@ public class World {
         setBlock((int) x, (int) y, (int) z, block, blockSubType);
     }
 
+    public static int getBlockTypeUnchecked(int x, int y, int z) {
+        int pos = condensePos(x, z)*2;
+        return blocks[y][pos];
+    }
     public static Vector2i getBlock(int x, int y, int z) {
         if (inBounds(x, y, z)) {
             int pos = condensePos(x, z)*2;

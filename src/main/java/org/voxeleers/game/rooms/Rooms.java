@@ -13,6 +13,61 @@ public class Rooms {
     public static List<Room> rooms = new ArrayList<>();
     public static Room currentScan = new Room();
 
+    public static void tick() {
+        for (Room room : rooms) {
+            for (int xyz : room.cells.keySet()) {
+                Cell cell = room.cells.get(xyz);
+                Vector3i pos = unpackCellPos(xyz);
+                for (Cell nCell : new Cell[]{
+                        room.cells.get(packCellPos(pos.x() + 1, pos.y(), pos.z())),
+                        room.cells.get(packCellPos(pos.x() - 1, pos.y(), pos.z())),
+                        room.cells.get(packCellPos(pos.x(), pos.y() + 1, pos.z())),
+                        room.cells.get(packCellPos(pos.x(), pos.y() - 1, pos.z())),
+                        room.cells.get(packCellPos(pos.x(), pos.y(), pos.z() + 1)),
+                        room.cells.get(packCellPos(pos.x(), pos.y(), pos.z() - 1))
+                }) {
+                    if (nCell != null) {
+                        Cell maxCell = cell;
+                        Cell minCell = nCell;
+                        if (minCell.energy > maxCell.energy) {
+                            maxCell = nCell;
+                            minCell = cell;
+                        }
+                        if (maxCell.energy != minCell.energy) {
+                            int flow = Math.min(10000, (maxCell.energy - minCell.energy) / 2);
+                            maxCell.energy -= flow;
+                            minCell.energy += flow;
+                        }
+                        for (Molecule molecule : cell.molecules) {
+                            boolean foundMatch = false;
+                            for (Molecule nMolecule : nCell.molecules) {
+                                if (molecule.element == nMolecule.element) {
+                                    Molecule maxMolecule = molecule;
+                                    Molecule minMolecule = nMolecule;
+                                    if (nMolecule.amount > molecule.amount) {
+                                        maxMolecule = nMolecule;
+                                        minMolecule = molecule;
+                                    }
+                                    if (maxMolecule.amount != minMolecule.amount) {
+                                        int flow = Math.min(10, (maxMolecule.amount - minMolecule.amount) / 2);
+                                        maxMolecule.amount -= flow;
+                                        minMolecule.amount += flow;
+                                    }
+                                    foundMatch = true;
+                                    break;
+                                }
+                            }
+                            if (!foundMatch) {
+                                int flow = Math.min(10, molecule.amount / 2);
+                                molecule.amount -= flow;
+                                nCell.molecules.add(new Molecule(molecule.element, flow));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     public static void inject(Vector3i pos, Molecule molecule) {
         Room room = getRoom(pos);
         if (room != null) {
@@ -71,7 +126,7 @@ public class Rooms {
             mergeRooms(currentScan);
             rooms.add(currentScan);
         } else {
-            //clearRooms(currentScan);
+            clearRooms(currentScan);
         }
         currentScan = null;
     }
@@ -83,7 +138,10 @@ public class Rooms {
                 if (mergedRoom.cells.containsKey(ogxyz)) {
                     for (int xyz : room.cells.keySet()) {
                         Cell cell = room.cells.get(xyz);
-                        Cell mergedCell =  mergedRoom.cells.get(xyz);
+                        Cell mergedCell = mergedRoom.cells.get(xyz);
+                        if (mergedCell == null) {
+                            mergedCell = new Cell();
+                        }
                         mergedCell.energy += cell.energy;
                         for (Molecule molecule : cell.molecules) {
                             boolean matched = false;
@@ -142,7 +200,7 @@ public class Rooms {
     }
     public static boolean getCell(int x, int y, int z, int packed) {
         if (!currentScan.cells.containsKey(packed)) {
-            if (World.getBlock(x, y, z).x() <= 0) {
+            if (World.getBlockTypeUnchecked(x, y, z) <= 0) {
                 currentScan.cells.put(packed, new Cell());
                 return true;
             }
