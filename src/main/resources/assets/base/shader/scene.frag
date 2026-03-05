@@ -171,15 +171,15 @@ vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess)
     float sunDist = (distance(lightPos.xz, sun.xz)/(size*1.5f));
     float adjustedTime = clamp((sunDist*abs(1-clamp(sunHeight, 0.05f, 0.5f)))+scattering, 0.f, 1.f);
     float thickness = gradient(lightPos.y, 128, 1500-max(0, sunHeight*1000), 0.33+(sunHeight/2), 1);
-    float sunSetness = min(1.f, max(abs(sunHeight*1.5f), adjustedTime));
+    float sunSetness = min(1.f, max(abs(sunHeight*1.1f), adjustedTime));
     float whiteY = max(ogY, 200)-135.f;
     float skyWhiteness = mix(max(0.33f, gradient(lightPos.y, (whiteY/4)+47, (whiteY/2)+436, 0, 0.9)), 0.9f, clamp(abs(1-sunSetness), 0, 1.f));
-    float sunBrightness = clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 1.f);
+    float sunBrightness = mix(0.f, clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 1.f), clamp(skyWhiteness+0.3f, 0, 0.85f));
     if (fogDetractorFactor == -1) {
         fogDetractorFactor = max(max(lighting.r, max(lighting.g, lighting.b))*0.8f, (sunBrightness*lighting.a)*1.5f);
     }
     float whiteness = isSky ? skyWhiteness : mix(0.9f, skyWhiteness, max(0, fogginess-0.8f)*5.f);
-    sunColor = mix(mix(vec3(1, 0.65f, 0.25f)*(1+((10*clamp(sunHeight, 0.f, 0.1f))*(15*min(0.5f, abs(1-sunBrightness))))), vec3(0.36f, 0.54f, 1.2f)*sunBrightness, sunSetness), vec3(sunBrightness), whiteness);
+    sunColor = mix(mix(vec3(0.25, 0.65f, 1)*(1+((10*clamp(sunHeight, 0.f, 0.1f))*(15*min(0.5f, abs(1-sunBrightness))))), vec3(0.5f, 0.56f, 0.7f)*sunBrightness, sunSetness), vec3(sunBrightness), whiteness);
     return vec4(max(lighting.rgb, min(fromLinear(mix(vec3(1), vec3(1, 0.95f, 0.85f), sunSetness/4)), lighting.a*sunColor)).rgb, thickness);
 }
 vec4 powLighting(vec4 lighting) {
@@ -196,7 +196,6 @@ vec4 tint = vec4(0);
 bool underwater = false;
 bool wasEverUnderwater = false;
 bool hitCaustic = false;
-bool isInfiniteSea = false;
 bool isShadow = false;
 
 vec3 ogRayPos = vec3(0);
@@ -220,7 +219,6 @@ void clearVars() {
     normal = vec3(0);
     underwater = false;
     hitCaustic = false;
-    isInfiniteSea = false;
     tint = vec4(0);
     prevPos = vec3(0);
     lod2Pos = vec3(0);
@@ -315,7 +313,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
             if (firstStep) {
                 firstStep = false;
                 mapPos = (lod2Pos*16)+(lodPos*4)+blockPos;
-                block = inBounds(mapPos, worldSize) ? getBlock(mapPos.x, mapPos.y, mapPos.z) : (mapPos.y > 63 ? ivec4(0) : (mapPos.y == 63 ? ivec4(1, 14, 0, 0) : ivec4(0)));
+                block = inBounds(mapPos, worldSize) ? getBlock(mapPos.x, mapPos.y, mapPos.z) : ivec4(0);
             }
             updateLightFog(mapPos+0.5f);
             if (block.x > 0 && !(block.x == 1 && underwater)) {
@@ -420,7 +418,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                     if (block.x == 1) {
                         voxelColor = mix(voxelColor, mix(vec4(1.f, 0.6f, 0.f, 0.95f), voxelColor, clamp(distance(sun.y, 64)/256, 0.f, 1.f)), lightFogLastCheck.a);
                         bool topVoxel = voxelPos.y >= 7; //-(block.y/16)
-                        if (!underwater && (isInfiniteSea || getVoxel(voxelPos.x, topVoxel ? 0 : voxelPos.y+1, voxelPos.z, mapPos.x, mapPos.y + (topVoxel ? 1 : 0), mapPos.z, block.x, block.y).a <= 0)) {
+                        if (!underwater && getVoxel(voxelPos.x, topVoxel ? 0 : voxelPos.y+1, voxelPos.z, mapPos.x, mapPos.y + (topVoxel ? 1 : 0), mapPos.z, block.x, block.y).a <= 0) {
                             float causticness = getCaustic(vec2(mapPos.x, mapPos.z)+(voxelPos.xz/8)+voxelPos.y);
                             if (causticness > -0.033 && causticness < 0.033) {
                                 hitCaustic = true;
@@ -493,7 +491,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
             mini = ((blockPos - rayPos) + 0.5 - 0.5 * vec3(raySign)) * deltaDist;
             blockDist = max(mini.x, max(mini.y, mini.z));
             mapPos = (lod2Pos*16)+(lodPos*4)+blockPos;
-            block = inBounds(mapPos, worldSize) ? getBlock(mapPos.x, mapPos.y, mapPos.z) : (mapPos.y > 63 ? ivec4(0) : (mapPos.y == 63 ? ivec4(1, 14, 0, 0) : ivec4(0)));
+            block = inBounds(mapPos, worldSize) ? getBlock(mapPos.x, mapPos.y, mapPos.z) : ivec4(0);
 
             if (entered != vec3(0)) {
                 vec3 intersect = rayPos + rayDir * blockDist;
@@ -524,7 +522,7 @@ vec4 traceLOD(vec3 rayPos, vec3 iMask, float chunkDist) {
 
     for (int i = 0; lodPos.x < 4.0 && lodPos.x >= 0.0 && lodPos.y < 4.0 && lodPos.y >= 0.0 && lodPos.z < 4.0 && lodPos.z >= 0.0 && i < 4*3; i++) {
         mapPos = (lod2Pos*16)+(lodPos*4);
-        int lod = isInfiniteSea ? 1 : texelFetch(blocks, ivec3(lodPos.z, lodPos.y, lodPos.x), 2).x;
+        int lod = texelFetch(blocks, ivec3(lodPos.z, lodPos.y, lodPos.x), 2).x;
         if (lod > 0) {
             vec3 uv3d = vec3(0);
             vec3 intersect = vec3(0);
@@ -568,8 +566,7 @@ vec4 raytrace(vec3 ogPos, vec3 newRayDir) {
         if (!inBound && rayDir.y >= 0.f && inBounds(ogPos, worldSize)) {
             break;
         }
-        isInfiniteSea = !inBound && (lod2Pos.y == 3) && ogPos.y > 63;
-        int lod = isInfiniteSea ? ((mapPos.y < 64) ? 1 : 0) : (inBound ? texelFetch(blocks, ivec3(lod2Pos.z, lod2Pos.y, lod2Pos.x), 4).x : 0);
+        int lod = inBound ? texelFetch(blocks, ivec3(lod2Pos.z, lod2Pos.y, lod2Pos.x), 4).x : 0;
         if (lod > 0) {
             vec3 uv3d = vec3(0);
             vec3 intersect = vec3(0);

@@ -309,7 +309,7 @@ public class Renderer {
     public static void drawClouds() {
         Random cloudRand = new Random(911);
         float brightness = Math.clamp((640+sunPos.y())/640, 0.3f, 1.f);
-        for (int i = 0; i < 512; i++) {
+        for (int i = 0; i < 196; i++) {
             float b = Math.max(0.25f, brightness-(cloudRand.nextFloat()/2));
             Vector3f pos = new Vector3f(0, 0, 2000*(cloudRand.nextFloat()+0.05f)).rotateY((float) ((cloudRand.nextFloat()*10)+(time*(3+cloudRand.nextInt(2)))));
             try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -321,12 +321,12 @@ public class Renderer {
     }
     public static void drawSunAndMoon() {
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(sunPos).scale(80).get(stack.mallocFloat(16)));
+            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(sunPos).scale(60).get(stack.mallocFloat(16)));
         }
-        glUniform4f(raster.uniforms.get("color"), 1.25f, 1.2f, 0, 1);
+        glUniform4f(raster.uniforms.get("color"), 1.2f, 1.2f, 1.25f, 1);
         drawCube();
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(munPos).scale(50).get(stack.mallocFloat(16)));
+            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(munPos).scale(20).get(stack.mallocFloat(16)));
         }
         glUniform4f(raster.uniforms.get("color"), 0.63f, 0.58f, 0.66f, 1);
         drawCube();
@@ -341,7 +341,7 @@ public class Renderer {
                     .rotateY(starRand.nextFloat() * 10)
                     .rotateZ((float) (time*3) + starRand.nextFloat() * 10);
             starPos.set(starPos.x + (starDist / 2f), starPos.y, starPos.z + (starDist / 2f));
-            float starSize = ((starRand.nextFloat()*6)+3)-Math.max(0, 15*(sunPos.y/World.size));
+            float starSize = (starRand.nextFloat()*2)+2;
             if (starSize > 0.01f) {
                 Matrix4f starMatrix = new Matrix4f()
                         .rotateXYZ(starRand.nextFloat(), starRand.nextFloat(), starRand.nextFloat())
