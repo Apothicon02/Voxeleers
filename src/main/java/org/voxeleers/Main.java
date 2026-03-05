@@ -27,6 +27,7 @@ import java.lang.Math;
 
 import static io.github.libsdl4j.api.mouse.SdlMouse.SDL_SetRelativeMouseMode;
 import static io.github.libsdl4j.api.scancode.SDL_Scancode.*;
+import static io.github.libsdl4j.api.video.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS;
 import static io.github.libsdl4j.api.video.SdlVideo.*;
 import static org.lwjgl.opengl.GL45.*;
 
@@ -104,9 +105,11 @@ public class Main {
             if (window.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
                 isClosing = true;
             } else {
-                boolean isLMBDown = window.leftButtonPressed;
-                boolean isRMBDown = window.rightButtonPressed;
-                boolean isMMBDown = window.middleButtonPressed;
+                int flags = SDL_GetWindowFlags(Window.window);
+                boolean focused = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
+                boolean isLMBDown = focused && window.leftButtonPressed;
+                boolean isRMBDown = focused && window.rightButtonPressed;
+                boolean isMMBDown = focused && window.middleButtonPressed;
                 isLMBClick = wasLMBDown && !isLMBDown;
                 isRMBClick = wasRMBDown & !isRMBDown;
                 isMMBClick = wasMMBDown & !isMMBDown;

@@ -10,6 +10,7 @@ import org.voxeleers.game.blocks.types.LightBlockType;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.rendering.Renderer;
 import org.voxeleers.game.rendering.Textures;
+import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.types.WorldType;
 import org.voxeleers.game.world.types.WorldTypes;
 import org.joml.Vector2i;
@@ -188,6 +189,15 @@ public class World {
         }
     }
 
+    public static void setBlockNoUpdates(int x, int y, int z, int block, int blockSubType) {
+        int pos = condensePos(x, z)*2;
+        blocks[y][pos] = (short)(block);
+        blocks[y][pos+1] = (short)(blockSubType);
+
+        glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
+        glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, new int[]{block, blockSubType, 0, 0});
+        updateLODS(x, y, z);
+    }
     public static void setBlock(int x, int y, int z, int block, int blockSubType) {
         if (inBounds(x, y, z)) {
             int pos = condensePos(x, z)*2;
@@ -198,6 +208,7 @@ public class World {
                 glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
                 glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, new int[]{block, blockSubType, 0, 0});
                 updateLODS(x, y, z);
+                Rooms.detectRooms(x, y, z);
             } else if (block > 0) {
                 blocksLOD2[y/16][condensePosLOD2(x, z)] = (short)(block);
                 blocksLOD[y/4][condensePosLOD(x, z)] = (short)(block);
