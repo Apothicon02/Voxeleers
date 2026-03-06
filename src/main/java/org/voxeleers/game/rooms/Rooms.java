@@ -3,11 +3,13 @@ package org.voxeleers.game.rooms;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.joml.Vector3i;
 import org.voxeleers.game.elements.Element;
+import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public class Rooms {
     public static Vector3i min = new Vector3i();
@@ -15,6 +17,7 @@ public class Rooms {
     public static int maxSize = 50;
     public static List<Room> rooms = new ArrayList<>();
     public static Room currentScan = new Room();
+    public static Random roomRandom = new Random(911);
 
     public static void tick() {
         ArrayList<Room> roomsToRemove = new ArrayList<>();
@@ -25,7 +28,7 @@ public class Rooms {
                 Cell cell = room.cells.get(xyz);
                 Vector3i pos = unpackCellPos(xyz);
 
-                int randomOffset = (int)(Math.random()*6);
+                int randomOffset = roomRandom.nextInt(6);
                 Vector3i[] neighbors = new Vector3i[]{
                         (new Vector3i(pos.x() + 1, pos.y(), pos.z())),
                         (new Vector3i(pos.x() - 1, pos.y(), pos.z())),
@@ -41,7 +44,9 @@ public class Rooms {
                     if (nCell == null) {
                         nCell = new Cell(globalCell);
                         if (World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z()) > 0) {
-                            thermalsOnly = true;
+                            //if (roomRandom.nextInt(1000) == 0) { //0.1% chance to do conduction.
+                                thermalsOnly = true;
+                            //}
                         }
                     }
                     Cell maxCell = cell;
@@ -56,8 +61,8 @@ public class Rooms {
                         maxTemp = oldMinTemp;
                         minTemp = oldMaxTemp;
                     }
-                    double tempFlow = (maxTemp - minTemp) * maxTemp * minTemp / (maxTemp+minTemp);
-                    int eFlow = (int) (thermalsOnly ? (tempFlow/1000) : Math.ceil(tempFlow/2));
+                    int tempFlow = Math.ceilDiv(maxCell.getEnergyFromTemperature((maxTemp-minTemp)/2), 2);
+                    int eFlow = Math.min(thermalsOnly ? 1 : Integer.MAX_VALUE, tempFlow);
                     maxCell.energy -= eFlow;
                     minCell.energy += eFlow;
                     if (!thermalsOnly) {
@@ -137,15 +142,18 @@ public class Rooms {
         if (room != null) {
             int xyz = packCellPos(pos);
             Cell cell = room.cells.get(xyz);
-            boolean injected = false;
+            float mass = 0;
+            Molecule exists = null;
             for (Molecule cellMolecule : cell.molecules) {
+                mass += Elements.elementMap.get(cellMolecule.element).specificHeat*cellMolecule.amount;
                 if (cellMolecule.element == molecule.element) {
-                    cellMolecule.amount += molecule.amount;
-                    injected = true;
-                    break;
+                    exists = cellMolecule;
                 }
             }
-            if (!injected) {
+            cell.energy += (int) (cell.energy/mass)*molecule.amount;
+            if (exists != null) {
+                exists.amount += molecule.amount;
+            } else {
                 cell.molecules.add(molecule);
             }
         }

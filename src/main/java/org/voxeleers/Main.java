@@ -12,6 +12,7 @@ import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemTypes;
 import org.voxeleers.game.rendering.Models;
+import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.LightHelper;
@@ -26,6 +27,7 @@ import org.lwjgl.opengl.GL;
 
 import java.io.IOException;
 import java.lang.Math;
+import java.util.List;
 
 import static io.github.libsdl4j.api.mouse.SdlMouse.SDL_SetRelativeMouseMode;
 import static io.github.libsdl4j.api.scancode.SDL_Scancode.*;
@@ -42,6 +44,18 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         Main main = new Main();
+//        Cell maxCell = new Cell(100, List.of(new Molecule(0, 100)));
+//        Cell minCell = new Cell(50, List.of(new Molecule(0, 155)));
+//        for (int i = 0; i < 10; i++) {
+//            float maxTemp = maxCell.getTemperature();
+//            float minTemp = minCell.getTemperature();
+//            int flow = Math.ceilDiv(maxCell.getEnergyFromTemperature((maxTemp-minTemp)/2), 2);
+//            maxCell.energy -= flow;
+//            minCell.energy += flow;
+//            maxTemp = maxCell.getTemperature();
+//            minTemp = minCell.getTemperature();
+//            int nothing = 0;
+//        }
         Engine gameEng = new Engine("Voxeleers", new Window.WindowOptions(), main);
         gameEng.start();
     }
@@ -133,9 +147,12 @@ public class Main {
                     } else if (wasCDown && !window.isKeyPressed(SDL_SCANCODE_C)) {
                         player.creative = !player.creative;
                     } else if (wasGDown && !window.isKeyPressed(SDL_SCANCODE_G)) {
-                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(0, 10000));
+                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(0, 1000000));
+                        //Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 24500000);
                     } else if (wasEDown && !window.isKeyPressed(SDL_SCANCODE_E)) {
                         Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 10000000);
+                    } else if (wasRDown && !window.isKeyPressed(SDL_SCANCODE_R)) {
+                        Rooms.tick();
                     }
                 } else if (window.isKeyPressed(SDL_SCANCODE_F4)) {
                     if (wasSDown && !window.isKeyPressed(SDL_SCANCODE_S)) {
@@ -329,7 +346,7 @@ public class Main {
                     currentTick++;
                     timePassed -= tickTime;
                     player.tick();
-                    Rooms.tick();
+                    //Rooms.tick();
                     ScheduledTicker.tick();
                     AudioController.disposeSources();
                     if (ticksDone >= 3) {

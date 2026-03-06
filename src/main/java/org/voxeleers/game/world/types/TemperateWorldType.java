@@ -31,11 +31,11 @@ import static org.voxeleers.game.world.World.getLight;
 public class TemperateWorldType extends WorldType {
     private Path worldPath = Path.of(Main.mainFolder+"world0/mars");
     public static Random seededRand = new Random(35311350L);
-    public static Cell globalAtmo = new Cell(60500, List.of(new Molecule(Elements.elementMap.indexOf(Elements.CARBON_DIOXIDE), 246), new Molecule(Elements.elementMap.indexOf(Elements.NITROGEN), 7), new Molecule(Elements.elementMap.indexOf(Elements.ARGON), 5)));
+    public static Cell globalAtmo = new Cell(60500, List.of(new Molecule(Elements.elementMap.indexOf(Elements.CARBON_DIOXIDE), 2460), new Molecule(Elements.elementMap.indexOf(Elements.NITROGEN), 70), new Molecule(Elements.elementMap.indexOf(Elements.ARGON), 50)));
     public static ByteArrayList globalElements = new ByteArrayList();
 
     @Override
-    public Random rand() {return  seededRand;}
+    public Random rand() {return seededRand;}
 
     @Override
     public Path getWorldPath() {

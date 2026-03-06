@@ -23,16 +23,20 @@ public class Cell {
     }
 
     public float getTemperature() {
-        int mass = 0;
-        float avgSpecificHeat = 0.f;
-        int i = 0;
+        float mass = 0;
         for (Molecule molecule : molecules) {
             Element element = Elements.elementMap.get(molecule.element);
-            avgSpecificHeat += element.specificHeat;
-            mass += molecule.amount;
-            i++;
+            mass += element.specificHeat*molecule.amount;
         }
-        avgSpecificHeat/=i;
-        return energy/(mass*avgSpecificHeat);
+        return energy/(mass/10.f);
+    }
+
+    public int getEnergyFromTemperature(float temp) {
+        float mass = 0;
+        for (Molecule molecule : molecules) {
+            Element element = Elements.elementMap.get(molecule.element);
+            mass += element.specificHeat*molecule.amount;
+        }
+        return (int) (temp*(mass/10.f));
     }
 }

@@ -10,6 +10,6 @@ public class Element {
     }
     public Element(String name, float specificHeat) {
         this.name = name;
-        this.specificHeat = specificHeat;
+        this.specificHeat = 1.f;
     }
 }
