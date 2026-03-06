@@ -94,19 +94,9 @@ public class GUI {
                 int xyz = Rooms.packCellPos(Main.player.blockPos);
                 cell = room.cells.get(xyz);
             }
-            int totalMass = 0;
-            float avgThermalDensity = 0.f;
-            int i = 0;
-            for (Molecule molecule : cell.molecules) {
-                Element element = Elements.elementMap.get(molecule.element);
-                avgThermalDensity += element.specificHeat;
-                totalMass += molecule.amount;
-                i++;
-            }
-            avgThermalDensity/=i;
-            float temperature = cell.energy/(totalMass*avgThermalDensity);
+            float temperature = cell.getTemperature();
             drawText(0, 1, 2, -2 - (charHeight * 4), ("Energy:"+cell.energy+" Temperature:"+String.format("%.2f", temperature)+"K").toCharArray());
-            i = 0;
+            int i = 0;
             for (Molecule molecule : cell.molecules) {
                 Element element = Elements.elementMap.get(molecule.element);
                 String str = element.name+":"+molecule.amount+" Pressure:"+String.format("%.2f", (molecule.amount*UGC*temperature)/1000000)+"kPa";

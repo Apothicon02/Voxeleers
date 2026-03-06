@@ -45,11 +45,18 @@ public class Rooms {
                     if (nCell != null) {
                         Cell maxCell = cell;
                         Cell minCell = nCell;
-                        if (minCell.energy > maxCell.energy) {
+                        float maxTemp = maxCell.getTemperature();
+                        float minTemp = minCell.getTemperature();
+                        if (minTemp > maxTemp) {
+                            float oldMaxTemp = maxTemp;
+                            float oldMinTemp = minTemp;
                             maxCell = nCell;
                             minCell = cell;
+                            maxTemp = oldMinTemp;
+                            minTemp = oldMaxTemp;
                         }
-                        int eFlow = Math.ceilDiv(maxCell.energy - minCell.energy,  2);
+                        double tempFlow = (maxTemp - minTemp) * maxTemp * minTemp / (maxTemp+minTemp);
+                        int eFlow = (int) Math.ceil(tempFlow/2);
                         maxCell.energy -= eFlow;
                         minCell.energy += eFlow;
                         for (Molecule molecule : cell.molecules) {
