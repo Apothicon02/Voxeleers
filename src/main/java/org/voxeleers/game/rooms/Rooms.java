@@ -25,6 +25,7 @@ public class Rooms {
                 Cell cell = room.cells.get(xyz);
                 Vector3i pos = unpackCellPos(xyz);
 
+                int randomOffset = (int)(Math.random()*6);
                 Vector3i[] neighbors = new Vector3i[]{
                         (new Vector3i(pos.x() + 1, pos.y(), pos.z())),
                         (new Vector3i(pos.x() - 1, pos.y(), pos.z())),
@@ -32,7 +33,9 @@ public class Rooms {
                         (new Vector3i(pos.x(), pos.y() - 1, pos.z())),
                         (new Vector3i(pos.x(), pos.y(), pos.z() + 1)),
                         (new Vector3i(pos.x(), pos.y(), pos.z() - 1))};
-                for (Vector3i nPos : neighbors) {
+                for (int i = randomOffset; i < randomOffset+6; i++) {
+                    int idx = i-(((int)(i/6))*6);
+                    Vector3i nPos  = neighbors[idx];
                     Cell nCell = room.cells.get(packCellPos(nPos.x(), nPos.y(), nPos.z()));
                     if (nCell == null) {
                         if (World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z()) <= 0) {
@@ -46,11 +49,9 @@ public class Rooms {
                             maxCell = nCell;
                             minCell = cell;
                         }
-                        if (maxCell.energy != minCell.energy) {
-                            int flow = Math.min(200000, (maxCell.energy - minCell.energy) / 2);
-                            maxCell.energy -= flow;
-                            minCell.energy += flow;
-                        }
+                        int eFlow = Math.ceilDiv(maxCell.energy - minCell.energy,  2);
+                        maxCell.energy -= eFlow;
+                        minCell.energy += eFlow;
                         for (Molecule molecule : cell.molecules) {
                             boolean foundMatch = false;
                             for (Molecule nMolecule : nCell.molecules) {
@@ -61,26 +62,26 @@ public class Rooms {
                                         maxMolecule = nMolecule;
                                         minMolecule = molecule;
                                     }
-                                    if (maxMolecule.amount != minMolecule.amount) {
-                                        int flow = Math.min(10, (maxMolecule.amount - minMolecule.amount) / 2);
-                                        maxMolecule.amount -= flow;
-                                        minMolecule.amount += flow;
-                                    }
+                                    int flow = Math.ceilDiv(maxMolecule.amount - minMolecule.amount, 2);
+                                    maxMolecule.amount -= flow;
+                                    minMolecule.amount += flow;
                                     foundMatch = true;
                                     break;
                                 }
                             }
                             if (!foundMatch) {
-                                int flow = Math.min(2000000, molecule.amount / 2);
+                                int flow = Math.max(1, Math.ceilDiv(molecule.amount, 2));
                                 molecule.amount -= flow;
                                 nCell.molecules.add(new Molecule(molecule.element, flow));
                             }
                         }
+                        cell.molecules.removeIf((molecule) -> molecule.amount <= 0);
+                        nCell.molecules.removeIf((molecule) -> molecule.amount <= 0);
                     }
                 }
 
                 if (matchesGlobal) {
-                    if (Math.abs(cell.energy - globalCell.energy) > 100) {
+                    if (Math.abs(cell.energy - globalCell.energy) > 0) {
                         matchesGlobal = false;
                     } else if (cell.molecules.size() != globalCell.molecules.size()) {
                         matchesGlobal = false;
@@ -91,7 +92,7 @@ public class Rooms {
                             for (Molecule globalMolecule : globalCell.molecules) {
                                 elements.addLast(molecule.element);
                                 if (globalMolecule.element == molecule.element) {
-                                    if (Math.abs(globalMolecule.amount - molecule.amount) > 100) {
+                                    if (Math.abs(globalMolecule.amount - molecule.amount) > 0) {
                                         matchesGlobal = false;
                                         break breakingPoint;
                                     }

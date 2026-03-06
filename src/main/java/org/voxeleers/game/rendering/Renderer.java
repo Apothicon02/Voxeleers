@@ -462,7 +462,7 @@ public class Renderer {
             glUniform2i(raster.uniforms.get("res"), window.getWidth(), window.getHeight());
             glUniform1i(raster.uniforms.get("alwaysUpfront"), 0);
             glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
-            drawDebugRooms();
+            //drawDebugRooms();
             drawClouds();
             drawSunAndMoon();
             drawStars();
