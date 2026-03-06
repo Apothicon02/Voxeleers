@@ -51,11 +51,17 @@ public class Rooms {
                     }
                     Cell maxCell = cell;
                     Cell minCell = nCell;
-                    if (minCell.energy > maxCell.energy) {
+                    float maxTemp = maxCell.getTemperature();
+                    float minTemp = minCell.getTemperature();
+                    if (minTemp > maxTemp) {
+                        float oldMaxTemp = maxTemp;
+                        float oldMinTemp = minTemp;
                         maxCell = nCell;
                         minCell = cell;
+                        maxTemp = oldMinTemp;
+                        minTemp = oldMaxTemp;
                     }
-                    int tempFlow = Math.ceilDiv(maxCell.energy-minCell.energy, 2);
+                    int tempFlow = Math.ceilDiv(maxCell.getEnergyFromTemperature((maxTemp-minTemp)/2), 2);
                     int eFlow = Math.min(thermalsOnly ? 1 : Integer.MAX_VALUE, tempFlow);
                     maxCell.energy -= eFlow;
                     minCell.energy += eFlow;
@@ -136,15 +142,18 @@ public class Rooms {
         if (room != null) {
             int xyz = packCellPos(pos);
             Cell cell = room.cells.get(xyz);
-            boolean injected = false;
+            float mass = 0;
+            Molecule exists = null;
             for (Molecule cellMolecule : cell.molecules) {
+                mass += Elements.elementMap.get(cellMolecule.element).specificHeat*cellMolecule.amount;
                 if (cellMolecule.element == molecule.element) {
-                    cellMolecule.amount += molecule.amount;
-                    injected = true;
-                    break;
+                    exists = cellMolecule;
                 }
             }
-            if (!injected) {
+            cell.energy += (int) (cell.energy/mass)*molecule.amount;
+            if (exists != null) {
+                exists.amount += molecule.amount;
+            } else {
                 cell.molecules.add(molecule);
             }
         }
