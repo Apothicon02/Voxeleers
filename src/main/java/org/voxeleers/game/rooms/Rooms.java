@@ -36,29 +36,31 @@ public class Rooms {
                 for (int i = randomOffset; i < randomOffset+6; i++) {
                     int idx = i-(((int)(i/6))*6);
                     Vector3i nPos  = neighbors[idx];
+                    boolean thermalsOnly = false;
                     Cell nCell = room.cells.get(packCellPos(nPos.x(), nPos.y(), nPos.z()));
                     if (nCell == null) {
-                        if (World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z()) <= 0) {
-                            nCell = new Cell(globalCell);
+                        nCell = new Cell(globalCell);
+                        if (World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z()) > 0) {
+                            thermalsOnly = true;
                         }
                     }
-                    if (nCell != null) {
-                        Cell maxCell = cell;
-                        Cell minCell = nCell;
-                        float maxTemp = maxCell.getTemperature();
-                        float minTemp = minCell.getTemperature();
-                        if (minTemp > maxTemp) {
-                            float oldMaxTemp = maxTemp;
-                            float oldMinTemp = minTemp;
-                            maxCell = nCell;
-                            minCell = cell;
-                            maxTemp = oldMinTemp;
-                            minTemp = oldMaxTemp;
-                        }
-                        double tempFlow = (maxTemp - minTemp) * maxTemp * minTemp / (maxTemp+minTemp);
-                        int eFlow = (int) Math.ceil(tempFlow/2);
-                        maxCell.energy -= eFlow;
-                        minCell.energy += eFlow;
+                    Cell maxCell = cell;
+                    Cell minCell = nCell;
+                    float maxTemp = maxCell.getTemperature();
+                    float minTemp = minCell.getTemperature();
+                    if (minTemp > maxTemp) {
+                        float oldMaxTemp = maxTemp;
+                        float oldMinTemp = minTemp;
+                        maxCell = nCell;
+                        minCell = cell;
+                        maxTemp = oldMinTemp;
+                        minTemp = oldMaxTemp;
+                    }
+                    double tempFlow = (maxTemp - minTemp) * maxTemp * minTemp / (maxTemp+minTemp);
+                    int eFlow = (int) (thermalsOnly ? (tempFlow/1000) : Math.ceil(tempFlow/2));
+                    maxCell.energy -= eFlow;
+                    minCell.energy += eFlow;
+                    if (!thermalsOnly) {
                         for (Molecule molecule : cell.molecules) {
                             boolean foundMatch = false;
                             for (Molecule nMolecule : nCell.molecules) {
