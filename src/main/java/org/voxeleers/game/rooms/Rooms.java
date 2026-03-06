@@ -1,10 +1,13 @@
 package org.voxeleers.game.rooms;
 
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.joml.Vector3i;
+import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Rooms {
     public static Vector3i min = new Vector3i();
@@ -14,7 +17,10 @@ public class Rooms {
     public static Room currentScan = new Room();
 
     public static void tick() {
+        ArrayList<Room> roomsToRemove = new ArrayList<>();
         for (Room room : rooms) {
+            boolean matchesGlobal = true;
+            Cell globalCell = World.worldType.getGlobalAtmo();
             for (int xyz : room.cells.keySet()) {
                 Cell cell = room.cells.get(xyz);
                 Vector3i pos = unpackCellPos(xyz);
@@ -30,7 +36,7 @@ public class Rooms {
                     Cell nCell = room.cells.get(packCellPos(nPos.x(), nPos.y(), nPos.z()));
                     if (nCell == null) {
                         if (World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z()) <= 0) {
-                            nCell = new Cell();
+                            nCell = new Cell(globalCell);
                         }
                     }
                     if (nCell != null) {
@@ -72,11 +78,52 @@ public class Rooms {
                         }
                     }
                 }
+
+                if (matchesGlobal) {
+                    if (Math.abs(cell.energy - globalCell.energy) > 100) {
+                        matchesGlobal = false;
+                    } else if (cell.molecules.size() != globalCell.molecules.size()) {
+                        matchesGlobal = false;
+                    } else {
+                        ByteArrayList elements = new ByteArrayList();
+                        breakingPoint:
+                        for (Molecule molecule : cell.molecules) {
+                            for (Molecule globalMolecule : globalCell.molecules) {
+                                elements.addLast(molecule.element);
+                                if (globalMolecule.element == molecule.element) {
+                                    if (Math.abs(globalMolecule.amount - molecule.amount) > 100) {
+                                        matchesGlobal = false;
+                                        break breakingPoint;
+                                    }
+                                }
+                            }
+                        }
+                        if (matchesGlobal) {
+                            for (byte element : World.worldType.getGlobalElements()) {
+                                if (!elements.contains(element)) {
+                                    matchesGlobal = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (matchesGlobal) {
+                roomsToRemove.add(room);
             }
         }
+        rooms.removeAll(roomsToRemove);
+    }
+    public static Room generateRoomIfNeeded(Vector3i pos) {
+        Room room = getRoom(pos);
+        if (room == null) {
+            room = detectRoom(pos.x, pos.y, pos.z);
+        }
+        return room;
     }
     public static void inject(Vector3i pos, Molecule molecule) {
-        Room room = getRoom(pos);
+        Room room = generateRoomIfNeeded(pos);
         if (room != null) {
             int xyz = packCellPos(pos);
             Cell cell = room.cells.get(xyz);
@@ -94,7 +141,7 @@ public class Rooms {
         }
     }
     public static void inject(Vector3i pos, int energy) {
-        Room room = getRoom(pos);
+        Room room = generateRoomIfNeeded(pos);
         if (room != null) {
             int xyz = packCellPos(pos);
             Cell cell = room.cells.get(xyz);
@@ -102,8 +149,7 @@ public class Rooms {
         }
     }
 
-    public static Room getRoom(Vector3i pos) {
-        int ogxyz = packCellPos(pos.x(), pos.y(), pos.z());
+    public static Room getRoom(int ogxyz) {
         for (Room room : rooms) {
             for (int xyz : room.cells.keySet()) {
                 if (xyz == ogxyz) {
@@ -112,6 +158,9 @@ public class Rooms {
             }
         }
         return null;
+    }
+    public static Room getRoom(Vector3i pos) {
+        return getRoom(packCellPos(pos.x(), pos.y(), pos.z()));
     }
 
     public static void detectRooms(int x, int y, int z) {
@@ -123,7 +172,7 @@ public class Rooms {
         detectRoom(x, y, z+1);
         detectRoom(x, y, z-1);
     }
-    public static void detectRoom(int x, int y, int z) {
+    public static Room detectRoom(int x, int y, int z) {
         min = new Vector3i(x-maxSize, y-maxSize, z-maxSize);
         min.max(new Vector3i(1));
         max = new Vector3i(x+maxSize, y+maxSize, z+maxSize);
@@ -131,11 +180,12 @@ public class Rooms {
         currentScan = new Room();
         if (scanCells(x, y, z) && !currentScan.cells.isEmpty()) {
             mergeRooms(currentScan);
-            rooms.add(currentScan);
-        } else {
-            //clearRooms(currentScan);
+            rooms.addLast(currentScan);
+            currentScan = null;
+            return rooms.getLast();
         }
         currentScan = null;
+        return null;
     }
 
     private static void mergeRooms(Room mergedRoom) {
@@ -148,6 +198,7 @@ public class Rooms {
                         Cell mergedCell = mergedRoom.cells.get(xyz);
                         if (mergedCell == null) {
                             mergedCell = new Cell();
+                            mergedRoom.cells.put(xyz, mergedCell);
                         }
                         mergedCell.energy += cell.energy;
                         for (Molecule molecule : cell.molecules) {
@@ -167,6 +218,11 @@ public class Rooms {
                     roomsToRemove.add(room);
                     break;
                 }
+            }
+        }
+        for (Map.Entry<Integer, Cell> entry : mergedRoom.cells.entrySet()) {
+            if (entry.getValue() == null) {
+                entry.setValue(new Cell(World.worldType.getGlobalAtmo()));
             }
         }
         rooms.removeIf(roomsToRemove::contains);
@@ -208,7 +264,7 @@ public class Rooms {
     public static boolean getCell(int x, int y, int z, int packed) {
         if (!currentScan.cells.containsKey(packed)) {
             if (World.getBlockTypeUnchecked(x, y, z) <= 0) {
-                currentScan.cells.put(packed, new Cell());
+                currentScan.cells.put(packed, null);
                 return true;
             }
         }

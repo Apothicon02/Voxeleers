@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.voxeleers.game.elements.Elements.UGC;
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.glDrawArrays;
@@ -88,21 +89,28 @@ public class GUI {
             drawText(0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
             drawText(0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
             Room room = Rooms.getRoom(Main.player.blockPos);
+            Cell cell = new Cell(World.worldType.getGlobalAtmo());
             if (room != null) {
                 int xyz = Rooms.packCellPos(Main.player.blockPos);
-                Cell cell = room.cells.get(xyz);
-                int totalMass = 0;
-                float avgThermalDensity = 0.f;
-                int i = 0;
-                for (Molecule molecule : cell.molecules) {
-                    Element element = Elements.elementMap.get(molecule.element);
-                    avgThermalDensity += element.specificHeat;
-                    totalMass += molecule.amount;
-                    String str = element.name+":"+String.format("%.2f", molecule.amount/1000.f)+"mL";
-                    drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
-                }
-                avgThermalDensity/=i;
-                drawText(0, 1, 2, -2 - (charHeight * 4), ("Energy:"+cell.energy+" Temperature:"+String.format("%.2f", cell.energy/(totalMass*avgThermalDensity))+"K").toCharArray());
+                cell = room.cells.get(xyz);
+            }
+            int totalMass = 0;
+            float avgThermalDensity = 0.f;
+            int i = 0;
+            for (Molecule molecule : cell.molecules) {
+                Element element = Elements.elementMap.get(molecule.element);
+                avgThermalDensity += element.specificHeat;
+                totalMass += molecule.amount;
+                i++;
+            }
+            avgThermalDensity/=i;
+            float temperature = cell.energy/(totalMass*avgThermalDensity);
+            drawText(0, 1, 2, -2 - (charHeight * 4), ("Energy:"+cell.energy+" Temperature:"+String.format("%.2f", temperature)+"K").toCharArray());
+            i = 0;
+            for (Molecule molecule : cell.molecules) {
+                Element element = Elements.elementMap.get(molecule.element);
+                String str = element.name+":"+molecule.amount+" Pressure:"+String.format("%.2f", (molecule.amount*UGC*temperature)/1000000)+"kPa";
+                drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
             }
         }
     }
