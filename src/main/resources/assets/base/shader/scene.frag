@@ -690,6 +690,8 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
             }
             shadowFactor = min(0.9f, mix(0.75f, 0.9f, min(1, distance(shadowPos, hitPos)/420))); //shadowFactor = mix(1.f, min(0.9f, mix(0.75f, 0.9f, min(1, distance(shadowPos, hitPos)/420))), waterDepth);
         }
+        vec4 normalizedTint = tint/max(1.f, max(tint.r, max(tint.g, tint.b)));
+        shadowFactor = max(0.75f, shadowFactor-(normalizedTint.a/4));
         isShadow = false;
         tint = prevTint;
         hitPos = oldHitPos;
