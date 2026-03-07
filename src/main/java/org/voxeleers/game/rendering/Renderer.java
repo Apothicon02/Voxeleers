@@ -6,6 +6,7 @@ import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.noise.Noises;
+import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
@@ -332,6 +333,29 @@ public class Renderer {
             }
         }
     }
+    public static void drawDebugTempPress() {
+        Random roomRand = new Random(911);
+        int i = 0;
+        for (Room room : Rooms.rooms) {
+            Vector3f color = debugColors[i];
+            i++;
+            if (i >= debugColors.length) {
+                i = 0;
+            }
+            for (int xyz : room.cells.keySet()) {
+                Cell cell = room.cells.get(xyz);
+                if (!cell.molecules.isEmpty()) {
+                    glUniform4f(raster.uniforms.get("color"), (Math.clamp(cell.getTemperature(), 29, 49)-29)/20.f, 0.f,  (float)Math.clamp(cell.getPressure()/10000000.f, 0, 1), 1.f);
+                    Vector3i cellPos = Rooms.unpackCellPos(xyz);
+                    try (MemoryStack stack = MemoryStack.stackPush()) {
+                        glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + roomRand.nextFloat(), cellPos.y() + roomRand.nextFloat(), cellPos.z() + roomRand.nextFloat()).scale(0.125f).get(stack.mallocFloat(16)));
+                    }
+                    drawCube();
+                }
+            }
+        }
+    }
+
     public static void drawClouds() {
         Random cloudRand = new Random(911);
         float brightness = Math.clamp((640+sunPos.y())/640, 0.3f, 1.f);
@@ -463,6 +487,7 @@ public class Renderer {
             glUniform1i(raster.uniforms.get("alwaysUpfront"), 0);
             glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
             //drawDebugRooms();
+            drawDebugTempPress();
             drawClouds();
             drawSunAndMoon();
             drawStars();

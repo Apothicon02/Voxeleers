@@ -2,7 +2,6 @@ package org.voxeleers.game.rooms;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.joml.Vector3i;
-import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.world.World;
 
@@ -38,7 +37,7 @@ public class Rooms {
                         (new Vector3i(pos.x(), pos.y(), pos.z() - 1))};
                 for (int i = randomOffset; i < randomOffset+6; i++) {
                     int idx = i-(((int)(i/6))*6);
-                    Vector3i nPos  = neighbors[idx];
+                    Vector3i nPos = neighbors[idx];
                     boolean thermalsOnly = false;
                     Cell nCell = room.cells.get(packCellPos(nPos.x(), nPos.y(), nPos.z()));
                     if (nCell == null) {
@@ -49,34 +48,27 @@ public class Rooms {
                             //}
                         }
                     }
-                    Cell maxCell = cell;
-                    Cell minCell = nCell;
-                    float maxTemp = maxCell.getTemperature();
-                    float minTemp = minCell.getTemperature();
-                    if (minTemp > maxTemp) {
-                        float oldMaxTemp = maxTemp;
-                        float oldMinTemp = minTemp;
-                        maxCell = nCell;
-                        minCell = cell;
-                        maxTemp = oldMinTemp;
-                        minTemp = oldMaxTemp;
-                    }
-                    int tempFlow = Math.ceilDiv(maxCell.getEnergyFromTemperature((maxTemp-minTemp)/2), 2);
-                    int eFlow = Math.min(thermalsOnly ? 1 : Integer.MAX_VALUE, tempFlow);
-                    maxCell.energy -= eFlow;
-                    minCell.energy += eFlow;
                     if (!thermalsOnly) {
                         for (Molecule molecule : cell.molecules) {
                             boolean foundMatch = false;
                             for (Molecule nMolecule : nCell.molecules) {
                                 if (molecule.element == nMolecule.element) {
+                                    Cell maxCell = cell;
+                                    Cell minCell = nCell;
                                     Molecule maxMolecule = molecule;
                                     Molecule minMolecule = nMolecule;
-                                    if (nMolecule.amount > molecule.amount) {
+                                    if (minMolecule.amount > maxMolecule.amount) { //nCell.getPressure() > cell.getPressure()
+                                        maxCell = nCell;
+                                        minCell = cell;
                                         maxMolecule = nMolecule;
                                         minMolecule = molecule;
                                     }
                                     int flow = Math.ceilDiv(maxMolecule.amount - minMolecule.amount, 2);
+                                    //int flow = (int) Math.ceil(maxCell.getMolesFromPressure((maxCell.getPressure()-minCell.getPressure())/2)/2);
+                                    double massLost = flow / (double) maxMolecule.amount;
+                                    int energyFlow = (int) (maxCell.energy*(massLost*Elements.elementMap.get(maxMolecule.element).specificHeat));
+                                    maxCell.energy -= energyFlow;
+                                    minCell.energy += energyFlow;
                                     maxMolecule.amount -= flow;
                                     minMolecule.amount += flow;
                                     foundMatch = true;
@@ -84,7 +76,12 @@ public class Rooms {
                                 }
                             }
                             if (!foundMatch) {
-                                int flow = Math.max(1, Math.ceilDiv(molecule.amount, 2));
+                                int flow = Math.ceilDiv(molecule.amount, 2);
+                                float specificHeat = Elements.elementMap.get(molecule.element).specificHeat;
+                                double massLost = ((double) flow) / molecule.amount;
+                                int energyFlow = (int) (cell.energy*(massLost*specificHeat));
+                                cell.energy -= energyFlow;
+                                nCell.energy += energyFlow;
                                 molecule.amount -= flow;
                                 nCell.molecules.add(new Molecule(molecule.element, flow));
                             }

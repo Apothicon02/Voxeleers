@@ -147,10 +147,9 @@ public class Main {
                     } else if (wasCDown && !window.isKeyPressed(SDL_SCANCODE_C)) {
                         player.creative = !player.creative;
                     } else if (wasGDown && !window.isKeyPressed(SDL_SCANCODE_G)) {
-                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(0, 1000000));
-                        //Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 24500000);
+                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(1, 1000000));
                     } else if (wasEDown && !window.isKeyPressed(SDL_SCANCODE_E)) {
-                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 10000000);
+                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 1000000);
                     } else if (wasRDown && !window.isKeyPressed(SDL_SCANCODE_R)) {
                         Rooms.tick();
                     }
@@ -346,7 +345,7 @@ public class Main {
                     currentTick++;
                     timePassed -= tickTime;
                     player.tick();
-                    //Rooms.tick();
+                    Rooms.tick();
                     ScheduledTicker.tick();
                     AudioController.disposeSources();
                     if (ticksDone >= 3) {

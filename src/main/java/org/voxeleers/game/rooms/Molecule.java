@@ -7,4 +7,8 @@ public class Molecule {
         this.element = (byte)(element);
         this.amount = amount;
     }
+    public Molecule(Molecule molecule) {
+        this.element = molecule.element;
+        this.amount = molecule.amount;
+    }
 }

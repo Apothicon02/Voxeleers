@@ -95,11 +95,11 @@ public class GUI {
                 cell = room.cells.get(xyz);
             }
             float temperature = cell.getTemperature();
-            drawText(0, 1, 2, -2 - (charHeight * 4), ("Energy:"+cell.energy+" Temperature:"+String.format("%.2f", temperature)+"K").toCharArray()); //258
+            drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.2f", cell.getPressure()/10000000.f)+"kPa Temperature:"+String.format("%.2f", temperature*10)+"K").toCharArray()); //258
             int i = 0;
             for (Molecule molecule : cell.molecules) {
                 Element element = Elements.elementMap.get(molecule.element);
-                String str = element.name+":"+molecule.amount+" Pressure:"+String.format("%.2f", ((molecule.amount/10.f)*UGC*temperature)/1000000)+"kPa";
+                String str = element.name+":"+molecule.amount;
                 drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
             }
         }

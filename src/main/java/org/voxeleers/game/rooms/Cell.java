@@ -6,6 +6,8 @@ import org.voxeleers.game.elements.Elements;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.voxeleers.game.elements.Elements.UGC;
+
 public class Cell {
     public int energy;
     public List<Molecule> molecules;
@@ -19,7 +21,26 @@ public class Cell {
     }
     public Cell(Cell cell) {
         energy = cell.energy;
-        molecules = new ArrayList<>(cell.molecules);
+        molecules = new ArrayList<>();
+        for (Molecule molecule : cell.molecules) {
+            molecules.add(new Molecule(molecule));
+        }
+    }
+
+    public double getPressure() {
+        float mass = 0;
+        float thermalMass = 0;
+        for (Molecule molecule : molecules) {
+            Element element = Elements.elementMap.get(molecule.element);
+            mass += molecule.amount;
+            thermalMass += element.specificHeat*molecule.amount;
+        }
+        float temperature = energy/thermalMass;
+        return mass*UGC*temperature;
+    }
+
+    public double getMolesFromPressure(double pressure) {
+        return pressure/(UGC*getTemperature());
     }
 
     public float getTemperature() {
@@ -28,7 +49,7 @@ public class Cell {
             Element element = Elements.elementMap.get(molecule.element);
             mass += element.specificHeat*molecule.amount;
         }
-        return energy/(mass/10.f);
+        return energy/mass;
     }
 
     public int getEnergyFromTemperature(float temp) {
@@ -37,6 +58,6 @@ public class Cell {
             Element element = Elements.elementMap.get(molecule.element);
             mass += element.specificHeat*molecule.amount;
         }
-        return (int) (temp*(mass/10.f));
+        return (int) (temp*mass);
     }
 }
