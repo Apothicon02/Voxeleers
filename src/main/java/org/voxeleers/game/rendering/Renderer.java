@@ -278,6 +278,14 @@ public class Renderer {
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
     }
+    public static void drawPlane() {
+        glBindVertexArray(Models.QUAD_UNNORMALIZED.vaoId);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glDrawArrays(GL_TRIANGLES, 0, Models.QUAD_UNNORMALIZED.positions.length);
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+    }
     public static void drawDoubleSidedPlane() {
         glBindVertexArray(Models.PLANE_DB.vaoId);
         glEnableVertexAttribArray(0);
@@ -348,7 +356,8 @@ public class Renderer {
                     glUniform4f(raster.uniforms.get("color"), (Math.clamp(cell.getTemperature(), 29, 49)-29)/20.f, 0.f,  (float)Math.clamp(cell.getPressure()/10000000.f, 0, 1), 1.f);
                     Vector3i cellPos = Rooms.unpackCellPos(xyz);
                     try (MemoryStack stack = MemoryStack.stackPush()) {
-                        glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + roomRand.nextFloat(), cellPos.y() + roomRand.nextFloat(), cellPos.z() + roomRand.nextFloat()).scale(0.125f).get(stack.mallocFloat(16)));
+                        glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).
+                                scale(0.05f).get(stack.mallocFloat(16)));
                     }
                     drawCube();
                 }

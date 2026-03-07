@@ -6,6 +6,7 @@ import org.voxeleers.game.ScheduledTicker;
 import org.voxeleers.game.audio.BlockSFX;
 import org.voxeleers.game.audio.Source;
 import org.voxeleers.game.blocks.types.BlockTypes;
+import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.gameplay.Player;
 import org.voxeleers.game.audio.AudioController;
@@ -44,18 +45,44 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         Main main = new Main();
-//        Cell maxCell = new Cell(100, List.of(new Molecule(0, 100)));
-//        Cell minCell = new Cell(50, List.of(new Molecule(0, 155)));
-//        for (int i = 0; i < 10; i++) {
-//            float maxTemp = maxCell.getTemperature();
-//            float minTemp = minCell.getTemperature();
-//            int flow = Math.ceilDiv(maxCell.getEnergyFromTemperature((maxTemp-minTemp)/2), 2);
-//            maxCell.energy -= flow;
-//            minCell.energy += flow;
-//            maxTemp = maxCell.getTemperature();
-//            minTemp = minCell.getTemperature();
-//            int nothing = 0;
-//        }
+        Cell cell = new Cell(200, List.of(new Molecule(0, 200)));
+        Cell nCell = new Cell(100, List.of(new Molecule(0, 100)));
+        double cellPressure = 0.f;
+        double nCellPressure = 0.f;
+        for (int i = 0; i < 512; i++) {
+            for (Molecule molecule : cell.molecules) {
+                int cellMoles = 0;
+                for (Molecule aMolecule : cell.molecules) {
+                    cellMoles += aMolecule.amount;
+                }
+                Molecule nMolecule = null;
+                for (Molecule potentialNMolecule : nCell.molecules) {
+                    if (molecule.element == potentialNMolecule.element) {
+                        nMolecule = potentialNMolecule;
+                        break;
+                    }
+                }
+                boolean doesMoleculeReallyExist = true;
+                if (nMolecule == null) {
+                    doesMoleculeReallyExist = false;
+                    nMolecule = new Molecule(molecule.element, 0);
+                }
+                cellPressure = cell.getPressure();
+                nCellPressure = nCell.getPressure();
+                double flow = Math.ceil(cell.getMolesFromPressure((cellPressure - nCellPressure)/2));
+                if (flow > 1) {
+                    double massLost = flow / cellMoles;
+                    int energyFlow = (int) (cell.energy * (massLost * Elements.elementMap.get(molecule.element).specificHeat));
+                    cell.energy -= energyFlow;
+                    nCell.energy += energyFlow;
+                    molecule.amount -= (int) flow;
+                    nMolecule.amount += (int) flow;
+                    if (!doesMoleculeReallyExist) {
+                        nCell.molecules.add(nMolecule);
+                    }
+                }
+            }
+        }
         Engine gameEng = new Engine("Voxeleers", new Window.WindowOptions(), main);
         gameEng.start();
     }
@@ -147,7 +174,7 @@ public class Main {
                     } else if (wasCDown && !window.isKeyPressed(SDL_SCANCODE_C)) {
                         player.creative = !player.creative;
                     } else if (wasGDown && !window.isKeyPressed(SDL_SCANCODE_G)) {
-                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(1, 1000000));
+                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(1, 20000000));
                     } else if (wasEDown && !window.isKeyPressed(SDL_SCANCODE_E)) {
                         Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 1000000);
                     } else if (wasRDown && !window.isKeyPressed(SDL_SCANCODE_R)) {

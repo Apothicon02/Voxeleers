@@ -10,14 +10,18 @@ import static org.voxeleers.game.elements.Elements.UGC;
 
 public class Cell {
     public int energy;
-    public List<Molecule> molecules;
+    public ArrayList<Molecule> molecules;
     public Cell() {
         energy = 0;
         molecules = new ArrayList<>(List.of());
     }
-    public Cell(int energy, List<Molecule> molecules) {
+    public Cell(int energy, ArrayList<Molecule> molecules) {
         this.energy = energy;
         this.molecules = molecules;
+    }
+    public Cell(int energy, List<Molecule> molecules) {
+        this.energy = energy;
+        this.molecules = new ArrayList<>(molecules);
     }
     public Cell(Cell cell) {
         energy = cell.energy;

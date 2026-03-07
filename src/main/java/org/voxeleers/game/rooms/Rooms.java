@@ -50,40 +50,35 @@ public class Rooms {
                     }
                     if (!thermalsOnly) {
                         for (Molecule molecule : cell.molecules) {
-                            boolean foundMatch = false;
-                            for (Molecule nMolecule : nCell.molecules) {
-                                if (molecule.element == nMolecule.element) {
-                                    Cell maxCell = cell;
-                                    Cell minCell = nCell;
-                                    Molecule maxMolecule = molecule;
-                                    Molecule minMolecule = nMolecule;
-                                    if (minMolecule.amount > maxMolecule.amount) { //nCell.getPressure() > cell.getPressure()
-                                        maxCell = nCell;
-                                        minCell = cell;
-                                        maxMolecule = nMolecule;
-                                        minMolecule = molecule;
-                                    }
-                                    int flow = Math.ceilDiv(maxMolecule.amount - minMolecule.amount, 2);
-                                    //int flow = (int) Math.ceil(maxCell.getMolesFromPressure((maxCell.getPressure()-minCell.getPressure())/2)/2);
-                                    double massLost = flow / (double) maxMolecule.amount;
-                                    int energyFlow = (int) (maxCell.energy*(massLost*Elements.elementMap.get(maxMolecule.element).specificHeat));
-                                    maxCell.energy -= energyFlow;
-                                    minCell.energy += energyFlow;
-                                    maxMolecule.amount -= flow;
-                                    minMolecule.amount += flow;
-                                    foundMatch = true;
+                            int cellMoles = 0;
+                            for (Molecule aMolecule : cell.molecules) {
+                                cellMoles += aMolecule.amount;
+                            }
+                            Molecule nMolecule = null;
+                            for (Molecule potentialNMolecule : nCell.molecules) {
+                                if (molecule.element == potentialNMolecule.element) {
+                                    nMolecule = potentialNMolecule;
                                     break;
                                 }
                             }
-                            if (!foundMatch) {
-                                int flow = Math.ceilDiv(molecule.amount, 2);
-                                float specificHeat = Elements.elementMap.get(molecule.element).specificHeat;
-                                double massLost = ((double) flow) / molecule.amount;
-                                int energyFlow = (int) (cell.energy*(massLost*specificHeat));
+                            boolean doesMoleculeReallyExist = true;
+                            if (nMolecule == null) {
+                                doesMoleculeReallyExist = false;
+                                nMolecule = new Molecule(molecule.element, 0);
+                            }
+                            double cellPressure = cell.getPressure();
+                            double nCellPressure = nCell.getPressure();
+                            double flow = Math.ceil(cell.getMolesFromPressure((cellPressure - nCellPressure)/2));
+                            if (flow > 1) {
+                                double massLost = flow / cellMoles;
+                                int energyFlow = (int) (cell.energy * (massLost * Elements.elementMap.get(molecule.element).specificHeat));
                                 cell.energy -= energyFlow;
                                 nCell.energy += energyFlow;
-                                molecule.amount -= flow;
-                                nCell.molecules.add(new Molecule(molecule.element, flow));
+                                molecule.amount -= (int) flow;
+                                nMolecule.amount += (int) flow;
+                                if (!doesMoleculeReallyExist) {
+                                    nCell.molecules.add(nMolecule);
+                                }
                             }
                         }
                         cell.molecules.removeIf((molecule) -> molecule.amount <= 0);

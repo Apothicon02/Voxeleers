@@ -45,7 +45,7 @@ public class BlockTypes {
             IGNEOUS = create(List.of(BlockTags.rocks, BlockTags.blunt), new BlockType(new BlockProperties())),
             STONE = create(List.of(BlockTags.rocks, BlockTags.blunt), new BlockType(new BlockProperties())), //10
             GLASS = create(List.of(BlockTags.blunt), new BlockType(new BlockProperties().blockSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 1, 1,
-                    new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 1, 1).blocksLight(false))),
+                    new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 1, 1).blocksLight(false).obstructsHeightmap(false))),
             MAGENTA_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
             LIME_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
             PORECAP = create(List.of(BlockTags.sediment), new PlantLightBlockType(((LightBlockProperties)TORCH.blockProperties.copy().ttb(50)).r(0).g(12).b(6))),
