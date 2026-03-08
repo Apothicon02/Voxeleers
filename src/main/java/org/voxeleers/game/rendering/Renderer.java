@@ -7,6 +7,7 @@ import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.rooms.Cell;
+import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
@@ -353,7 +354,12 @@ public class Renderer {
             for (int xyz : room.cells.keySet()) {
                 Cell cell = room.cells.get(xyz);
                 if (!cell.molecules.isEmpty()) {
-                    glUniform4f(raster.uniforms.get("color"), (float)(Math.clamp(cell.getTemperature(), 29, 49)-29)/20.f, 0.f,  (float)Math.clamp(cell.getPressure()/10000000.f, 0, 1), 1.f);
+                    float brightness = 0.f;
+                    for (Molecule molecule : cell.molecules) {
+                        brightness += molecule.amount;
+                    }
+                    brightness /= 200000;
+                    glUniform4f(raster.uniforms.get("color"), brightness, brightness, brightness, 1.f);
                     Vector3i cellPos = Rooms.unpackCellPos(xyz);
                     try (MemoryStack stack = MemoryStack.stackPush()) {
                         glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).

@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.voxeleers.game.elements.Elements.UGC;
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.glDrawArrays;
@@ -94,12 +93,15 @@ public class GUI {
                 int xyz = Rooms.packCellPos(Main.player.blockPos);
                 cell = room.cells.get(xyz);
             }
-            double temperature = cell.getTemperature();
-            drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.2f", cell.getPressure()/10000000.f)+"kPa Temperature:"+String.format("%.2f", temperature*10)+"K").toCharArray()); //258
+            float cellMoles = 0;
+            for (Molecule molecule : cell.molecules) {
+                cellMoles += molecule.amount;
+            }
+            drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.3f", cellMoles/1000.f)+"kPa").toCharArray());
             int i = 0;
             for (Molecule molecule : cell.molecules) {
                 Element element = Elements.elementMap.get(molecule.element);
-                String str = element.name+":"+molecule.amount;
+                String str = element.name+":"+String.format("%.3f", (molecule.amount/cellMoles)*100)+"%";
                 drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
             }
         }
