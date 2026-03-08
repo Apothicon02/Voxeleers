@@ -506,9 +506,9 @@ public class Renderer {
             drawClouds();
             drawSunAndMoon();
             drawStars();
-//            drawCenter();
-//            drawDebugWheel();
-//            drawHuman();
+            drawCenter();
+            drawDebugWheel();
+            drawHuman();
             glUniform1i(raster.uniforms.get("tex"), 1); // rendering item
             glBindTextureUnit(0, Textures.items.id);
             glUniform4f(raster.uniforms.get("color"), 1, 1, 1, 1);
