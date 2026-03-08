@@ -47,7 +47,7 @@ public class Cell {
         return pressure/(UGC*getTemperature());
     }
 
-    public float getTemperature() {
+    public double getTemperature() {
         float mass = 0;
         for (Molecule molecule : molecules) {
             Element element = Elements.elementMap.get(molecule.element);
@@ -56,7 +56,7 @@ public class Cell {
         return energy/mass;
     }
 
-    public int getEnergyFromTemperature(float temp) {
+    public int getEnergyFromTemperature(double temp) {
         float mass = 0;
         for (Molecule molecule : molecules) {
             Element element = Elements.elementMap.get(molecule.element);

@@ -94,7 +94,7 @@ public class GUI {
                 int xyz = Rooms.packCellPos(Main.player.blockPos);
                 cell = room.cells.get(xyz);
             }
-            float temperature = cell.getTemperature();
+            double temperature = cell.getTemperature();
             drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.2f", cell.getPressure()/10000000.f)+"kPa Temperature:"+String.format("%.2f", temperature*10)+"K").toCharArray()); //258
             int i = 0;
             for (Molecule molecule : cell.molecules) {

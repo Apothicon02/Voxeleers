@@ -66,19 +66,26 @@ public class Rooms {
                                 doesMoleculeReallyExist = false;
                                 nMolecule = new Molecule(molecule.element, 0);
                             }
+                            double cellTemperature = cell.getTemperature();
+                            double nCellTemperature = nCell.getTemperature();
                             double cellPressure = cell.getPressure();
                             double nCellPressure = nCell.getPressure();
-                            double flow = Math.ceil(cell.getMolesFromPressure((cellPressure - nCellPressure)/2));
-                            if (flow > 1) {
-                                double massLost = flow / cellMoles;
-                                int energyFlow = (int) (cell.energy * (massLost * Elements.elementMap.get(molecule.element).specificHeat));
-                                cell.energy -= energyFlow;
-                                nCell.energy += energyFlow;
-                                molecule.amount -= (int) flow;
-                                nMolecule.amount += (int) flow;
+                            double moleFlow = Math.ceil(cell.getMolesFromPressure((cellPressure - nCellPressure)/2));
+                            double massLost = 0.d;
+                            if (moleFlow > 0) {
+                                massLost = moleFlow / cellMoles;
+                                molecule.amount -= (int) moleFlow;
+                                nMolecule.amount += (int) moleFlow;
                                 if (!doesMoleculeReallyExist) {
                                     nCell.molecules.add(nMolecule);
                                 }
+                            }
+                            double tempFlow = (Math.ceil((cellTemperature - nCellTemperature)/2)/cell.energy)*((double) molecule.amount/cellMoles);
+                            float specificHeat = Elements.elementMap.get(molecule.element).specificHeat;
+                            int energyFlow = (int) (cell.energy * Math.max(massLost, 0)*specificHeat);
+                            if (energyFlow != 0) {
+                                cell.energy -= energyFlow;
+                                nCell.energy += energyFlow;
                             }
                         }
                         cell.molecules.removeIf((molecule) -> molecule.amount <= 0);
