@@ -17,6 +17,35 @@ public class Utils {
         return new Vector3f(vec3i.x, vec3i.y, vec3i.z);
     }
 
+    public static Vector3f getColorOfTemp(int temp) {
+        Vector3f color = new Vector3f(0);
+        if (temp > 2000) {
+            color.set(1.f);
+        } else if (temp > 1000) {
+            float mix = (temp -1000)/1000.f;
+            color.set(1.f, mix, mix);
+        } else if (temp > 374) { //water boiling
+            float mix = (temp -374)/626.f;
+            color.set(1.f, 1.f-mix, 0.f);
+        } else if (temp > 294) { //room temp
+            float mix = (temp -294)/80.f;
+            color.set(mix, 1.f, 0.f);
+        } else if (temp > 273) { //water freezing
+            float mix = (temp -273)/21.f;
+            color.set(0.f, 1.f, 1.f-mix);
+        } else if (temp > 200) {
+            float mix = (temp -200)/73.f;
+            color.set(0.f, mix, 1.f);
+        } else if (temp > 100) {
+            float mix = (temp -100)/100.f;
+            color.set(1.f-mix, 0.f, 1.f);
+        } else { //absolute zero
+            float mix = temp /100.f;
+            color.set(mix, 0.f, mix);
+        }
+        return color;
+    }
+
     public static int[] flipIntArray(int[] arr) {
         int[] newArr = new int[arr.length];
         int i = arr.length-1;

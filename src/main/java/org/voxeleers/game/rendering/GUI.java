@@ -4,14 +4,10 @@ import org.voxeleers.Main;
 import org.voxeleers.engine.Engine;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.engine.Window;
-import org.voxeleers.game.elements.Element;
-import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.items.ItemTypes;
-import org.voxeleers.game.rooms.Cell;
-import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
@@ -88,22 +84,12 @@ public class GUI {
             drawText(0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
             drawText(0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
             Room room = Rooms.getRoom(Main.player.blockPos);
-            Cell cell = new Cell(World.worldType.getGlobalAtmo());
+            int temp = World.worldType.getGlobalTemp();
             if (room != null) {
                 int xyz = Rooms.packCellPos(Main.player.blockPos);
-                cell = room.cells.get(xyz);
+                temp = room.cells.get(xyz);
             }
-            float cellMoles = 0;
-            for (Molecule molecule : cell.molecules) {
-                cellMoles += molecule.amount;
-            }
-            drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.3f", cellMoles/1000.f)+"kPa").toCharArray());
-            int i = 0;
-            for (Molecule molecule : cell.molecules) {
-                Element element = Elements.elementMap.get(molecule.element);
-                String str = element.name+":"+String.format("%.3f", (molecule.amount/cellMoles)*100)+"%";
-                drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
-            }
+            drawText(0, 1, 2, -2 - (charHeight * 4), ("Temperature:"+String.format("%.1f", temp/10000.f)+"K").toCharArray());
         }
     }
 

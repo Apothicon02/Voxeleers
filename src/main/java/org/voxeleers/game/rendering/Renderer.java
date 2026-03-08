@@ -1,20 +1,16 @@
 package org.voxeleers.game.rendering;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
+import org.jetbrains.annotations.NotNull;
 import org.voxeleers.Main;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
-import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.noise.Noises;
-import org.voxeleers.game.rooms.Cell;
-import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
 import org.joml.*;
 import org.voxeleers.engine.*;
 import org.voxeleers.engine.Window;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryStack;
 
 import javax.imageio.ImageIO;
@@ -332,41 +328,31 @@ public class Renderer {
             }
             glUniform4f(raster.uniforms.get("color"), color.x()*0.95f, color.y()*0.95f, color.z()*0.95f, 1.f);
             for (int xyz : room.cells.keySet()) {
-                if (!room.cells.get(xyz).molecules.isEmpty()) {
-                    Vector3i cellPos = Rooms.unpackCellPos(xyz);
-                    try (MemoryStack stack = MemoryStack.stackPush()) {
-                        glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + roomRand.nextFloat(), cellPos.y() + roomRand.nextFloat(), cellPos.z() + roomRand.nextFloat()).scale(0.125f).get(stack.mallocFloat(16)));
-                    }
-                    drawCube();
+                Vector3i cellPos = Rooms.unpackCellPos(xyz);
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + roomRand.nextFloat(), cellPos.y() + roomRand.nextFloat(), cellPos.z() + roomRand.nextFloat()).scale(0.125f).get(stack.mallocFloat(16)));
                 }
+                drawCube();
             }
         }
     }
-    public static void drawDebugTempPress() {
-        Random roomRand = new Random(911);
+    public static void drawDebugTemps() {
         int i = 0;
         for (Room room : Rooms.rooms) {
-            Vector3f color = debugColors[i];
             i++;
             if (i >= debugColors.length) {
                 i = 0;
             }
             for (int xyz : room.cells.keySet()) {
-                Cell cell = room.cells.get(xyz);
-                if (!cell.molecules.isEmpty()) {
-                    float brightness = 0.f;
-                    for (Molecule molecule : cell.molecules) {
-                        brightness += molecule.amount;
-                    }
-                    brightness /= 200000;
-                    glUniform4f(raster.uniforms.get("color"), brightness, brightness, brightness, 1.f);
-                    Vector3i cellPos = Rooms.unpackCellPos(xyz);
-                    try (MemoryStack stack = MemoryStack.stackPush()) {
-                        glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).
-                                scale(0.05f).get(stack.mallocFloat(16)));
-                    }
-                    drawCube();
+                int temp = room.cells.get(xyz);
+                Vector3f color = Utils.getColorOfTemp(temp/10000);
+                glUniform4f(raster.uniforms.get("color"), color.x(), color.y(), color.z(), 1.f);
+                Vector3i cellPos = Rooms.unpackCellPos(xyz);
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).
+                            scale(0.05f).get(stack.mallocFloat(16)));
                 }
+                drawCube();
             }
         }
     }
@@ -502,7 +488,7 @@ public class Renderer {
             glUniform1i(raster.uniforms.get("alwaysUpfront"), 0);
             glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
             //drawDebugRooms();
-            drawDebugTempPress();
+            drawDebugTemps();
             drawClouds();
             drawSunAndMoon();
             drawStars();
