@@ -163,8 +163,7 @@ vec4 getLight(float x, float y, float z) {
 }
 vec3 ogPos = vec3(0);
 vec3 sunColor = vec3(0);
-float fogDetractorFactor = 1.f;
-vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess) {
+vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess, bool negateSun) {
     float ogY = ogPos.y;
     float sunHeight = sun.y/size;
     float scattering = gradient(lightPos.y, ogY-63, ogY+437, 1.5f, -0.5f);
@@ -175,8 +174,9 @@ vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess)
     float whiteY = max(ogY, 200)-135.f;
     float skyWhiteness = mix(max(0.33f, gradient(lightPos.y, (whiteY/4)+47, (whiteY/2)+436, 0, 0.9)), 0.9f, clamp(abs(1-sunSetness), 0, 1.f));
     float sunBrightness = mix(0.f, clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 1.f), clamp(skyWhiteness+0.3f, 0, 0.85f));
-    if (fogDetractorFactor == -1) {
-        fogDetractorFactor = max(max(lighting.r, max(lighting.g, lighting.b))*0.8f, (sunBrightness*lighting.a)*1.5f);
+    lighting.rgb = max(vec3(0), lighting.rgb-(sunBrightness*lighting.a));
+    if (negateSun) {
+        lighting.a = 0;
     }
     float whiteness = isSky ? skyWhiteness : mix(0.9f, skyWhiteness, max(0, fogginess-0.8f)*5.f);
     sunColor = mix(mix(vec3(0.25, 0.65f, 1)*(1+((10*clamp(sunHeight, 0.f, 0.1f))*(15*min(0.5f, abs(1-sunBrightness))))), vec3(0.5f, 0.56f, 0.7f)*sunBrightness, sunSetness), vec3(sunBrightness), whiteness);
@@ -247,7 +247,9 @@ vec4 lightFogLastCheck = vec4(0);
 void updateLightFog(vec3 pos) {
     if (!isShadow) {
         lightFogLastCheck = (getLight(pos.x, pos.y, pos.z));
-        lightFog = max(lightFog, getLightingColor(mapPos, vec4(lightFogLastCheck.rgb, 0), false, 1)/2);
+        if (lightFogLastCheck.r > 0  && lightFogLastCheck.g > 0  && lightFogLastCheck.b > 0 ) {
+            lightFog = max(lightFog, getLightingColor(mapPos, lightFogLastCheck, false, 1, true)/2);
+        }
     }
 }
 
@@ -813,9 +815,8 @@ void main() {
     lighting.a = mix(lighting.a*shadowFactor, (vec4(0, 0, 0, 1)).a, fogginess);
     lighting = powLighting(lighting);
     if (!isLight) {
-        fogDetractorFactor = -1;
         lighting.a*=waterDepth;
-        vec4 lightingColor = getLightingColor(lightPos, lighting, isSky, fogginess);
+        vec4 lightingColor = getLightingColor(lightPos, lighting, isSky, fogginess, false);
         fragColor.rgb *= lightingColor.rgb;
         fragColor.rgb = mix(fragColor.rgb*1.2f, lightingColor.rgb, fogginess);
     }
@@ -830,7 +831,7 @@ void main() {
         lighting = (getLight(lightPos.x, lightPos.y, lightPos.z));
         lighting.a = mix(lighting.a*shadowFactor, (vec4(0, 0, 0, 1)).a, fogginess);
         lighting = powLighting(lighting);
-        vec4 lightingColor = getLightingColor(lightPos, lighting, false, fogginess);
+        vec4 lightingColor = getLightingColor(lightPos, lighting, false, fogginess, false);
         normalizedTint.rgb *= lightingColor.rgb;
         normalizedTint.rgb = mix(normalizedTint.rgb, lightingColor.rgb, fogginess);
         fragColor.rgb = mix(fragColor.rgb, normalizedTint.rgb, mix(normalizedTint.a, 1.f, reflectivity));
@@ -839,6 +840,7 @@ void main() {
     if (hitBlock == ivec3(playerData[0], playerData[1], playerData[2]) && ui) {
         fragColor.rgb = mix(fragColor.rgb, vec3(0.7, 0.7, 1), 0.5f);
     }
+    fragColor.rgb += lightFog.rgb;
     fragColor = toLinear(fragColor);
     fragColor.a = depth;
 }
