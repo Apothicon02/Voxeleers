@@ -6,12 +6,15 @@ import org.voxeleers.game.ScheduledTicker;
 import org.voxeleers.game.audio.BlockSFX;
 import org.voxeleers.game.audio.Source;
 import org.voxeleers.game.blocks.types.BlockTypes;
+import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.gameplay.Player;
 import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemTypes;
 import org.voxeleers.game.rendering.Models;
+import org.voxeleers.game.rooms.Cell;
+import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.LightHelper;
 import org.voxeleers.game.world.World;
@@ -25,6 +28,7 @@ import org.lwjgl.opengl.GL;
 
 import java.io.IOException;
 import java.lang.Math;
+import java.util.List;
 
 import static io.github.libsdl4j.api.mouse.SdlMouse.SDL_SetRelativeMouseMode;
 import static io.github.libsdl4j.api.scancode.SDL_Scancode.*;
@@ -131,10 +135,12 @@ public class Main {
                         }
                     } else if (wasCDown && !window.isKeyPressed(SDL_SCANCODE_C)) {
                         player.creative = !player.creative;
+                    } else if (wasGDown && !window.isKeyPressed(SDL_SCANCODE_G)) {
+                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(0, 41200000), 120777800); //spawns 100kPa 20c oxygen
                     } else if (wasEDown && !window.isKeyPressed(SDL_SCANCODE_E)) {
-                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 100000000);
+                        Rooms.mulEnergy(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 2);
                     } else if (wasRDown && !window.isKeyPressed(SDL_SCANCODE_R)) {
-                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), Integer.MIN_VALUE);
+                        Rooms.mulEnergy(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 0);
                     }
                 } else if (window.isKeyPressed(SDL_SCANCODE_F4)) {
                     if (wasSDown && !window.isKeyPressed(SDL_SCANCODE_S)) {

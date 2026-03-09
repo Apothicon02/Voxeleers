@@ -1,5 +1,8 @@
 package org.voxeleers.game.world.types;
 
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import org.voxeleers.game.rooms.Cell;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +20,8 @@ public class WorldType {
     public String getWorldTypeName() {
         return "none";
     }
-    public int getGlobalTemp() {return 0;}
+    public Cell getGlobalAtmo() {return new Cell();}
+    public ByteArrayList getGlobalElements() {return new ByteArrayList();}
 
     public void generate() throws IOException {
         generated = false;
