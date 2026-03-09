@@ -3,6 +3,8 @@ package org.voxeleers.game.items;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
+import org.voxeleers.game.blocks.types.BlockTypes;
+import org.voxeleers.game.world.World;
 
 public class Item implements Cloneable {
     public int dataLength = 9; //excludes this int
@@ -26,6 +28,23 @@ public class Item implements Cloneable {
         long time = System.currentTimeMillis();
         if (prevTickTime != 0) {
             long dif = time - prevTickTime;
+            if (!BlockTypes.blockTypeMap.get(World.getBlock(pos.x(), pos.y()-0.05f, pos.z()).x()).blockProperties.isSolid) {
+                this.pos.y -= 0.05f;
+            }
+            int start = (int)(Math.random()*Math.max(1, World.items.size()-10));
+            int end = Math.min(start+10, World.items.size());
+            for (int i = start; i < end; i++) {
+                Item randomItem = World.items.get(i);
+                if (randomItem.type == type && randomItem.amount < randomItem.type.maxStackSize && Math.abs(randomItem.pos.x() - pos.x()) < 1.f && Math.abs(randomItem.pos.y() - pos.y()) < 1.f && Math.abs(randomItem.pos.z() - pos.z()) < 1.f) {
+                    int flow = Math.min(amount, randomItem.type.maxStackSize - randomItem.amount);
+                    randomItem.amount += flow;
+                    amount -= flow;
+                    if (amount <= 0) {
+                        World.items.remove(this);
+                    }
+                    break;
+                }
+            }
             timeExisted += dif;
             rot += (dif / 50f) * Math.random();
             if (rot >= 360) {
