@@ -3,6 +3,7 @@ package org.voxeleers.game.world.types;
 import org.voxeleers.Main;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
+import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.world.LightHelper;
 import org.voxeleers.game.world.shapes.Blob;
@@ -19,6 +20,8 @@ import static org.voxeleers.game.world.World.getLight;
 public class TemperateWorldType extends WorldType {
     private Path worldPath = Path.of(Main.mainFolder+"world0/mars");
     public static Random seededRand = new Random(35311350L);
+    public static Cell globalAtmo = new Cell(7566, List.of(new Molecule(Elements.elementMap.indexOf(Elements.CARBON_DIOXIDE), 2460), new Molecule(Elements.elementMap.indexOf(Elements.NITROGEN), 70), new Molecule(Elements.elementMap.indexOf(Elements.ARGON), 50)));
+    public static ByteArrayList globalElements = new ByteArrayList();
 
     @Override
     public Random rand() {return seededRand;}

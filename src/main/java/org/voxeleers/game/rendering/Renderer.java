@@ -344,13 +344,16 @@ public class Renderer {
                 i = 0;
             }
             for (int xyz : room.cells.keySet()) {
-                int temp = room.cells.get(xyz);
-                Vector3f color = Utils.getColorOfTemp(temp/10000);
-                glUniform4f(raster.uniforms.get("color"), color.x(), color.y(), color.z(), 1.f);
-                Vector3i cellPos = Rooms.unpackCellPos(xyz);
-                try (MemoryStack stack = MemoryStack.stackPush()) {
-                    glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).
-                            scale(0.05f).get(stack.mallocFloat(16)));
+                Cell cell = room.cells.get(xyz);
+                if (!cell.molecules.isEmpty()) {
+                    Vector3f color = Utils.getColorOfTemp(cell.getTemperature()*100);
+                    glUniform4f(raster.uniforms.get("color"), color.x(), color.y(), color.z(), 1.f);
+                    Vector3i cellPos = Rooms.unpackCellPos(xyz);
+                    try (MemoryStack stack = MemoryStack.stackPush()) {
+                        glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).
+                                scale(0.05f).get(stack.mallocFloat(16)));
+                    }
+                    drawCube();
                 }
                 drawCube();
             }

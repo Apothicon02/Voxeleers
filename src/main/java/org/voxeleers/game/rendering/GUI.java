@@ -87,7 +87,15 @@ public class GUI {
             int temp = World.worldType.getGlobalTemp();
             if (room != null) {
                 int xyz = Rooms.packCellPos(Main.player.blockPos);
-                temp = room.cells.get(xyz);
+                cell = room.cells.get(xyz);
+            }
+            double temperature = cell.getTemperature();
+            drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.2f", cell.getPressure()/10000000.f)+"kPa Temperature:"+String.format("%.2f", temperature*100)+"K"+" Energy:"+cell.energy).toCharArray()); //258
+            int i = 0;
+            for (Molecule molecule : cell.molecules) {
+                Element element = Elements.elementMap.get(molecule.element);
+                String str = element.name+":"+molecule.amount;
+                drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
             }
             drawText(0, 1, 2, -2 - (charHeight * 4), ("Temperature:"+String.format("%.1f", temp/10000.f)+"K").toCharArray());
         }
