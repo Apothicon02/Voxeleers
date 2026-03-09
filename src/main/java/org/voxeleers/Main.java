@@ -136,9 +136,9 @@ public class Main {
                     } else if (wasCDown && !window.isKeyPressed(SDL_SCANCODE_C)) {
                         player.creative = !player.creative;
                     } else if (wasGDown && !window.isKeyPressed(SDL_SCANCODE_G)) {
-                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(0, 41200000), 120777800); //spawns 100kPa 20c oxygen
+                        Rooms.inject(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), new Molecule(0, (isShiftDown ? 10 : 1) * 412000), (isShiftDown ? 10 : 1) * 120777); //spawns 100kPa 20c oxygen
                     } else if (wasEDown && !window.isKeyPressed(SDL_SCANCODE_E)) {
-                        Rooms.mulEnergy(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 2);
+                        Rooms.mulEnergy(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 100);
                     } else if (wasRDown && !window.isKeyPressed(SDL_SCANCODE_R)) {
                         Rooms.mulEnergy(Main.player.prevSelectedBlock.get(RoundingMode.FLOOR, new Vector3i()), 0);
                     }

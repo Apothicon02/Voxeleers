@@ -86,21 +86,23 @@ public class GUI {
         if (!Main.isSwappingWorldType) {
             glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
             drawText(0, 1, 2, -2 - charHeight, ((long) (Engine.avgMS) + "fps ").toCharArray());
-            drawText(0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
-            drawText(0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
-            Room room = Rooms.getRoom(Main.player.blockPos);
-            Cell cell = new Cell(World.worldType.getGlobalAtmo());
-            if (room != null) {
-                int xyz = Rooms.packCellPos(Main.player.blockPos);
-                cell = room.cells.get(xyz);
-            }
-            double temperature = cell.getTemperature();
-            drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.2f", cell.getPressure()/10000000.f)+"kPa Temperature:"+String.format("%.2f", temperature*100)+"K"+" Energy:"+cell.energy).toCharArray()); //258
-            int i = 0;
-            for (Molecule molecule : cell.molecules) {
-                Element element = Elements.elementMap.get(molecule.element);
-                String str = element.name+":"+molecule.amount;
-                drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
+            if (Main.showDebug) {
+                drawText(0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
+                drawText(0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
+                Room room = Rooms.getRoom(Main.player.blockPos);
+                Cell cell = new Cell(World.worldType.getGlobalAtmo());
+                if (room != null) {
+                    int xyz = Rooms.packCellPos(Main.player.blockPos);
+                    cell = room.cells.get(xyz);
+                }
+                double temperature = cell.getTemperature();
+                drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:" + String.format("%.2f", cell.getPressure() / 10000.f) + "kPa Temperature:" + String.format("%.2f", temperature * 1000) + "K" + " Energy:" + cell.energy).toCharArray()); //258
+                int i = 0;
+                for (Molecule molecule : cell.molecules) {
+                    Element element = Elements.elementMap.get(molecule.element);
+                    String str = element.name + ":" + molecule.amount;
+                    drawText(0, 1, 2, -2 - (charHeight * (5 + (i++))), str.toCharArray());
+                }
             }
         }
     }
@@ -232,9 +234,7 @@ public class GUI {
                 drawText(offX, offY, 1+startOffset-(charWidth*1.5f), 1-charHeight, chars);
             }
         }
-        if (Main.showDebug) {
-            drawDebug(window);
-        }
+        drawDebug(window);
     }
 
     public static void drawSlot(float offsetX, float offsetY, float offPxX, float offPxY, int x, int y, int sizeX, int sizeY) {
