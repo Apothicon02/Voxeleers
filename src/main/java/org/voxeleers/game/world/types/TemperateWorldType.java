@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.voxeleers.Main;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
+import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.rooms.Cell;
@@ -26,7 +27,7 @@ import static org.voxeleers.game.world.World.getLight;
 public class TemperateWorldType extends WorldType {
     private Path worldPath = Path.of(Main.mainFolder+"world0/mars");
     public static Random seededRand = new Random(35311350L);
-    public static Cell globalAtmo = new Cell(64, List.of(new Molecule(Elements.elementMap.indexOf(Elements.CARBON_DIOXIDE), 246), new Molecule(Elements.elementMap.indexOf(Elements.NITROGEN), 7), new Molecule(Elements.elementMap.indexOf(Elements.ARGON), 5)));
+    public static Cell globalAtmo = new Cell(31100000, List.of(new Molecule(Elements.elementMap.indexOf(Elements.ARGON), 412000)));//64000, List.of(new Molecule(Elements.elementMap.indexOf(Elements.CARBON_DIOXIDE), 246), new Molecule(Elements.elementMap.indexOf(Elements.NITROGEN), 7), new Molecule(Elements.elementMap.indexOf(Elements.ARGON), 5)));
     public static ByteArrayList globalElements = new ByteArrayList();
 
     @Override

@@ -352,12 +352,12 @@ public class Renderer {
                 for (int xyz : room.cells.keySet()) {
                     Cell cell = room.cells.get(xyz);
                     if (!cell.molecules.isEmpty()) {
-                        Vector3f color = Utils.getColorOfTemp(cell.getTemperature() * 1000);
+                        Vector3f color = Utils.getColorOfTemp(cell.getTemperature());
                         glUniform4f(raster.uniforms.get("color"), color.x(), color.y(), color.z(), 1.f);
                         Vector3i cellPos = Rooms.unpackCellPos(xyz);
                         try (MemoryStack stack = MemoryStack.stackPush()) {
                             glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).
-                                    scale((float) Math.clamp(cell.getPressure() / 5000000.f, 0.01f, 0.25f)).get(stack.mallocFloat(16)));
+                                    scale((float) Math.clamp(cell.getPressure() / 5000000000.f, 0.01f, 0.25f)).get(stack.mallocFloat(16)));
                         }
                         drawCube();
                     }

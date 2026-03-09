@@ -25,6 +25,7 @@ public class Rooms {
     public static Random roomRandom = new Random(911);
 
     public static void tick() {
+        int offset = roomRandom.nextInt(5000);
         ArrayList<Room> roomsToRemove = new ArrayList<>();
         for (Room room : rooms) {
             boolean sealed = true;
@@ -35,24 +36,28 @@ public class Rooms {
                 Vector3i pos = unpackCellPos(xyz);
 
                 double cellTemp = cell.getTemperature();
-                for (Molecule molecule : cell.molecules) {
-                    if (molecule.amount >= 1) {
-                        Element element = Elements.elementMap.get(molecule.element);
-                        if (cellTemp*1000 < element.freezingTemp) {
-                            molecule.amount--;
-                            ItemType itemType = element.iceItemType;
-                            boolean itemExisted = false;
-                            for (Item item : World.items) {
-                                if (item.type == itemType && item.amount < item.type.maxStackSize) {
-                                    if (item.pos.x() == pos.x() && item.pos.y() == pos.y() && item.pos.z() == pos.z()) {
-                                        item.amount++;
-                                        itemExisted = true;
-                                        break;
+                offset--;
+                if (offset <= 0) {
+                    offset = 5000;
+                    for (Molecule molecule : cell.molecules) {
+                        if (molecule.amount >= 1) {
+                            Element element = Elements.elementMap.get(molecule.element);
+                            if (cellTemp < element.freezingTemp) {
+                                molecule.amount--;
+                                ItemType itemType = element.iceItemType;
+                                boolean itemExisted = false;
+                                for (Item item : World.items) {
+                                    if (item.type == itemType && item.amount < item.type.maxStackSize) {
+                                        if (Math.abs(item.pos.x() - pos.x()) < 1.f && Math.abs(item.pos.y() - pos.y()) < 1.f && Math.abs(item.pos.z() - pos.z()) < 1.f) {
+                                            item.amount++;
+                                            itemExisted = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-                            if (!itemExisted) {
-                                World.items.add(new IceItem().type(itemType).moveTo(new Vector3f(pos.x()+0.25f, pos.y()+0.25f, pos.z()+0.25f)));
+                                if (!itemExisted) {
+                                    World.items.add(new IceItem().type(itemType).moveTo(new Vector3f(pos.x() + 0.25f, pos.y() + 0.25f, pos.z() + 0.25f)));
+                                }
                             }
                         }
                     }
@@ -113,7 +118,7 @@ public class Rooms {
                             }
                             cellTemp = cell.getTemperature();
                             double nCellTemp = nCell.getTemperature();
-                            double tempFlow = cell.getEnergyFromTemperature((cellTemp - nCellTemp) / 100) * ((double) molecule.amount / cellMoles);
+                            double tempFlow = cell.getEnergyFromTemperature((cellTemp - nCellTemp) / 2) * ((double) molecule.amount / cellMoles);
                             if (tempFlow < 0) {
                                 tempFlow = 0;
                             }
@@ -124,7 +129,7 @@ public class Rooms {
                                 massLost = 0;
                             }
                             float specificHeat = Elements.elementMap.get(molecule.element).specificHeat;
-                            int energyFlow = (int) (Math.max(cell.energy * massLost, tempFlow) * specificHeat);
+                            long energyFlow = (long) (Math.max(cell.energy * massLost, tempFlow) * specificHeat);
                             if (energyFlow != 0) {
                                 cell.energy -= energyFlow;
                                 nCell.energy += energyFlow;
@@ -178,7 +183,7 @@ public class Rooms {
         }
         return room;
     }
-    public static void inject(Vector3i pos, Molecule molecule, int energy) {
+    public static void inject(Vector3i pos, Molecule molecule, long energy) {
         Room room = generateRoomIfNeeded(pos);
         if (room != null) {
             int xyz = packCellPos(pos);
@@ -192,7 +197,7 @@ public class Rooms {
             }
             cell.energy += energy;
             if (cell.energy < 0) {
-                cell.energy = Integer.MAX_VALUE-100;
+                cell.energy = Long.MAX_VALUE-100;
             }
             if (exists != null) {
                 exists.amount += molecule.amount;
@@ -208,7 +213,7 @@ public class Rooms {
             Cell cell = room.cells.get(xyz);
             cell.energy *= energyMul;
             if (cell.energy < 0) {
-                cell.energy = Integer.MAX_VALUE-100;
+                cell.energy = Long.MAX_VALUE-100;
             }
         }
     }

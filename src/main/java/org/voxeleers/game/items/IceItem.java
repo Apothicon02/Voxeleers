@@ -1,5 +1,6 @@
 package org.voxeleers.game.items;
 
+import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.rooms.Cell;
@@ -14,6 +15,23 @@ public class IceItem extends Item implements Cloneable {
         long time = System.currentTimeMillis();
         if (prevTickTime != 0) {
             long dif = time - prevTickTime;
+            if (!BlockTypes.blockTypeMap.get(World.getBlock(pos.x(), pos.y()-0.125f, pos.z()).x()).blockProperties.isSolid) {
+                this.pos.y -= 0.125f;
+            }
+            int start = (int)(Math.random()*Math.max(1, World.items.size()-10));
+            int end = Math.min(start+10, World.items.size());
+            for (int i = start; i < end; i++) {
+                Item randomItem = World.items.get(i);
+                if (randomItem.type == type && randomItem.amount < randomItem.type.maxStackSize && Math.abs(randomItem.pos.x() - pos.x()) < 1.f && Math.abs(randomItem.pos.y() - pos.y()) < 1.f && Math.abs(randomItem.pos.z() - pos.z()) < 1.f) {
+                    int flow = Math.min(amount, randomItem.type.maxStackSize - randomItem.amount);
+                    randomItem.amount += flow;
+                    amount -= flow;
+                    if (amount <= 0) {
+                        World.items.remove(this);
+                    }
+                    break;
+                }
+            }
             timeExisted += dif;
             rot += (dif / 50f) * Math.random();
             if (rot >= 360) {
@@ -38,7 +56,7 @@ public class IceItem extends Item implements Cloneable {
             if (room != null) {
                 Cell cell = room.cells.get(xyz);
                 Element element = ((IceItemType) this.type).element;
-                double temp = cell.getTemperature() * 1000;
+                double temp = cell.getTemperature();
                 if (temp > element.freezingTemp) {
                     int elementId = Elements.elementMap.indexOf(element);
                     Molecule molecule = null;

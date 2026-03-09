@@ -9,17 +9,17 @@ import java.util.List;
 import static org.voxeleers.game.elements.Elements.UGC;
 
 public class Cell {
-    public int energy;
+    public long energy;
     public ArrayList<Molecule> molecules;
     public Cell() {
         energy = 0;
         molecules = new ArrayList<>(List.of());
     }
-    public Cell(int energy, ArrayList<Molecule> molecules) {
+    public Cell(long energy, ArrayList<Molecule> molecules) {
         this.energy = energy;
         this.molecules = molecules;
     }
-    public Cell(int energy, List<Molecule> molecules) {
+    public Cell(long energy, List<Molecule> molecules) {
         this.energy = energy;
         this.molecules = new ArrayList<>(molecules);
     }
@@ -32,14 +32,14 @@ public class Cell {
     }
 
     public double getPressure() {
-        float mass = 0;
-        float thermalMass = 0;
+        double mass = 0;
+        double thermalMass = 0;
         for (Molecule molecule : molecules) {
             Element element = Elements.elementMap.get(molecule.element);
             mass += molecule.amount;
             thermalMass += element.specificHeat*molecule.amount;
         }
-        float temperature = energy/thermalMass;
+        double temperature = energy/thermalMass;
         return mass*UGC*temperature;
     }
 
@@ -48,7 +48,7 @@ public class Cell {
     }
 
     public double getTemperature() {
-        float mass = 0;
+        double mass = 0;
         for (Molecule molecule : molecules) {
             Element element = Elements.elementMap.get(molecule.element);
             mass += element.specificHeat*molecule.amount;
@@ -56,12 +56,12 @@ public class Cell {
         return energy/mass;
     }
 
-    public int getEnergyFromTemperature(double temp) {
-        float mass = 0;
+    public long getEnergyFromTemperature(double temp) {
+        double mass = 0;
         for (Molecule molecule : molecules) {
             Element element = Elements.elementMap.get(molecule.element);
             mass += element.specificHeat*molecule.amount;
         }
-        return (int) (temp*mass);
+        return (long) (temp*mass);
     }
 }
