@@ -1,13 +1,13 @@
 package org.voxeleers.game.rooms;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 
 public class Room {
-    public Int2ObjectOpenHashMap<Cell> cells;
+    public Int2IntOpenHashMap cells;
     public Room() {
-        cells = new Int2ObjectOpenHashMap<>();
+        cells = new Int2IntOpenHashMap();
     }
-    public Room(Int2ObjectOpenHashMap<Cell> cells) {
+    public Room(Int2IntOpenHashMap cells) {
         this.cells = cells;
     }
 }

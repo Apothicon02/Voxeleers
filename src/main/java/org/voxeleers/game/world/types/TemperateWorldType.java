@@ -1,22 +1,16 @@
 package org.voxeleers.game.world.types;
 
-import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.voxeleers.Main;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
 import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.noise.Noises;
-import org.voxeleers.game.rooms.Cell;
-import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.world.LightHelper;
 import org.voxeleers.game.world.shapes.Blob;
 import org.joml.Vector2i;
 import org.joml.Vector3i;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Random;
 
 import static org.voxeleers.engine.Utils.condensePos;
@@ -43,23 +37,7 @@ public class TemperateWorldType extends WorldType {
     }
 
     @Override
-    public Cell getGlobalAtmo() {return globalAtmo;}
-    @Override
-    public ByteArrayList getGlobalElements() {return globalElements;}
-
-    @Override
-    public void generate() throws IOException {
-        for (Molecule molecule : globalAtmo.molecules) {
-            globalElements.addLast(molecule.element);
-        }
-        generated = false;
-        if (Files.exists(getWorldPath())) {
-            loadWorld(getWorldPath()+"/");
-        } else {
-            createNew();
-        }
-        generated = true;
-    }
+    public int getGlobalTemp() {return 2932000;}
 
     @Override
     public void createNew() {

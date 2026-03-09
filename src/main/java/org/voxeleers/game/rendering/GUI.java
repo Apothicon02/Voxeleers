@@ -4,14 +4,10 @@ import org.voxeleers.Main;
 import org.voxeleers.engine.Engine;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.engine.Window;
-import org.voxeleers.game.elements.Element;
-import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.items.ItemTypes;
-import org.voxeleers.game.rooms.Cell;
-import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
@@ -26,7 +22,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.voxeleers.game.elements.Elements.UGC;
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.glDrawArrays;
@@ -89,7 +84,7 @@ public class GUI {
             drawText(0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
             drawText(0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
             Room room = Rooms.getRoom(Main.player.blockPos);
-            Cell cell = new Cell(World.worldType.getGlobalAtmo());
+            int temp = World.worldType.getGlobalTemp();
             if (room != null) {
                 int xyz = Rooms.packCellPos(Main.player.blockPos);
                 cell = room.cells.get(xyz);
@@ -102,6 +97,7 @@ public class GUI {
                 String str = element.name+":"+molecule.amount;
                 drawText(0, 1, 2, -2 - (charHeight * (5+(i++))), str.toCharArray());
             }
+            drawText(0, 1, 2, -2 - (charHeight * 4), ("Temperature:"+String.format("%.1f", temp/10000.f)+"K").toCharArray());
         }
     }
 

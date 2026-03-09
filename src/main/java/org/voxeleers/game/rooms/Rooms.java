@@ -24,9 +24,9 @@ public class Rooms {
         for (Room room : rooms) {
             boolean sealed = true;
             boolean matchesGlobal = true;
-            Cell globalCell = World.worldType.getGlobalAtmo();
+            int globalCell = World.worldType.getGlobalTemp();
             for (int xyz : room.cells.keySet()) {
-                Cell cell = room.cells.get(xyz);
+                int cell = room.cells.get(xyz);
                 Vector3i pos = unpackCellPos(xyz);
 
                 int randomOffset = roomRandom.nextInt(6);
@@ -107,28 +107,6 @@ public class Rooms {
                         matchesGlobal = false;
                     } else if (cell.molecules.size() != globalCell.molecules.size()) {
                         matchesGlobal = false;
-                    } else {
-                        ByteArrayList elements = new ByteArrayList();
-                        breakingPoint:
-                        for (Molecule molecule : cell.molecules) {
-                            for (Molecule globalMolecule : globalCell.molecules) {
-                                elements.addLast(molecule.element);
-                                if (globalMolecule.element == molecule.element) {
-                                    if (Math.abs(globalMolecule.amount - molecule.amount) > 0) {
-                                        matchesGlobal = false;
-                                        break breakingPoint;
-                                    }
-                                }
-                            }
-                        }
-                        if (matchesGlobal) {
-                            for (byte element : World.worldType.getGlobalElements()) {
-                                if (!elements.contains(element)) {
-                                    matchesGlobal = false;
-                                    break;
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -226,25 +204,10 @@ public class Rooms {
             for (int ogxyz : room.cells.keySet()) {
                 if (mergedRoom.cells.containsKey(ogxyz)) {
                     for (int xyz : room.cells.keySet()) {
-                        Cell cell = room.cells.get(xyz);
-                        Cell mergedCell = mergedRoom.cells.get(xyz);
-                        if (mergedCell == null) {
-                            mergedCell = new Cell();
-                            mergedRoom.cells.put(xyz, mergedCell);
-                        }
-                        mergedCell.energy += cell.energy;
-                        for (Molecule molecule : cell.molecules) {
-                            boolean matched = false;
-                            for (Molecule mergedMolecule : mergedCell.molecules) {
-                                if (molecule.element == mergedMolecule.element) {
-                                    mergedMolecule.amount += molecule.amount;
-                                    matched = true;
-                                    break;
-                                }
-                            }
-                            if (!matched) {
-                                mergedCell.molecules.add(molecule);
-                            }
+                        int cell = room.cells.get(xyz);
+                        int mergedCell = mergedRoom.cells.get(xyz);
+                        if (mergedCell <= 0) {
+                            mergedRoom.cells.put(xyz, cell+mergedCell);
                         }
                     }
                     roomsToRemove.add(room);
@@ -252,11 +215,11 @@ public class Rooms {
                 }
             }
         }
-        for (Map.Entry<Integer, Cell> entry : mergedRoom.cells.entrySet()) {
-            if (entry.getValue() == null) {
-                entry.setValue(new Cell(World.worldType.getGlobalAtmo()));
+        mergedRoom.cells.forEach((xyz, temp) -> {
+            if (temp <= 0) {
+                mergedRoom.cells.put((int)xyz, World.worldType.getGlobalTemp());
             }
-        }
+        });
         rooms.removeIf(roomsToRemove::contains);
     }
     private static void clearRooms(Room area) {
