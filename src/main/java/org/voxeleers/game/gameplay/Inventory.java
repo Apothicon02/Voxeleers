@@ -236,7 +236,7 @@ public class Inventory {
     }
     public Item getContainerItem(int index) {
         ItemType type = ItemTypes.itemTypeMap.get(index);
-        return type == null ? null : new Item().type(type).amount(type.maxStackSize);
+        return type == null ? null : type.createItem().amount(type.maxStackSize);
     }
     public Item getItem(int index) {
         return items[index];

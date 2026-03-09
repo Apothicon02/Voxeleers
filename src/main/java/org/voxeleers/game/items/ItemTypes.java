@@ -3,8 +3,8 @@ package org.voxeleers.game.items;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.game.audio.SFX;
 import org.voxeleers.game.audio.Sounds;
-import org.voxeleers.game.blocks.BlockTag;
 import org.voxeleers.game.blocks.types.BlockTypes;
+import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.rendering.Renderer;
 import org.voxeleers.game.rendering.Texture3D;
 import org.voxeleers.game.rendering.Textures;
@@ -85,7 +85,15 @@ public class ItemTypes {
             DIRT = create(new ItemType("resource/texture/dirt").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.DIRT), 0).sfx(new ItemSFX(new SFX[]{Sounds.DIRT_STEP1, Sounds.DIRT_STEP2, Sounds.DIRT_STEP3}, 0.5f, 1.f))),
             GRASSY_DIRT = create(new ItemType("resource/texture/grassy_dirt").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.GRASS), 0).sfx(new ItemSFX(new SFX[]{Sounds.DIRT_STEP1, Sounds.DIRT_STEP2, Sounds.DIRT_STEP3}, 0.5f, 1.f))),
             CLAY = create(new ItemType("resource/texture/clay").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.CLAY), 0).sfx(new ItemSFX(new SFX[]{Sounds.MUD_STEP1, Sounds.MUD_STEP2}, 0.5f, 0.66f))),
-            MUD = create(new ItemType("resource/texture/mud").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.MUD), 0).sfx(new ItemSFX(new SFX[]{Sounds.MUD_STEP1, Sounds.MUD_STEP2}, 0.5f, 0.66f)));
+            MUD = create(new ItemType("resource/texture/mud").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.MUD), 0).sfx(new ItemSFX(new SFX[]{Sounds.MUD_STEP1, Sounds.MUD_STEP2}, 0.5f, 0.66f))),
+            CARBON_DIOXIDE_ICE = create(new IceItemType("resource/texture/carbon_dioxide_ice").element(Elements.CARBON_DIOXIDE).maxStackSize(Integer.MAX_VALUE).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 0.66f))),
+            OXYGEN_ICE = create(new IceItemType("resource/texture/oxygen_ice").element(Elements.OXYGEN).maxStackSize(Integer.MAX_VALUE).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 0.66f))),
+            HYDROGEN_ICE = create(new ItemType("resource/texture/hydrogen_ice").maxStackSize(Integer.MAX_VALUE).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 0.66f))),
+            WATER_ICE = create(new ItemType("resource/texture/water_ice").maxStackSize(Integer.MAX_VALUE).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 0.66f))),
+            NITROGEN_ICE = create(new IceItemType("resource/texture/nitrogen_ice").element(Elements.NITROGEN).maxStackSize(Integer.MAX_VALUE).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 0.66f))),
+            ARGON_ICE = create(new IceItemType("resource/texture/argon_ice").element(Elements.ARGON).maxStackSize(Integer.MAX_VALUE).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 0.66f))),
+            HELIUM_ICE = create(new ItemType("resource/texture/helium_ice").maxStackSize(Integer.MAX_VALUE).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 0.66f))),
+            NEON_ICE = create(new ItemType("resource/texture/neon_ice").maxStackSize(Integer.MAX_VALUE).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 0.66f)));
 
     private static ItemType create(ItemType type) {
         itemTypeMap.put(itemTypeMap.size(), type);

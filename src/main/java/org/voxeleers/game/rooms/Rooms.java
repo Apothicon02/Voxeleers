@@ -1,9 +1,14 @@
 package org.voxeleers.game.rooms;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import org.joml.Vector3f;
 import org.joml.Vector3i;
 import org.voxeleers.game.blocks.types.BlockTypes;
+import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.elements.Elements;
+import org.voxeleers.game.items.IceItem;
+import org.voxeleers.game.items.Item;
+import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.world.World;
 
 import java.util.ArrayList;
@@ -29,6 +34,30 @@ public class Rooms {
                 Cell cell = room.cells.get(xyz);
                 Vector3i pos = unpackCellPos(xyz);
 
+                double cellTemp = cell.getTemperature();
+                for (Molecule molecule : cell.molecules) {
+                    if (molecule.amount >= 1) {
+                        Element element = Elements.elementMap.get(molecule.element);
+                        if (cellTemp*1000 < element.freezingTemp) {
+                            molecule.amount--;
+                            ItemType itemType = element.iceItemType;
+                            boolean itemExisted = false;
+                            for (Item item : World.items) {
+                                if (item.type == itemType && item.amount < item.type.maxStackSize) {
+                                    if (item.pos.x() == pos.x() && item.pos.y() == pos.y() && item.pos.z() == pos.z()) {
+                                        item.amount++;
+                                        itemExisted = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!itemExisted) {
+                                World.items.add(new IceItem().type(itemType).moveTo(new Vector3f(pos.x()+0.25f, pos.y()+0.25f, pos.z()+0.25f)));
+                            }
+                        }
+                    }
+                }
+
                 int randomOffset = roomRandom.nextInt(6);
                 Vector3i[] neighbors = new Vector3i[]{
                         (new Vector3i(pos.x() + 1, pos.y(), pos.z())),
@@ -47,7 +76,7 @@ public class Rooms {
                         nCell = new Cell(globalCell);
                         if (BlockTypes.blockTypeMap.get(World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z())).blockProperties.isSolid) {
                             flowMoles = false;
-                            flowAnything = false;
+                            flowAnything = false;//disables global temperature exchange through walls when uncommented
                         } else {
                             sealed = false;
                         }
@@ -82,7 +111,7 @@ public class Rooms {
                                     }
                                 }
                             }
-                            double cellTemp = cell.getTemperature();
+                            cellTemp = cell.getTemperature();
                             double nCellTemp = nCell.getTemperature();
                             double tempFlow = cell.getEnergyFromTemperature((cellTemp - nCellTemp) / 100) * ((double) molecule.amount / cellMoles);
                             if (tempFlow < 0) {

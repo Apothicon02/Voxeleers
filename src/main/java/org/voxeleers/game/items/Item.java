@@ -2,6 +2,7 @@ package org.voxeleers.game.items;
 
 import org.joml.Vector2i;
 import org.joml.Vector3f;
+import org.joml.Vector3i;
 
 public class Item implements Cloneable {
     public int dataLength = 9; //excludes this int
@@ -46,6 +47,10 @@ public class Item implements Cloneable {
             }
         }
         prevTickTime = time;
+    }
+    public Item moveTo(Vector3i pos) {
+        this.pos = new Vector3f(pos.x, pos.y, pos.z);
+        return this;
     }
     public Item moveTo(Vector3f pos) {
         this.pos = new Vector3f(pos.x, pos.y, pos.z);

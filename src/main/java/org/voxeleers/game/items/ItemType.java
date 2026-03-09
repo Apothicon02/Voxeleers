@@ -18,6 +18,9 @@ public class ItemType {
         this.name = name;
     }
 
+    public Item createItem() {
+        return new Item().type(this);
+    }
     public ItemType maxStackSize(int size) {
         maxStackSize = size;
         return this;
