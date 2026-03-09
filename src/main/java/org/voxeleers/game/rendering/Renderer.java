@@ -345,7 +345,6 @@ public class Renderer {
         Random roomRand = new Random(911);
         int i = 0;
         for (Room room : Rooms.rooms) {
-            Vector3f color = debugColors[i];
             i++;
             if (i >= debugColors.length) {
                 i = 0;
@@ -353,7 +352,8 @@ public class Renderer {
             for (int xyz : room.cells.keySet()) {
                 Cell cell = room.cells.get(xyz);
                 if (!cell.molecules.isEmpty()) {
-                    glUniform4f(raster.uniforms.get("color"), (float)(Math.clamp(cell.getTemperature(), 29, 49)-29)/20.f, 0.f,  (float)Math.clamp(cell.getPressure()/10000000.f, 0, 1), 1.f);
+                    Vector3f color = Utils.getColorOfTemp(cell.getTemperature()*100);
+                    glUniform4f(raster.uniforms.get("color"), color.x(), color.y(), color.z(), 1.f);
                     Vector3i cellPos = Rooms.unpackCellPos(xyz);
                     try (MemoryStack stack = MemoryStack.stackPush()) {
                         glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).

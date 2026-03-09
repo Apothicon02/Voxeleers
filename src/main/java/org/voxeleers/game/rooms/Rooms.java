@@ -2,6 +2,7 @@ package org.voxeleers.game.rooms;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.joml.Vector3i;
+import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.world.World;
 
@@ -21,6 +22,7 @@ public class Rooms {
     public static void tick() {
         ArrayList<Room> roomsToRemove = new ArrayList<>();
         for (Room room : rooms) {
+            boolean sealed = true;
             boolean matchesGlobal = true;
             Cell globalCell = World.worldType.getGlobalAtmo();
             for (int xyz : room.cells.keySet()) {
@@ -38,22 +40,23 @@ public class Rooms {
                 for (int i = randomOffset; i < randomOffset+6; i++) {
                     int idx = i-(((int)(i/6))*6);
                     Vector3i nPos = neighbors[idx];
-                    boolean thermalsOnly = false;
+                    boolean flowMoles = true;
                     Cell nCell = room.cells.get(packCellPos(nPos.x(), nPos.y(), nPos.z()));
                     if (nCell == null) {
                         nCell = new Cell(globalCell);
-                        if (World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z()) > 0) {
-                            //if (roomRandom.nextInt(1000) == 0) { //0.1% chance to do conduction.
-                                thermalsOnly = true;
-                            //}
+                        if (BlockTypes.blockTypeMap.get(World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z())).blockProperties.isSolid) {
+                            flowMoles = false;
+                        } else {
+                            sealed = false;
                         }
                     }
-                    if (!thermalsOnly) {
-                        for (Molecule molecule : cell.molecules) {
-                            int cellMoles = 0;
-                            for (Molecule aMolecule : cell.molecules) {
-                                cellMoles += aMolecule.amount;
-                            }
+                    for (Molecule molecule : cell.molecules) {
+                        int cellMoles = 0;
+                        for (Molecule aMolecule : cell.molecules) {
+                            cellMoles += aMolecule.amount;
+                        }
+                        double massLost = 0.d;
+                        if (flowMoles) {
                             Molecule nMolecule = null;
                             for (Molecule potentialNMolecule : nCell.molecules) {
                                 if (molecule.element == potentialNMolecule.element) {
@@ -66,12 +69,7 @@ public class Rooms {
                                 doesMoleculeReallyExist = false;
                                 nMolecule = new Molecule(molecule.element, 0);
                             }
-                            double cellTemperature = cell.getTemperature();
-                            double nCellTemperature = nCell.getTemperature();
-                            double cellPressure = cell.getPressure();
-                            double nCellPressure = nCell.getPressure();
-                            double moleFlow = Math.ceil(cell.getMolesFromPressure((cellPressure - nCellPressure)/2));
-                            double massLost = 0.d;
+                            double moleFlow = Math.ceilDiv(molecule.amount - nMolecule.amount, 2);
                             if (moleFlow > 0) {
                                 massLost = moleFlow / cellMoles;
                                 molecule.amount -= (int) moleFlow;
@@ -80,21 +78,32 @@ public class Rooms {
                                     nCell.molecules.add(nMolecule);
                                 }
                             }
-                            double tempFlow = (Math.ceil((cellTemperature - nCellTemperature)/2)/cell.energy)*((double) molecule.amount/cellMoles);
-                            float specificHeat = Elements.elementMap.get(molecule.element).specificHeat;
-                            int energyFlow = (int) (cell.energy * Math.max(massLost, 0)*specificHeat);
-                            if (energyFlow != 0) {
-                                cell.energy -= energyFlow;
-                                nCell.energy += energyFlow;
-                            }
                         }
-                        cell.molecules.removeIf((molecule) -> molecule.amount <= 0);
-                        nCell.molecules.removeIf((molecule) -> molecule.amount <= 0);
+                        double cellTemp = cell.getTemperature();
+                        double nCellTemp = nCell.getTemperature();
+                        double tempFlow = cell.getEnergyFromTemperature((cellTemp - nCellTemp)/100)*((double) molecule.amount/cellMoles);
+                        if (tempFlow < 0) {
+                            tempFlow = 0;
+                        }
+                        if (cellTemp >= nCellTemp) {
+                            tempFlow = Math.max(1, tempFlow);
+                        }
+                        if (massLost < 0) {
+                            massLost = 0;
+                        }
+                        float specificHeat = Elements.elementMap.get(molecule.element).specificHeat;
+                        int energyFlow = (int) (Math.max(cell.energy * massLost, tempFlow)*specificHeat);
+                        if (energyFlow != 0) {
+                            cell.energy -= energyFlow;
+                            nCell.energy += energyFlow;
+                        }
                     }
+                    cell.molecules.removeIf((molecule) -> molecule.amount <= 0);
+                    nCell.molecules.removeIf((molecule) -> molecule.amount <= 0);
                 }
 
                 if (matchesGlobal) {
-                    if (Math.abs(cell.energy - globalCell.energy) > 0) {
+                    if (Math.abs(cell.energy - globalCell.energy) > 100) {
                         matchesGlobal = false;
                     } else if (cell.molecules.size() != globalCell.molecules.size()) {
                         matchesGlobal = false;
@@ -123,7 +132,7 @@ public class Rooms {
                     }
                 }
             }
-            if (matchesGlobal) {
+            if (matchesGlobal && !sealed) {
                 roomsToRemove.add(room);
             }
         }
@@ -136,20 +145,19 @@ public class Rooms {
         }
         return room;
     }
-    public static void inject(Vector3i pos, Molecule molecule) {
+    public static void inject(Vector3i pos, Molecule molecule, int energy) {
         Room room = generateRoomIfNeeded(pos);
         if (room != null) {
             int xyz = packCellPos(pos);
             Cell cell = room.cells.get(xyz);
-            float mass = 0;
             Molecule exists = null;
             for (Molecule cellMolecule : cell.molecules) {
-                mass += Elements.elementMap.get(cellMolecule.element).specificHeat*cellMolecule.amount;
                 if (cellMolecule.element == molecule.element) {
                     exists = cellMolecule;
+                    break;
                 }
             }
-            cell.energy += (int) (cell.energy/mass)*molecule.amount;
+            cell.energy += energy;
             if (exists != null) {
                 exists.amount += molecule.amount;
             } else {
@@ -157,12 +165,19 @@ public class Rooms {
             }
         }
     }
-    public static void inject(Vector3i pos, int energy) {
+    public static void mulEnergy(Vector3i pos, int energyMul) {
         Room room = generateRoomIfNeeded(pos);
         if (room != null) {
             int xyz = packCellPos(pos);
             Cell cell = room.cells.get(xyz);
-            cell.energy += energy;
+            cell.energy *= energyMul;
+        }
+    }
+    public static void removeCell(Vector3i pos) {
+        Room room = getRoom(pos);
+        if (room != null) {
+            int xyz = packCellPos(pos);
+            room.cells.remove(xyz);
         }
     }
 
@@ -280,7 +295,7 @@ public class Rooms {
     }
     public static boolean getCell(int x, int y, int z, int packed) {
         if (!currentScan.cells.containsKey(packed)) {
-            if (World.getBlockTypeUnchecked(x, y, z) <= 0) {
+            if (!BlockTypes.blockTypeMap.get(World.getBlockTypeUnchecked(x, y, z)).blockProperties.isSolid) {
                 currentScan.cells.put(packed, null);
                 return true;
             }

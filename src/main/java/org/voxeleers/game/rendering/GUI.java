@@ -95,7 +95,7 @@ public class GUI {
                 cell = room.cells.get(xyz);
             }
             double temperature = cell.getTemperature();
-            drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.2f", cell.getPressure()/10000000.f)+"kPa Temperature:"+String.format("%.2f", temperature*10)+"K").toCharArray()); //258
+            drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:"+String.format("%.2f", cell.getPressure()/10000000.f)+"kPa Temperature:"+String.format("%.2f", temperature*100)+"K"+" Energy:"+cell.energy).toCharArray()); //258
             int i = 0;
             for (Molecule molecule : cell.molecules) {
                 Element element = Elements.elementMap.get(molecule.element);

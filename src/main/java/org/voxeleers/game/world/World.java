@@ -208,6 +208,7 @@ public class World {
                 glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
                 glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, new int[]{block, blockSubType, 0, 0});
                 updateLODS(x, y, z);
+                Rooms.removeCell(new Vector3i(x, y, z));
                 Rooms.detectRooms(x, y, z);
             } else if (block > 0) {
                 blocksLOD2[y/16][condensePosLOD2(x, z)] = (short)(block);
