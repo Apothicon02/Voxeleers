@@ -7,10 +7,10 @@ public class Elements {
     public static ArrayList<Element> elementMap = new ArrayList<>();
 
     public static Element
-            OXYGEN = create(new Element("Oxygen", 0.918f, 54)),
-            CARBON_DIOXIDE = create(new Element("Carbon Dioxide", 0.839f, 194)),
-            NITROGEN = create(new Element("Nitrogen", 1.04f, 63)),
-            ARGON = create(new Element("Argon", 0.5203f, 83));
+            OXYGEN = create(new Element("Oxygen", 0.918d, 54)),
+            CARBON_DIOXIDE = create(new Element("Carbon Dioxide", 0.839d, 194)),
+            NITROGEN = create(new Element("Nitrogen", 1.04d, 63)),
+            ARGON = create(new Element("Argon", 0.5203d, 83));
 
     public static Element create(Element element) {
         elementMap.addLast(element);

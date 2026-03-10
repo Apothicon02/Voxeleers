@@ -1,10 +1,13 @@
 package org.voxeleers.game.world;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.voxeleers.Main;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.game.ScheduledTicker;
+import org.voxeleers.game.blocks.entities.BlockEntity;
+import org.voxeleers.game.blocks.entities.BlockEntityTypes;
 import org.voxeleers.game.blocks.types.BlockType;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
@@ -43,6 +46,7 @@ public class World {
     public static WorldType worldType = WorldTypes.TEMPERATE;
     public static WorldType nextWorldType = WorldTypes.BOREAL;
     public static ObjectOpenHashSet<Item> items = new ObjectOpenHashSet<>();
+    public static Int2ObjectOpenHashMap<BlockEntity> blockEntities = new Int2ObjectOpenHashMap<>();
     public static short[][] blocks = new short[height][(size*size)*2];
     public static boolean[] unsavedBlocks = new boolean[height];
     public static short[][] blocksLOD = new short[height/4][(size*size)/4];
@@ -59,6 +63,22 @@ public class World {
         blocksLOD2 = new short[height/16][(size*size)/16];
         lights = new byte[height][(size*size)*4];
         heightmap = new short[size*size];
+    }
+
+    public static void tickBlockEntities() {
+        blockEntities.forEach((Integer xyz, BlockEntity blockEntity) -> {
+            Vector3i pos = Rooms.unpackCellPos(xyz);
+            blockEntity.tick(getBlockUnchecked(pos.x(), pos.y(), pos.z()), pos);
+        });
+    }
+    public static void tickItems() {
+        for (Item item : World.items) {
+            if (item.timeExisted >= 600000) { //600000ms = 10m
+                World.items.remove(item);
+            } else {
+                item.tick();
+            }
+        }
     }
 
     public static void dropItem(Item item) {
@@ -149,21 +169,29 @@ public class World {
         Vector2i existing = getBlock(x, y, z);
         if (existing != null && (replace || existing.x() == 0)) {
             Vector3i pos = new Vector3i(x, y, z);
+            int xyz = Rooms.packCellPos(x, y, z);
+            BlockEntity existingBlockEntity = World.blockEntities.get(xyz);
+            if (existingBlockEntity != null) {existingBlockEntity.remove(xyz);}
             Vector4i oldLight = getLight(pos);
             byte r = 0;
             byte g = 0;
             byte b = 0;
             Vector2i newBlock = new Vector2i(block, blockSubType);
             BlockType blockType = BlockTypes.blockTypeMap.get(block);
-            boolean lightChanged = BlockTypes.blockTypeMap.get(existing.x) instanceof LightBlockType;
+            BlockType existingType = BlockTypes.blockTypeMap.get(existing.x);
+            boolean lightChanged = existingType instanceof LightBlockType;
             if (blockType instanceof LightBlockType lType) {
                 lightChanged = true;
                 r = lType.lightBlockProperties().r;
                 g = lType.lightBlockProperties().g;
                 b = lType.lightBlockProperties().b;
             }
-            BlockType oldBlockType = BlockTypes.blockTypeMap.get(existing.x);
+            BlockType oldBlockType = existingType;
             setBlock(x, y, z, block, blockSubType);
+            BlockEntity blockEntity = BlockEntityTypes.blockTypeToEntity.get(blockType);
+            if (blockEntity != null) {
+                World.blockEntities.put(xyz, blockEntity.create());
+            }
             if (tickDelay > 0) {
                 ScheduledTicker.scheduleTick(Main.currentTick+tickDelay, pos, 0);
             }
@@ -183,7 +211,7 @@ public class World {
             }
 
             if (block == 0) {
-                BlockTypes.blockTypeMap.get(existing.x).onPlace(pos, existing, silent);
+                existingType.onPlace(pos, existing, silent);
             } else {
                 BlockTypes.blockTypeMap.get(block).onPlace(pos, new Vector2i(block, blockSubType), silent);
             }
@@ -221,6 +249,10 @@ public class World {
         setBlock((int) x, (int) y, (int) z, block, blockSubType);
     }
 
+    public static Vector2i getBlockUnchecked(int x, int y, int z) {
+        int pos = condensePos(x, z)*2;
+        return new Vector2i(blocks[y][pos], blocks[y][pos+1]);
+    }
     public static int getBlockTypeUnchecked(int x, int y, int z) {
         int pos = condensePos(x, z)*2;
         return blocks[y][pos];

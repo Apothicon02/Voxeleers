@@ -12,6 +12,7 @@ uniform mat4 model;
 uniform int offsetIdx;
 uniform ivec2 res;
 uniform bool taa;
+uniform bool instanced;
 
 out flat int instance;
 out vec3 pos;
@@ -26,8 +27,8 @@ void main() {
     float yOff = taa ? yOffsets[offsetIdx]/res.y : 0;
     pos = position;
     norm = normal;
-    instance = color.r == -1.f ? gl_InstanceID : -1;
-    vec4 worldPos = (instance >= 0 ? models[gl_InstanceID] : model) * vec4(position.xy+vec2(xOff, yOff), position.z, 1.0);
+    instance = gl_InstanceID;
+    vec4 worldPos = (instanced ? models[gl_InstanceID] : model) * vec4(position.xy+vec2(xOff, yOff), position.z, 1.0);
     vec4 clipPos = projection * view * worldPos;
     gl_Position = clipPos;
 

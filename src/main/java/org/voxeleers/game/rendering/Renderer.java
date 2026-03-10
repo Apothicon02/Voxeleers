@@ -220,7 +220,7 @@ public class Renderer {
         scene = new ShaderProgram("scene.vert", new String[]{"scene.frag"},
                 new String[]{"res", "projection", "view", "selected", "offsetIdx", "checkerStep", "reverseChecker", "taa", "ui", "upscale", "renderDistance", "aoQuality", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
         raster = new ShaderProgram("debug.vert", new String[]{"debug.frag"},
-                new String[]{"res", "projection", "view", "model", "selected", "offsetIdx", "color", "tex", "atlasOffset", "taa", "ui", "alwaysUpfront", "renderDistance", "aoQuality", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
+                new String[]{"res", "projection", "view", "model", "selected", "offsetIdx", "color", "tex", "atlasOffset", "taa", "instanced", "ui", "alwaysUpfront", "renderDistance", "aoQuality", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
         unchecker = new ShaderProgram("scene.vert", new String[]{"unchecker.frag"},
                 new String[]{});
         aa = new ShaderProgram("scene.vert", new String[]{"aa.frag"},
@@ -382,7 +382,6 @@ public class Renderer {
     public static void drawGas() {
         if (uiState == 1) {
             Random roomRand = new Random(911);
-            glUniform4f(raster.uniforms.get("color"), -1, -1, -1, -1);
             int i = 0;
             for (Room room : Rooms.rooms) {
                 FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(room.cells.size()*16);
@@ -423,7 +422,6 @@ public class Renderer {
     }
 
     public static void drawClouds() {
-        glUniform4f(raster.uniforms.get("color"), -1, -1, -1, -1);
         FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(196*16);
         FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(196*4);
         Random cloudRand = new Random(911);
@@ -464,7 +462,6 @@ public class Renderer {
     public static Vector3f[] starColors = new Vector3f[]{new Vector3f(0.9f, 0.95f, 1.f), new Vector3f(1, 0.95f, 0.4f), new Vector3f(0.72f, 0.05f, 0), new Vector3f(0.42f, 0.85f, 1.f), new Vector3f(0.04f, 0.3f, 1.f), new Vector3f(1, 1, 0.1f)};
     public static int starDist = World.size+100;
     public static void drawStars() {
-        glUniform4f(raster.uniforms.get("color"), -1, -1, -1, -1);
         FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(1024*16);
         FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(1024*4);
         Random starRand = new Random(911);
@@ -545,6 +542,58 @@ public class Renderer {
         }
         drawCube();
     }
+    public static void drawItems() {
+        glUniform1i(raster.uniforms.get("tex"), 1); // rendering item
+        glBindTextureUnit(0, Textures.items.id);
+        FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(World.items.size()*16);
+        FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(World.items.size()*4);
+        IntBuffer atlasOffsetBuffer = BufferUtils.createIntBuffer(World.items.size()*2);
+        for (Item item : World.items) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                modelBuffer.put(new Matrix4f().rotateY((float) Math.toRadians(item.rot)).setTranslation(new Vector3f(item.pos).add(0, item.hover, 0)).scale(0.5f).get(stack.mallocFloat(16)));
+            }
+            colorBuffer.put(1.f);
+            colorBuffer.put(1.f);
+            colorBuffer.put(1.f);
+            colorBuffer.put(1.f);
+            atlasOffsetBuffer.put(item.type.atlasOffset.x());
+            atlasOffsetBuffer.put(item.type.atlasOffset.y());
+        }
+        modelBuffer.flip();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, modelBuffer, GL_DYNAMIC_DRAW);
+        colorBuffer.flip();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER,  colorBuffer, GL_DYNAMIC_DRAW);
+        atlasOffsetBuffer.flip();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, atlasOffsetSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, atlasOffsetSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER,  atlasOffsetBuffer, GL_DYNAMIC_DRAW);
+        drawDoubleSidedPlanes(World.items.size());
+    }
+    public static void drawPlayer() {
+        Item item = player.inv.getItem(player.inv.selectedSlot);
+        glUniform1i(raster.uniforms.get("alwaysUpfront"), 1);
+        if (item != null) {
+            glUniform4f(raster.uniforms.get("color"), 1, 1, 1, 1);
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitch().invert().translate(0.045f + Math.max(0, handTilt() * 0.03f), -0.115f + (player.bobbing * 0.05f) - Math.min(0, handTilt() * 0.1f), -0.03f + (handTilt() * 0.1f)).rotateY((float) Math.toRadians(-90.f)).rotateZ((float) Math.toRadians(55.f + (handTilt() < 0 ? (handTilt() * 80) : (handTilt() * 40)) + HandManager.getTilt())).scale(0.125f).get(stack.mallocFloat(16)));
+            }
+            glUniform2i(raster.uniforms.get("atlasOffset"), item.type.atlasOffset.x(), item.type.atlasOffset.y());
+            drawDoubleSidedPlane();
+        } else {
+            glUniform1i(raster.uniforms.get("tex"), -1); //rendering hand
+            if (showUI && !Main.isSwappingWorldType) {
+                glUniform4f(raster.uniforms.get("color"), 0.6f, 0.45f, 0.35f, 1);
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitch().invert().translate(0.55f, -0.35f + (player.bobbing * 0.325f), 0.f).rotateX((float) Math.toRadians((handTilt() * -88) + (HandManager.getTilt() / 2))).scale(0.1375f, 0.1375f, 0.5f).get(stack.mallocFloat(16)));
+                }
+                drawCube();
+            }
+        }
+    }
     public static boolean reverseChecker = false;
     public static int checkerStepX = 0;
     public static int checkerStepY = 0;
@@ -580,68 +629,18 @@ public class Renderer {
             glUniform2i(raster.uniforms.get("res"), window.getWidth(), window.getHeight());
             glUniform1i(raster.uniforms.get("alwaysUpfront"), 0);
             glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
+            glUniform1i(raster.uniforms.get("instanced"), 1);
             //drawDebugRooms();
             drawGas();
             drawClouds();
-            drawSunAndMoon();
             drawStars();
+            drawItems();
+            glUniform1i(raster.uniforms.get("instanced"), 0);
+            drawSunAndMoon();
 //            drawCenter();
 //            drawDebugWheel();
 //            drawHuman();
-            glUniform1i(raster.uniforms.get("tex"), 1); // rendering item
-            glBindTextureUnit(0, Textures.items.id);
-            FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(World.items.size()*16);
-            FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(World.items.size()*4);
-            IntBuffer atlasOffsetBuffer = BufferUtils.createIntBuffer(World.items.size()*2);
-            glUniform4f(raster.uniforms.get("color"), -1, -1, -1, -1);
-            for (Item item : World.items) {
-                if (item.timeExisted >= 600000) { //600000ms = 10m
-                    World.items.remove(item);
-                } else {
-                    item.tick();
-                    try (MemoryStack stack = MemoryStack.stackPush()) {
-                        modelBuffer.put(new Matrix4f().rotateY((float) Math.toRadians(item.rot)).setTranslation(new Vector3f(item.pos).add(0, item.hover, 0)).scale(0.5f).get(stack.mallocFloat(16)));
-                    }
-                    colorBuffer.put(1.f);
-                    colorBuffer.put(1.f);
-                    colorBuffer.put(1.f);
-                    colorBuffer.put(1.f);
-                    atlasOffsetBuffer.put(item.type.atlasOffset.x());
-                    atlasOffsetBuffer.put(item.type.atlasOffset.y());
-                }
-            }
-            modelBuffer.flip();
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
-            glBufferData(GL_SHADER_STORAGE_BUFFER, modelBuffer, GL_DYNAMIC_DRAW);
-            colorBuffer.flip();
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
-            glBufferData(GL_SHADER_STORAGE_BUFFER,  colorBuffer, GL_DYNAMIC_DRAW);
-            atlasOffsetBuffer.flip();
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, atlasOffsetSSBOId);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, atlasOffsetSSBOId);
-            glBufferData(GL_SHADER_STORAGE_BUFFER,  atlasOffsetBuffer, GL_DYNAMIC_DRAW);
-            drawDoubleSidedPlanes(World.items.size());
-            glUniform4f(raster.uniforms.get("color"), 1, 1, 1, 1);
-            Item item = player.inv.getItem(player.inv.selectedSlot);
-            glUniform1i(raster.uniforms.get("alwaysUpfront"), 1);
-            if (item != null) {
-                try (MemoryStack stack = MemoryStack.stackPush()) {
-                    glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitch().invert().translate(0.045f + Math.max(0, handTilt() * 0.03f), -0.115f + (player.bobbing * 0.05f) - Math.min(0, handTilt() * 0.1f), -0.03f + (handTilt() * 0.1f)).rotateY((float) Math.toRadians(-90.f)).rotateZ((float) Math.toRadians(55.f + (handTilt() < 0 ? (handTilt() * 80) : (handTilt() * 40)) + HandManager.getTilt())).scale(0.125f).get(stack.mallocFloat(16)));
-                }
-                glUniform2i(raster.uniforms.get("atlasOffset"), item.type.atlasOffset.x(), item.type.atlasOffset.y());
-                drawDoubleSidedPlane();
-            } else {
-                glUniform1i(raster.uniforms.get("tex"), -1); //rendering hand
-                if (showUI && !Main.isSwappingWorldType) {
-                    glUniform4f(raster.uniforms.get("color"), 0.6f, 0.45f, 0.35f, 1);
-                    try (MemoryStack stack = MemoryStack.stackPush()) {
-                        glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitch().invert().translate(0.55f, -0.35f + (player.bobbing * 0.325f), 0.f).rotateX((float) Math.toRadians((handTilt() * -88) + (HandManager.getTilt() / 2))).scale(0.1375f, 0.1375f, 0.5f).get(stack.mallocFloat(16)));
-                    }
-                    drawCube();
-                }
-            }
+            drawPlayer();
 
             glBindFramebuffer(GL_FRAMEBUFFER, upscale ? sceneFBOId : uncheckerFBOId);
             scene.bind();

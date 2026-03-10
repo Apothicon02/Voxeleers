@@ -112,7 +112,7 @@ public class BlockTypes {
             STICK = create(new BlockType(FLINT_BATON.blockProperties.copy().isFluidReplaceable(true).blockSFX(new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1,
                     new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1))),
             STICK_PLATFORM = create(new BlockType(STICK.blockProperties.copy().isCollidable(true))),
-            TUNGSTEN_HAMMER = create(new BlockType(FLINT_BATON.blockProperties.copy().proficiencies(Map.of(BlockTags.blunt, 0.5f))));
+            POWERED_VENT = create(new BlockType(new BlockProperties()));
 
     private static BlockType create(List<BlockTag> tags, BlockType type) {
         for (BlockTag tag : tags) {
