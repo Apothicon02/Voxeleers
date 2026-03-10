@@ -507,11 +507,9 @@ public class Renderer {
             glUniform1i(raster.uniforms.get("tex"), 1); // rendering item
             glBindTextureUnit(0, Textures.items.id);
             glUniform4f(raster.uniforms.get("color"), 1, 1, 1, 1);
-            for (int i = 0; i < World.items.size(); i++) {
-                Item item = World.items.get(i);
+            for (Item item : World.items) {
                 if (item.timeExisted >= 600000) { //600000ms = 10m
-                    World.items.remove(i);
-                    i--;
+                    World.items.remove(item);
                 } else {
                     try (MemoryStack stack = MemoryStack.stackPush()) {
                         item.tick();

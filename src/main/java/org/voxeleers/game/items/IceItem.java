@@ -18,10 +18,10 @@ public class IceItem extends Item implements Cloneable {
             if (!BlockTypes.blockTypeMap.get(World.getBlock(pos.x(), pos.y()-0.125f, pos.z()).x()).blockProperties.isSolid) {
                 this.pos.y -= 0.125f;
             }
-            int start = (int)(Math.random()*Math.max(1, World.items.size()-10));
-            int end = Math.min(start+10, World.items.size());
-            for (int i = start; i < end; i++) {
-                Item randomItem = World.items.get(i);
+//            int start = (int)(Math.random()*Math.max(1, World.items.size()-10));
+//            int end = Math.min(start+10, World.items.size());
+            for (Item randomItem : World.items) {
+                //Item randomItem = World.items.get(i);
                 if (randomItem.type == type && randomItem.amount < randomItem.type.maxStackSize && Math.abs(randomItem.pos.x() - pos.x()) < 1.f && Math.abs(randomItem.pos.y() - pos.y()) < 1.f && Math.abs(randomItem.pos.z() - pos.z()) < 1.f) {
                     int flow = Math.min(amount, randomItem.type.maxStackSize - randomItem.amount);
                     randomItem.amount += flow;

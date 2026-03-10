@@ -1,6 +1,7 @@
 package org.voxeleers.game.world;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.voxeleers.Main;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.game.ScheduledTicker;
@@ -41,7 +42,7 @@ public class World {
     public static boolean generated = false;
     public static WorldType worldType = WorldTypes.TEMPERATE;
     public static WorldType nextWorldType = WorldTypes.BOREAL;
-    public static ArrayList<Item> items = new ArrayList<>();
+    public static ObjectOpenHashSet<Item> items = new ObjectOpenHashSet<>();
     public static short[][] blocks = new short[height][(size*size)*2];
     public static boolean[] unsavedBlocks = new boolean[height];
     public static short[][] blocksLOD = new short[height/4][(size*size)/4];
