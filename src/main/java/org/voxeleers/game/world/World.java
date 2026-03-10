@@ -62,7 +62,7 @@ public class World {
     }
 
     public static void dropItem(Item item) {
-        World.items.add(item.clone().timeExisted(-2000).moveTo(Main.player.getCameraMatrixWithoutPitch().invert().translate(0, -Main.player.eyeHeight + 0.2f, -1f).getTranslation(new Vector3f())));
+        World.items.add(item.clone().timeExisted(-2000).prevTickTime(System.currentTimeMillis()).moveTo(Main.player.getCameraMatrixWithoutPitch().invert().translate(0, -Main.player.eyeHeight + 0.2f, -1f).getTranslation(new Vector3f())));
     }
 
     public static boolean inBounds(int x, int y, int z) {

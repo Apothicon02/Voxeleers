@@ -232,9 +232,10 @@ public class Player {
     public void pickupTick() {
         for (Item item : World.items) {
             if (item.timeExisted > 500 && item.pos.y() >= pos.y() && item.pos.y() <= pos.y()+height && new Vector2f(item.pos.x(), item.pos.z()).distance(new Vector2f(pos.x(), pos.z())) < 1f) { //500ms = 0.5s
-                item = inv.addToInventory(item, false);
-                if (item == null) {
-                    World.items.remove(item);
+                World.items.remove(item);
+                item = inv.addToInventory(item, true);
+                if (item != null && item.amount > 0) {
+                    World.items.add(item);
                 }
             }
         }
