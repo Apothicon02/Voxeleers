@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.Math;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -45,6 +47,9 @@ public class Renderer {
     public static int blurredFBOId;
 
     public static int playerSSBOId;
+    public static int modelsSSBOId;
+    public static int colorsSSBOId;
+    public static int atlasOffsetSSBOId;
 
     public static boolean taa = true;
     public static boolean showUI = true;
@@ -179,7 +184,19 @@ public class Renderer {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, playerSSBOId);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, playerSSBOId);
         glBufferStorage(GL_SHADER_STORAGE_BUFFER, new float[6], GL_CLIENT_STORAGE_BIT | GL_MAP_READ_BIT);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        modelsSSBOId = glCreateBuffers();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, new float[16], GL_DYNAMIC_DRAW);
+        colorsSSBOId = glCreateBuffers();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, new float[4], GL_DYNAMIC_DRAW);
+        atlasOffsetSSBOId = glCreateBuffers();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, atlasOffsetSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, atlasOffsetSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, new int[2], GL_DYNAMIC_DRAW);
     }
 
     public static void updateBuffers() {
@@ -189,7 +206,13 @@ public class Renderer {
         glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, data);
         player.selectedBlock.set(data[0], data[1], data[2]);
         player.prevSelectedBlock.set(data[3], data[4], data[5]);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, atlasOffsetSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, atlasOffsetSSBOId);
     }
 
     public static void init(Window window) throws Exception {
@@ -277,6 +300,14 @@ public class Renderer {
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
     }
+    public static void drawCubes(int amount) {
+        glBindVertexArray(Models.CUBE.vaoId);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, Models.CUBE.positions.length, amount);
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+    }
     public static void drawPlane() {
         glBindVertexArray(Models.QUAD_UNNORMALIZED.vaoId);
         glEnableVertexAttribArray(0);
@@ -290,6 +321,14 @@ public class Renderer {
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glDrawArrays(GL_TRIANGLES, 0, Models.PLANE_DB.positions.length);
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+    }
+    public static void drawDoubleSidedPlanes(int amount) {
+        glBindVertexArray(Models.PLANE_DB.vaoId);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, Models.PLANE_DB.positions.length, amount);
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
     }
@@ -343,8 +382,11 @@ public class Renderer {
     public static void drawGas() {
         if (uiState == 1) {
             Random roomRand = new Random(911);
+            glUniform4f(raster.uniforms.get("color"), -1, -1, -1, -1);
             int i = 0;
             for (Room room : Rooms.rooms) {
+                FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(room.cells.size()*16);
+                FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(room.cells.size()*4);
                 i++;
                 if (i >= debugColors.length) {
                     i = 0;
@@ -353,31 +395,59 @@ public class Renderer {
                     Cell cell = room.cells.get(xyz);
                     if (!cell.molecules.isEmpty()) {
                         Vector3f color = Utils.getColorOfTemp(cell.getTemperature());
-                        glUniform4f(raster.uniforms.get("color"), color.x(), color.y(), color.z(), 1.f);
+                        colorBuffer.put(color.x());
+                        colorBuffer.put(color.y());
+                        colorBuffer.put(color.z());
+                        colorBuffer.put(1.f);
                         Vector3i cellPos = Rooms.unpackCellPos(xyz);
+                        float scale = (float) Math.clamp(cell.getPressure() / 10000000000.f, 0.01f, 0.125f)/2;
+                        float scaleOF = (1-(scale*2));
                         try (MemoryStack stack = MemoryStack.stackPush()) {
-                            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().setTranslation(cellPos.x() + 0.5f, cellPos.y() + 0.5f, cellPos.z() + 0.5f).
-                                    scale((float) Math.clamp(cell.getPressure() / 5000000000.f, 0.01f, 0.25f)).get(stack.mallocFloat(16)));
+                            modelBuffer.put(new Matrix4f().setTranslation(cellPos.x() + scale + (roomRand.nextFloat()*scaleOF), cellPos.y() + scale + (roomRand.nextFloat()*scaleOF),
+                                            cellPos.z() + scale + (roomRand.nextFloat()*scaleOF)).
+                                    scale(scale).get(stack.mallocFloat(16)));
                         }
-                        drawCube();
                     }
                 }
+                modelBuffer.flip();
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
+                glBufferData(GL_SHADER_STORAGE_BUFFER, modelBuffer, GL_DYNAMIC_DRAW);
+                colorBuffer.flip();
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
+                glBufferData(GL_SHADER_STORAGE_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
+                drawCubes(room.cells.size());
             }
         }
     }
 
     public static void drawClouds() {
+        glUniform4f(raster.uniforms.get("color"), -1, -1, -1, -1);
+        FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(196*16);
+        FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(196*4);
         Random cloudRand = new Random(911);
         float brightness = Math.clamp((640+sunPos.y())/640, 0.3f, 1.f);
         for (int i = 0; i < 196; i++) {
             float b = Math.max(0.25f, brightness-(cloudRand.nextFloat()/2));
             Vector3f pos = new Vector3f(0, 0, 2000*(cloudRand.nextFloat()+0.05f)).rotateY((float) ((cloudRand.nextFloat()*10)+(time*(3+cloudRand.nextInt(2)))));
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateY(cloudRand.nextFloat()/10).setTranslation(pos.set(pos.x + 512, cloudRand.nextInt(200)+320-((Math.abs(pos.x)+Math.abs(pos.z))/10), pos.z + 512)).scale(10+cloudRand.nextInt(10), 3+cloudRand.nextInt(6), 10+cloudRand.nextInt(10)).get(stack.mallocFloat(16)));
+                modelBuffer.put(new Matrix4f().rotateY(cloudRand.nextFloat()/10).setTranslation(pos.set(pos.x + 512, cloudRand.nextInt(200)+320-((Math.abs(pos.x)+Math.abs(pos.z))/10), pos.z + 512)).scale(10+cloudRand.nextInt(10), 3+cloudRand.nextInt(6), 10+cloudRand.nextInt(10)).get(stack.mallocFloat(16)));
             }
-            glUniform4f(raster.uniforms.get("color"), b, b, b, -1);
-            drawCube();
+            colorBuffer.put(b);
+            colorBuffer.put(b);
+            colorBuffer.put(b);
+            colorBuffer.put(-1);
         }
+        modelBuffer.flip();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, modelBuffer, GL_DYNAMIC_DRAW);
+        colorBuffer.flip();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
+        drawCubes(1024);
     }
     public static void drawSunAndMoon() {
         try(MemoryStack stack = MemoryStack.stackPush()) {
@@ -394,6 +464,9 @@ public class Renderer {
     public static Vector3f[] starColors = new Vector3f[]{new Vector3f(0.9f, 0.95f, 1.f), new Vector3f(1, 0.95f, 0.4f), new Vector3f(0.72f, 0.05f, 0), new Vector3f(0.42f, 0.85f, 1.f), new Vector3f(0.04f, 0.3f, 1.f), new Vector3f(1, 1, 0.1f)};
     public static int starDist = World.size+100;
     public static void drawStars() {
+        glUniform4f(raster.uniforms.get("color"), -1, -1, -1, -1);
+        FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(1024*16);
+        FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(1024*4);
         Random starRand = new Random(911);
         for (int i = 0; i < 1024; i++) {
             Vector3f starPos = new Vector3f(0, starDist * 2, 0)
@@ -409,14 +482,25 @@ public class Renderer {
                         .scale(starSize);
                 if (starMatrix.getTranslation(new Vector3f()).y > World.seaLevel-player.pos.y()) {
                     try (MemoryStack stack = MemoryStack.stackPush()) {
-                        glUniformMatrix4fv(raster.uniforms.get("model"), false, starMatrix.get(stack.mallocFloat(16)));
+                        modelBuffer.put(starMatrix.get(stack.mallocFloat(16)));
                     }
                     Vector3f color = starRand.nextFloat() < 0.64f ? new Vector3f(0.97f, 0.98f, 1.f) : starColors[starRand.nextInt(starColors.length - 1)];
-                    glUniform4f(raster.uniforms.get("color"), color.x*12, color.y*12, color.z*12, 2);
-                    drawCube();
+                    colorBuffer.put(color.x*12);
+                    colorBuffer.put(color.y*12);
+                    colorBuffer.put(color.z*12);
+                    colorBuffer.put(2);
                 }
             }
         }
+        modelBuffer.flip();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, modelBuffer, GL_DYNAMIC_DRAW);
+        colorBuffer.flip();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
+        drawCubes(1024);
     }
     public static void drawCenter() {
         glUniform4f(raster.uniforms.get("color"), 0.5f, 0.5f, 0.5f, 1);
@@ -506,19 +590,42 @@ public class Renderer {
 //            drawHuman();
             glUniform1i(raster.uniforms.get("tex"), 1); // rendering item
             glBindTextureUnit(0, Textures.items.id);
-            glUniform4f(raster.uniforms.get("color"), 1, 1, 1, 1);
+            FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(World.items.size()*16);
+            FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(World.items.size()*4);
+            IntBuffer atlasOffsetBuffer = BufferUtils.createIntBuffer(World.items.size()*2);
+            glUniform4f(raster.uniforms.get("color"), -1, -1, -1, -1);
             for (Item item : World.items) {
                 if (item.timeExisted >= 600000) { //600000ms = 10m
                     World.items.remove(item);
                 } else {
-                    try (MemoryStack stack = MemoryStack.stackPush()) {
+                    if (uiState == 1) {
                         item.tick();
-                        glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateY((float) Math.toRadians(item.rot)).setTranslation(new Vector3f(item.pos).add(0, item.hover, 0)).scale(0.5f).get(stack.mallocFloat(16)));
                     }
-                    glUniform2i(raster.uniforms.get("atlasOffset"), item.type.atlasOffset.x(), item.type.atlasOffset.y());
-                    drawDoubleSidedPlane();
+                    try (MemoryStack stack = MemoryStack.stackPush()) {
+                        modelBuffer.put(new Matrix4f().rotateY((float) Math.toRadians(item.rot)).setTranslation(new Vector3f(item.pos).add(0, item.hover, 0)).scale(0.5f).get(stack.mallocFloat(16)));
+                    }
+                    colorBuffer.put(1.f);
+                    colorBuffer.put(1.f);
+                    colorBuffer.put(1.f);
+                    colorBuffer.put(1.f);
+                    atlasOffsetBuffer.put(item.type.atlasOffset.x());
+                    atlasOffsetBuffer.put(item.type.atlasOffset.y());
                 }
             }
+            modelBuffer.flip();
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, modelBuffer, GL_DYNAMIC_DRAW);
+            colorBuffer.flip();
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
+            glBufferData(GL_SHADER_STORAGE_BUFFER,  colorBuffer, GL_DYNAMIC_DRAW);
+            atlasOffsetBuffer.flip();
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, atlasOffsetSSBOId);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, atlasOffsetSSBOId);
+            glBufferData(GL_SHADER_STORAGE_BUFFER,  atlasOffsetBuffer, GL_DYNAMIC_DRAW);
+            drawDoubleSidedPlanes(World.items.size());
+            glUniform4f(raster.uniforms.get("color"), 1, 1, 1, 1);
             Item item = player.inv.getItem(player.inv.selectedSlot);
             glUniform1i(raster.uniforms.get("alwaysUpfront"), 1);
             if (item != null) {

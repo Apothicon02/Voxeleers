@@ -1,13 +1,19 @@
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 
+uniform vec4 color;
 uniform mat4 projection;
 uniform mat4 view;
+layout(std430, binding = 1) buffer modelsSSBO
+{
+    mat4[] models;
+};
 uniform mat4 model;
 uniform int offsetIdx;
 uniform ivec2 res;
 uniform bool taa;
 
+out flat int instance;
 out vec3 pos;
 out vec3 norm;
 out vec3 wPos;
@@ -20,7 +26,8 @@ void main() {
     float yOff = taa ? yOffsets[offsetIdx]/res.y : 0;
     pos = position;
     norm = normal;
-    vec4 worldPos = model * vec4(position.xy+vec2(xOff, yOff), position.z, 1.0);
+    instance = color.r == -1.f ? gl_InstanceID : -1;
+    vec4 worldPos = (instance >= 0 ? models[gl_InstanceID] : model) * vec4(position.xy+vec2(xOff, yOff), position.z, 1.0);
     vec4 clipPos = projection * view * worldPos;
     gl_Position = clipPos;
 

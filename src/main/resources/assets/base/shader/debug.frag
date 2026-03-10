@@ -6,7 +6,16 @@ uniform ivec2 atlasOffset;
 uniform vec3 sun;
 uniform vec3 mun;
 uniform bool alwaysUpfront;
+layout(std430, binding = 2) buffer colorsSSBO
+{
+    vec4[] colors;
+};
+layout(std430, binding = 3) buffer atlasOffsetsSSBO
+{
+    ivec2[] atlasOffsets;
+};
 
+in flat int instance;
 in vec3 pos;
 in vec3 norm;
 in vec3 wPos;
@@ -19,10 +28,15 @@ void main() {
     float depth = alwaysUpfront ? 1.f : gl_FragCoord.z;
     rasterPos = vec4(wPos, depth);
     rasterNorm = vec4(norm*-1, 0);
+    vec4 theColor = color;
+    if (instance >= 0) {
+        theColor = colors[instance];
+    }
     if (tex <= 0) {
-        fragColor = color;
+        fragColor = theColor;
     } else {
-        vec4 guiColor = texelFetch(texture, ivec3(atlasOffset.x+(pos.x*16), atlasOffset.y+(abs(1-pos.y)*16), 0), 0)*color;
+        ivec2 offset = atlasOffsets[instance];
+        vec4 guiColor = texelFetch(texture, ivec3(offset.x+(pos.x*16), offset.y+(abs(1-pos.y)*16), 0), 0)*theColor;
         if (guiColor.a > 0) {
             fragColor = guiColor;
         } else {
