@@ -598,9 +598,7 @@ public class Renderer {
                 if (item.timeExisted >= 600000) { //600000ms = 10m
                     World.items.remove(item);
                 } else {
-                    if (uiState == 1) {
-                        item.tick();
-                    }
+                    item.tick();
                     try (MemoryStack stack = MemoryStack.stackPush()) {
                         modelBuffer.put(new Matrix4f().rotateY((float) Math.toRadians(item.rot)).setTranslation(new Vector3f(item.pos).add(0, item.hover, 0)).scale(0.5f).get(stack.mallocFloat(16)));
                     }

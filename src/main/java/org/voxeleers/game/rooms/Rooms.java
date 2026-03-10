@@ -227,10 +227,8 @@ public class Rooms {
 
     public static Room getRoom(int ogxyz) {
         for (Room room : rooms) {
-            for (int xyz : room.cells.keySet()) {
-                if (xyz == ogxyz) {
-                    return room;
-                }
+            if (room.cells.keySet().contains(ogxyz)) {
+                return room;
             }
         }
         return null;
@@ -302,11 +300,6 @@ public class Rooms {
             }
         }
         rooms.removeIf(roomsToRemove::contains);
-    }
-    private static void clearRooms(Room area) {
-        for (int xyz : area.cells.keySet()) {
-            rooms.removeIf(room -> room.cells.containsKey(xyz));
-        }
     }
 
     public static boolean scanCells(int x, int y, int z) {
