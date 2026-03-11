@@ -22,7 +22,6 @@ public class CloudBlockType extends BlockType {
                 ScheduledTicker.scheduleTick(Main.currentTick+1200, pos.xyz(new Vector3i()), 1);
                 setBlock(pos.x, pos.y - 1, pos.z, 1, 15, false, false, 1, false);
             }
-            fluidTick(pos.xyz(new Vector3i()));
             updateSupport(new Vector3i(pos.x, pos.y, pos.z));
         }
     }

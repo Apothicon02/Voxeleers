@@ -1,8 +1,6 @@
 package org.voxeleers.game.blocks.types;
 
 import org.voxeleers.game.blocks.BlockTag;
-import org.voxeleers.game.world.FluidHelper;
-import org.voxeleers.game.world.GasHelper;
 import org.voxeleers.game.world.World;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
@@ -76,15 +74,8 @@ public class BlockType {
     public void tick(Vector4i pos) {
         if (inBounds(pos.x, pos.y, pos.z)) {
             Vector3i justPos = new Vector3i(pos.x, pos.y, pos.z);
-            fluidTick(justPos);
             updateSupport(justPos);
         }
-    }
-
-    public void fluidTick(Vector3i pos) {
-        Vector2i block = getBlock(pos);
-        FluidHelper.updateFluid(pos, block);
-        GasHelper.updateGas(pos, block);
     }
 
     public boolean whilePlayerBreaking(Vector3i pos, Vector2i blockBreaking, Vector2i hand) {

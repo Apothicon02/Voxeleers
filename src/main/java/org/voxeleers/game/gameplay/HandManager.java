@@ -3,7 +3,6 @@ package org.voxeleers.game.gameplay;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.engine.Window;
 import org.voxeleers.game.audio.BlockSFX;
-import org.voxeleers.game.blocks.Fluids;
 import org.voxeleers.game.blocks.BlockTags;
 import org.voxeleers.game.blocks.drops.BlockDrops;
 import org.voxeleers.game.blocks.types.BlockProperties;
@@ -60,9 +59,6 @@ public class HandManager {
                     if (mmbDown) {
                         Vector2i block = World.getBlock(pos.x, pos.y, pos.z);
                         if (block != null) {
-                            if (BlockTypes.blockTypeMap.get(block.x).blockProperties.isFluid) {
-                                block.x = Fluids.fluidBucketMap.get(block.x);
-                            }
                             if (player.creative) {
                                 //StackManager.setFirstEntryInStack(block);
                             } else {
@@ -126,33 +122,10 @@ public class HandManager {
                             } else if (blockToPlace.x > 0) {//player.stack[0] > 0) {
                                 Vector2i oldBlock = World.getBlock((int) pos.x, (int) pos.y, (int) pos.z);
                                 BlockProperties oldType = BlockTypes.blockTypeMap.get(oldBlock.x).blockProperties;
-                                BlockType blockType = BlockTypes.blockTypeMap.get(blockToPlace.x);
-                                if (blockType instanceof FullBucketBlockType && !player.crouching) {
-                                    blockToPlace.x = Fluids.fluidBucketMap.get(blockToPlace.x);
-                                    blockType = BlockTypes.blockTypeMap.get(blockToPlace.x);
-                                }
-                                if (oldType.isFluidReplaceable || (oldType.isFluid && !BlockTags.buckets.tagged.contains(blockToPlace.x) && !blockType.blockProperties.isFluidReplaceable && !blockType.blockProperties.isFluid)) {
+                                if (oldType.isFluidReplaceable) {
                                     World.setBlock((int) pos.x, (int) pos.y, (int) pos.z, blockToPlace.x, blockToPlace.y, true, false, 1, false);
                                     if (!player.creative) {
-                                        if (blockType.blockProperties.isFluid) {
-                                            blockToPlace.x = BlockTypes.getId(BlockTypes.BUCKET);
-                                            blockToPlace.y = 0;
-                                            //StackManager.setFirstEntryInStack(new Vector2i(blockTypeId, blockSubtypeId));
-                                        } else {
-                                            //StackManager.removeFirstEntryInStack();
-                                        }
-                                    }
-                                } else if (oldType.isFluid && blockToPlace.x == oldBlock.x) { //merge liquid
-                                    int room = 15-oldBlock.y;
-                                    int flow = Math.min(room, blockToPlace.y);
-                                    World.setBlock((int) pos.x, (int) pos.y, (int) pos.z, blockToPlace.x, oldBlock.y+flow, true, false, 1, false);
-                                    if (!player.creative) {
-                                        blockToPlace.y -= flow;
-                                        if (blockToPlace.y < 1) {
-                                            blockToPlace.x = BlockTypes.getId(BlockTypes.BUCKET);
-                                            blockToPlace.y = 0;
-                                        }
-                                        //StackManager.setFirstEntryInStack(new Vector2i(blockTypeId, blockSubtypeId));
+                                        //StackManager.removeFirstEntryInStack();
                                     }
                                 }
                             }

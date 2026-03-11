@@ -26,7 +26,7 @@ public class BlockTypes {
     public static BlockType
             AIR = create(new BlockType(new BlockProperties().blockSFX(new SFX[]{Sounds.CLOUD}, 0.75f, 0.75f, new SFX[]{Sounds.CLOUD}, 0.75f, 0.75f)
                     .isSolid(false).blocksLight(false).isCollidable(false).isFluidReplaceable(true).obstructsHeightmap(false))),
-            WATER = create(new WaterBlockType(new BlockProperties().isSolid(false).blocksLight(false).isCollidable(false).isFluid(true).obstructsHeightmap(false).blockSFX(
+            WATER = create(new BlockType(new BlockProperties().isSolid(false).blocksLight(false).isCollidable(false).isFluid(true).obstructsHeightmap(false).blockSFX(
                     new SFX[]{Sounds.SPLASH1}, 1f, 1.25f, new SFX[]{Sounds.SPLASH1}, 0f, 1f))),
             GRASS = create(List.of(BlockTags.sediment, BlockTags.grass), new BlockType(new BlockProperties().ttb(200).blockSFX(new SFX[]{Sounds.GRASS_STEP2, Sounds.GRASS_STEP3}, 1, 1,
                     new SFX[]{Sounds.GRASS_STEP1, Sounds.GRASS_STEP2, Sounds.GRASS_STEP3}, 1, 1))),
@@ -104,14 +104,14 @@ public class BlockTypes {
             CLAY = create(List.of(BlockTags.sediment), new BlockType(MUD.blockProperties)),
             OBSIDIAN = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties.copy().ttb(2000).blocksLight(true))),
             STEAM = create(new BlockType(new BlockProperties().isSolid(false).blocksLight(false).isCollidable(false).obstructsHeightmap(false).isGas(true))), //60
-            STEAM_BUCKET = create(List.of(BlockTags.buckets, BlockTags.cantBreakBlocks), new FullBucketBlockType(BUCKET.blockProperties)),
             WATER_BUCKET = create(List.of(BlockTags.buckets, BlockTags.cantBreakBlocks), new FullBucketBlockType(BUCKET.blockProperties)),
-            FLINT_BATON = create(new BlockType(new BlockProperties().proficiencies(Map.of(BlockTags.blunt, 0.75f)).isSolid(false).isCollidable(false).blocksLight(false).obstructsHeightmap(false))),
-            STICK = create(new BlockType(FLINT_BATON.blockProperties.copy().isFluidReplaceable(true).blockSFX(new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1,
+            STICK = create(new BlockType(new BlockProperties().isSolid(false).blocksLight(false).obstructsHeightmap(false).isFluidReplaceable(true).blockSFX(new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1,
                     new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1))),
-            STICK_PLATFORM = create(new BlockType(STICK.blockProperties.copy().isCollidable(true))), //65
+            STICK_PLATFORM = create(new BlockType(STICK.blockProperties.copy().isCollidable(true))),
             STEEL_FRAME = create(new BlockType(new BlockProperties().blocksLight(false).obstructsHeightmap(false).permeable(true))),
-            POWERED_VENT = create(new BlockType(new BlockProperties()));
+            POWERED_VENT = create(new BlockType(new BlockProperties())), //65
+            BLUE_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
+            RED_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties));
 
     private static BlockType create(List<BlockTag> tags, BlockType type) {
         for (BlockTag tag : tags) {

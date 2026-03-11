@@ -168,7 +168,7 @@ public class Player {
                         if (recordFriction) {
                             if (typeId == 7) { //kyanite
                                 friction = Math.min(friction, 0.95f);
-                            } else if (typeId == 11 || typeId == 12 || typeId == 13) { //glass
+                            } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 14 || typeId == 15) { //glass
                                 friction = Math.min(friction, 0.85f);
                             } else if (BlockTags.planks.tagged.contains(block.x)) { //wood
                                 friction = Math.min(friction, 0.5f);
@@ -181,7 +181,7 @@ public class Player {
                         if (recordBounciness) {
                             if (typeId == 7) { //kyanite
                                 bounciness = Math.min(bounciness, -2f);
-                            } else if (typeId == 11 || typeId == 12 || typeId == 13) { //glass
+                            } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 14 || typeId == 15) { //glass
                                 bounciness = Math.min(bounciness, -0.33f);
                             }
                         }

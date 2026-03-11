@@ -125,7 +125,7 @@ float whiteNoise(vec2 coords) {
 }
 
 bool castsFullShadow(ivec4 block) {
-    return block.x != 4 && block.x != 5 && block.x != 14 && block.x != 18 && block.x != 30 && block.x != 52 && block.x != 53 && block.x != 66 && block.x != 67;
+    return block.x != 4 && block.x != 5 && block.x != 14 && block.x != 18 && block.x != 30 && block.x != 52 && block.x != 53 && block.x != 64 && block.x != 65;
 }
 
 vec4 getVoxel(int x, int y, int z, int bX, int bY, int bZ, int blockType, int blockSubtype) {
@@ -436,17 +436,17 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                         wasEverUnderwater = true;
                         steppingBlock = true;
                     }
-                    if (!isShadow && isFullSemitransparentBlock(block.xy)) {
+                    if (isFullSemitransparentBlock(block.xy)) {
                         steppingBlock = true;
                     }
-                    float brightness = dot((tint.a < 1 ? -1 : 1) * normal, source+vec3(0, height, 0))*-0.0001f;
-                    float tintMul = clamp(0.875f+brightness, 0.75f, 1.f);
-                    if (prevTintAddition != voxelColor || (isShadow && voxelColor.a > 0.f)) {
+                    if (prevTintAddition != voxelColor) {
+                        float brightness = dot((tint.a < 1 ? -1 : 1) * normal, source+vec3(0, height, 0))*-0.0001f;
+                        float tintMul = clamp(0.875f+brightness, 0.75f, 1.f);
                         prevTintAddition = voxelColor;
                         if (firstTintAddition == vec3(0)) {
                             firstTintAddition = voxelColor.rgb*tintMul;
                         }
-                        vec3 shadeTintFactor = (isShadow ? vec3(1-voxelColor.r, 1-voxelColor.g, 1-voxelColor.b) : vec3(1));
+                        vec3 shadeTintFactor = (isShadow ? vec3(1-voxelColor.r, 1-voxelColor.g, 1-voxelColor.b)*(tint.a == 1 ? 1.5f : 1.f) : vec3(1));
                         tint.rgb -= shadeTintFactor * abs(1-voxelColor.rgb)*tintMul*tint.rgb;
                         tint.a -= max(shadeTintFactor.r, max(shadeTintFactor.g, shadeTintFactor.b)) * voxelColor.a*tint.a;
                     }

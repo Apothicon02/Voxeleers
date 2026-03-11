@@ -106,41 +106,42 @@ public class TemperateWorldType extends WorldType {
         for (int x = (size / 2) - 29; x <= size / 2; x++) {
             for (int z = (size / 2) - 29; z < size / 2; z++) {
                 setBlock(x, 100, z, 11, 0);
-                if (x == (size / 2) - 29 || x == (size / 2) || z == (size / 2) - 29 || z == (size / 2) - 1) {
-                    setBlock(x, 99, z, 11, 0);
-                    setBlock(x, 98, z, 11, 0);
-                    setBlock(x, 97, z, 11, 0);
-                    setBlock(x, 96, z, 11, 0);
-                    setBlock(x, 95, z, 11, 0);
-                    setBlock(x, 94, z, 11, 0);
-                    setBlock(x, 93, z, 11, 0);
-                    setBlock(x, 92, z, 11, 0);
-                    setBlock(x, 91, z, 11, 0);
-                    setBlock(x, 90, z, 11, 0);
-                    setBlock(x, 89, z, 11, 0);
-                    setBlock(x, 88, z, 11, 0);
-                    setBlock(x, 87, z, 11, 0);
-                    setBlock(x, 86, z, 11, 0);
-                    setBlock(x, 85, z, 11, 0);
-                    setBlock(x, 84, z, 11, 0);
-                    setBlock(x, 83, z, 11, 0);
-                    setBlock(x, 82, z, 11, 0);
-                    setBlock(x, 81, z, 11, 0);
-                    setBlock(x, 80, z, 11, 0);
-                    setBlock(x, 79, z, 11, 0);
-                    setBlock(x, 78, z, 11, 0);
-                    setBlock(x, 77, z, 11, 0);
-                    setBlock(x, 76, z, 11, 0);
-                    setBlock(x, 75, z, 11, 0);
-                    setBlock(x, 74, z, 11, 0);
-                    setBlock(x, 73, z, 11, 0);
-                    setBlock(x, 72, z, 11, 0);
-                    setBlock(x, 71, z, 11, 0);
-                    setBlock(x, 70, z, 11, 0);
+                boolean xWall = x == (size / 2) - 29 || x == (size / 2);
+                if (xWall || z == (size / 2) - 29 || z == (size / 2) - 1) {
+                    int block = xWall ? (x > 500 ? BlockTypes.getId(BlockTypes.RED_STAINED_GLASS) : BlockTypes.getId(BlockTypes.MAGENTA_STAINED_GLASS)) : (z > 500 ? BlockTypes.getId(BlockTypes.BLUE_STAINED_GLASS) : BlockTypes.getId(BlockTypes.LIME_STAINED_GLASS));
+                    setBlock(x, 99, z, block, 0);
+                    setBlock(x, 98, z, block, 0);
+                    setBlock(x, 97, z, block, 0);
+                    setBlock(x, 96, z, block, 0);
+                    setBlock(x, 95, z, block, 0);
+                    setBlock(x, 94, z, block, 0);
+                    setBlock(x, 93, z, block, 0);
+                    setBlock(x, 92, z, block, 0);
+                    setBlock(x, 91, z, block, 0);
+                    setBlock(x, 90, z, block, 0);
+                    setBlock(x, 89, z, block, 0);
+                    setBlock(x, 88, z, block, 0);
+                    setBlock(x, 87, z, block, 0);
+                    setBlock(x, 86, z, block, 0);
+                    setBlock(x, 85, z, block, 0);
+                    setBlock(x, 84, z, block, 0);
+                    setBlock(x, 83, z, block, 0);
+                    setBlock(x, 82, z, block, 0);
+                    setBlock(x, 81, z, block, 0);
+                    setBlock(x, 80, z, block, 0);
+                    setBlock(x, 79, z, block, 0);
+                    setBlock(x, 78, z, block, 0);
+                    setBlock(x, 77, z, block, 0);
+                    setBlock(x, 76, z, block, 0);
+                    setBlock(x, 75, z, block, 0);
+                    setBlock(x, 74, z, block, 0);
+                    setBlock(x, 73, z, block, 0);
+                    setBlock(x, 72, z, block, 0);
+                    setBlock(x, 71, z, block, 0);
+                    setBlock(x, 70, z, block, 0);
                 }
             }
         }
-        setBlock(512, 95, 512, 11, 0);
 
         for (int x = 0; x < size; x++) {
             for (int z = 0; z < size; z++) {
