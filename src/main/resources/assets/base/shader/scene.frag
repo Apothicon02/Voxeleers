@@ -192,7 +192,8 @@ vec3 hitPos = vec3(0);
 vec3 solidHitPos = vec3(0);
 vec3 mapPos = vec3(0);
 vec3 normal = vec3(0);
-vec4 tint = vec4(0);
+vec4 tint = vec4(1);
+vec3 firstTintAddition = vec3(0);
 bool underwater = false;
 bool wasEverUnderwater = false;
 bool hitCaustic = false;
@@ -218,7 +219,8 @@ void clearVars() {
     normal = vec3(0);
     underwater = false;
     hitCaustic = false;
-    tint = vec4(0);
+    tint = vec4(1);
+    firstTintAddition = vec3(0);
     prevPos = vec3(0);
     lod2Pos = vec3(0);
     lodPos = vec3(0);
@@ -434,15 +436,19 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                         wasEverUnderwater = true;
                         steppingBlock = true;
                     }
-                    if (isFullSemitransparentBlock(block.xy)) {
+                    if (!isShadow && isFullSemitransparentBlock(block.xy)) {
                         steppingBlock = true;
                     }
-                    float brightness = dot((tint.a > 0 ? -1 : 1) * normal, source+vec3(0, height, 0))*-0.0001f;
+                    float brightness = dot((tint.a < 1 ? -1 : 1) * normal, source+vec3(0, height, 0))*-0.0001f;
                     float tintMul = clamp(0.875f+brightness, 0.75f, 1.f);
-                    if (prevTintAddition != voxelColor) {
+                    if (prevTintAddition != voxelColor || (isShadow && voxelColor.a > 0.f)) {
                         prevTintAddition = voxelColor;
-                        tint.rgb += voxelColor.rgb*tintMul;
-                        tint.a += voxelColor.a;
+                        if (firstTintAddition == vec3(0)) {
+                            firstTintAddition = voxelColor.rgb*tintMul;
+                        }
+                        vec3 shadeTintFactor = (isShadow ? vec3(1-voxelColor.r, 1-voxelColor.g, 1-voxelColor.b) : vec3(1));
+                        tint.rgb -= shadeTintFactor * abs(1-voxelColor.rgb)*tintMul*tint.rgb;
+                        tint.a -= max(shadeTintFactor.r, max(shadeTintFactor.g, shadeTintFactor.b)) * voxelColor.a*tint.a;
                     }
                 } else {
                     hitSolidVoxel = true;
@@ -682,9 +688,10 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
             vNorm *= 0;
         }
     }
-    vec3 shadowPos = underwater ? mix((floor(hitPos*8)+0.5f)/8, hitPos, abs(tintNormal)) : prevPos+(shadowPosOffset*shadeNormOffFade);//(mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal)));
+    vec3 shadowPos = underwater ? mix((floor(hitPos*8)+0.5f)/8, hitPos, abs(tintNormal)) : mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal))+(shadowPosOffset*shadeNormOffFade);//(mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal)));
     if (actuallyCastShadowRay) {
         vec3 sunDir = vec3(normalize(source - (worldSize/2)));
+        vec3 prevFirstTint = firstTintAddition;
         vec4 prevTint = tint;
         vec3 oldHitPos = hitPos;
         clearVars();
@@ -696,10 +703,11 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
             }
             shadowFactor = min(0.9f, mix(0.75f, 0.9f, min(1, distance(shadowPos, hitPos)/420))); //shadowFactor = mix(1.f, min(0.9f, mix(0.75f, 0.9f, min(1, distance(shadowPos, hitPos)/420))), waterDepth);
         }
-        vec4 normalizedTint = tint/max(1.f, max(tint.r, max(tint.g, tint.b)));
-        shadowFactor = max(0.75f, shadowFactor-(tint.a > 0 ? 0.125f : 0.f));
+        shadowFactor = max(0.75f, shadowFactor-(firstTintAddition != vec3(0) ? 0.125f : 0.f));
         isShadow = false;
-        tint = prevTint+(tint*shadowFactor);
+        vec4 shadeTint = (0.5f+(tint/2));
+        tint = prevTint*shadeTint;//mix(tint, prevTint, pow(shadowFactor, 10));
+        if (prevFirstTint != vec3(0)) {firstTintAddition = prevFirstTint;} else {firstTintAddition = shadeTint.rgb;}
         hitPos = oldHitPos;
     }
     float brightness = (dot(vNorm, source+vec3(0, height, 0))*-0.0002f)*waterDepth;
@@ -822,19 +830,18 @@ void main() {
     }
     if (tint.a > 0) {
         normal = tintNormal;
-        float reflectivity = wasEverUnderwater ? clamp(distance(lightPos, ogPos)/128, 0, 1) : dot(normal, ogDir)/4;//dot(normal, ogDir);
+        float reflectivity = wasEverUnderwater ? clamp(distance(lightPos, ogPos)/128, 0, 1) : 0.f;
         lightPos = hitPos;
-        vec4 normalizedTint = tint/max(1.f, max(tint.r, max(tint.g, tint.b)));
         shadowFactor = 1.f;
-        //normalizedTint = getShadow(normalizedTint, false, false, 0.f);
         fogginess = clamp((clamp(sqrt(distance(ogPos, lightPos)/(size*0.66f))*gradient(lightPos.y, 63, 80, 1, 1+abs(noise(lightPos.xz)/3)), 0, 1)), 0.f, 1.f);
         lighting = (getLight(lightPos.x, lightPos.y, lightPos.z));
         lighting.a = mix(lighting.a*shadowFactor, (vec4(0, 0, 0, 1)).a, fogginess);
         lighting = powLighting(lighting);
         vec4 lightingColor = getLightingColor(lightPos, lighting, false, fogginess, false);
-        normalizedTint.rgb *= lightingColor.rgb;
-        normalizedTint.rgb = mix(normalizedTint.rgb, lightingColor.rgb, fogginess);
-        fragColor.rgb = mix(fragColor.rgb, normalizedTint.rgb, mix(normalizedTint.a, 1.f, reflectivity));
+        tint.rgb = mix(tint.rgb, firstTintAddition, 0.5f);
+        tint.rgb *= lightingColor.rgb;
+        tint.rgb = mix(tint.rgb, lightingColor.rgb, fogginess);
+        fragColor.rgb = mix(fragColor.rgb, tint.rgb, mix(abs(1-tint.a), 1.f, reflectivity));
     }
 
     if (hitBlock == ivec3(playerData[0], playerData[1], playerData[2]) && ui) {
