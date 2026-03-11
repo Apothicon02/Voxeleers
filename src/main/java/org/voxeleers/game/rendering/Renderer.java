@@ -270,15 +270,7 @@ public class Renderer {
         glUniform1d(program.uniforms.get("time"), time);
         glUniform1i(program.uniforms.get("shadowsEnabled"), shadowsEnabled ? 1 : 0);
         glUniform1i(program.uniforms.get("reflectionShadows"), reflectionShadows ? 1 : 0);
-        sunPos.set(0, World.size*2, 0);
-        sunPos.rotateZ((float) time);
-        sunPos.rotateX(0.5f);
-        sunPos.set(sunPos.x+(World.size/2f), sunPos.y, sunPos.z+(World.size/2f)+128);
         glUniform3f(program.uniforms.get("sun"), sunPos.x, sunPos.y, sunPos.z);
-        munPos.set(0, World.size*-2, 0);
-        munPos.rotateZ((float) time);
-        sunPos.rotateX(-0.2f);
-        munPos.set(munPos.x+(World.size/2f), munPos.y, munPos.z+(World.size/2f)+128);
         glUniform3f(program.uniforms.get("mun"), munPos.x, munPos.y, munPos.z);
     }
 
@@ -451,25 +443,8 @@ public class Renderer {
             drawCubes(1024);
         }
     }
-    public static void drawSunAndMoon() {
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(sunPos).scale(60).get(stack.mallocFloat(16)));
-        }
-        glUniform4f(raster.uniforms.get("color"), 1.2f, 1.2f, 1.25f, 1);
-        drawCube();
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(munPos).scale(20).get(stack.mallocFloat(16)));
-        }
-        glUniform4f(raster.uniforms.get("color"), 1.f, 0.88f, 1.f, 1);
-        drawCube();
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(munPos.x()+450, munPos.y(), munPos.z()+900).scale(15).get(stack.mallocFloat(16)));
-        }
-        glUniform4f(raster.uniforms.get("color"), 1.f, 0.88f, 0.93f, 1);
-        drawCube();
-    }
     public static Vector3f[] starColors = new Vector3f[]{new Vector3f(0.9f, 0.95f, 1.f), new Vector3f(1, 0.95f, 0.4f), new Vector3f(0.72f, 0.05f, 0), new Vector3f(0.42f, 0.85f, 1.f), new Vector3f(0.04f, 0.3f, 1.f), new Vector3f(1, 1, 0.1f)};
-    public static int starDist = World.size+100;
+    public static int starDist = (World.size*2)+200;
     public static void drawStars() {
         FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(1024*16);
         FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(1024*4);
@@ -480,7 +455,7 @@ public class Renderer {
                     .rotateY(starRand.nextFloat() * 10)
                     .rotateZ((float) (time*3) + starRand.nextFloat() * 10);
             starPos.set(starPos.x + (starDist / 2f), starPos.y, starPos.z + (starDist / 2f));
-            float starSize = (starRand.nextFloat()*2)+2;
+            float starSize = (starRand.nextFloat()*4)+4;
             if (starSize > 0.01f) {
                 Matrix4f starMatrix = new Matrix4f()
                         .rotateXYZ(starRand.nextFloat(), starRand.nextFloat(), starRand.nextFloat())
@@ -647,7 +622,7 @@ public class Renderer {
             drawItems();
             glUniform1i(raster.uniforms.get("instanced"), 0);
             glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
-            drawSunAndMoon();
+            World.worldType.renderCelestialBodies();
 //            drawCenter();
 //            drawDebugWheel();
 //            drawHuman();

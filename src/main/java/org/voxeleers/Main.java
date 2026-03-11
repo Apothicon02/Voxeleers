@@ -330,6 +330,7 @@ public class Main {
                     ticksDone++;
                     currentTick++;
                     timePassed -= tickTime;
+                    World.worldType.tick();
                     World.tickItems();
                     World.tickBlockEntities();
                     player.tick();

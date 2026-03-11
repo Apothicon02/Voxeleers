@@ -23,7 +23,8 @@ public class WorldType {
     public Cell getGlobalAtmo() {return new Cell();}
     public ByteArrayList getGlobalElements() {return new ByteArrayList();}
     public boolean hasVisualAtmo() {return false;}
-
+    public void renderCelestialBodies() {}
+    public void tick() {}
     public void generate() throws IOException {
         generated = false;
         if (Files.exists(getWorldPath())) {

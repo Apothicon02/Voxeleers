@@ -1,6 +1,8 @@
 package org.voxeleers.game.world.types;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import org.joml.Matrix4f;
+import org.lwjgl.system.MemoryStack;
 import org.voxeleers.Main;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
@@ -9,6 +11,7 @@ import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.world.LightHelper;
+import org.voxeleers.game.world.World;
 import org.voxeleers.game.world.shapes.Blob;
 import org.joml.Vector2i;
 import org.joml.Vector3i;
@@ -19,7 +22,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
 
+import static org.lwjgl.opengl.GL20.glUniform4f;
+import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
 import static org.voxeleers.engine.Utils.condensePos;
+import static org.voxeleers.game.rendering.Renderer.*;
 import static org.voxeleers.game.world.World.*;
 import static org.voxeleers.game.world.World.getLight;
 
@@ -31,24 +37,49 @@ public class MarsWorldType extends WorldType {
 
     @Override
     public boolean hasVisualAtmo() {return true;}
-
     @Override
     public Random rand() {return seededRand;}
-
     @Override
     public Path getWorldPath() {
         return worldPath;
     }
-
     @Override
     public String getWorldTypeName() {
         return "Mars";
     }
-
     @Override
     public Cell getGlobalAtmo() {return globalAtmo;}
     @Override
     public ByteArrayList getGlobalElements() {return globalElements;}
+    @Override
+    public void renderCelestialBodies() {
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(sunPos).scale(60).get(stack.mallocFloat(16)));
+        }
+        glUniform4f(raster.uniforms.get("color"), 1.2f, 1.2f, 1.25f, 1);
+        drawCube();
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(munPos).scale(20).get(stack.mallocFloat(16)));
+        }
+        glUniform4f(raster.uniforms.get("color"), 1.f, 0.88f, 1.f, 1);
+        drawCube();
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(munPos.x()+450, munPos.y(), munPos.z()+900).scale(15).get(stack.mallocFloat(16)));
+        }
+        glUniform4f(raster.uniforms.get("color"), 1.f, 0.88f, 0.93f, 1);
+        drawCube();
+    }
+    @Override
+    public void tick() {
+        sunPos.set(0, World.size*2, 0);
+        sunPos.rotateZ((float) time);
+        sunPos.rotateX(0.5f);
+        sunPos.set(sunPos.x+(World.size/2f), sunPos.y, sunPos.z+(World.size/2f)+128);
+        munPos.set(0, World.size*-2, 0);
+        munPos.rotateZ((float) time);
+        sunPos.rotateX(-0.2f);
+        munPos.set(munPos.x+(World.size/2f), munPos.y, munPos.z+(World.size/2f)+128);
+    }
 
     @Override
     public void generate() throws IOException {
