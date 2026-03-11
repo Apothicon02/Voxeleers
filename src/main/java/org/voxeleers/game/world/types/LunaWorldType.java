@@ -4,8 +4,6 @@ import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.voxeleers.Main;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
-import org.voxeleers.game.elements.Element;
-import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Molecule;
@@ -17,17 +15,16 @@ import org.joml.Vector3i;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Random;
 
 import static org.voxeleers.engine.Utils.condensePos;
 import static org.voxeleers.game.world.World.*;
 import static org.voxeleers.game.world.World.getLight;
 
-public class TemperateWorldType extends WorldType {
-    private Path worldPath = Path.of(Main.mainFolder+"world0/mars");
+public class LunaWorldType extends WorldType {
+    private Path worldPath = Path.of(Main.mainFolder+"world0/luna");
     public static Random seededRand = new Random(35311350L);
-    public static Cell globalAtmo = new Cell(64000, List.of(new Molecule(Elements.elementMap.indexOf(Elements.CARBON_DIOXIDE), 246), new Molecule(Elements.elementMap.indexOf(Elements.NITROGEN), 7), new Molecule(Elements.elementMap.indexOf(Elements.ARGON), 5)));
+    public static Cell globalAtmo = new Cell();
     public static ByteArrayList globalElements = new ByteArrayList();
 
     @Override
@@ -72,7 +69,7 @@ public class TemperateWorldType extends WorldType {
                 surface = Math.max(16, surface);
                 heightmap[condensePos(x, z)] = (short) (surface);
                 for (int y = surface; y >= 0; y--) {
-                    setBlock(x, y, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0);
+                    setBlock(x, y, z, BlockTypes.getId(BlockTypes.STONE), 0);
                 }
             }
         }
@@ -93,7 +90,7 @@ public class TemperateWorldType extends WorldType {
                 boolean flat = maxSteepness < 3;
                 if (flat) {
                     for (int newY = surface; newY >= surface - 5; newY--) {
-                        setBlock(x, newY, z, BlockTypes.getId(BlockTypes.SAND), 0);
+                        setBlock(x, newY, z, BlockTypes.getId(BlockTypes.REGOLITH), 0);
                     }
                 } else {
                     for (int newY = surface; newY >= surface - 5; newY--) {
@@ -148,9 +145,9 @@ public class TemperateWorldType extends WorldType {
                 int surface = heightmap[(x * size) + z];
                 Vector2i blockOn = getBlock(x, surface, z);
                 float randomNumber = seededRand.nextFloat();
-                if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL)) {
-                    if (randomNumber < 0.08f) {
-                        Blob.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0, (int) (2 + (seededRand.nextFloat() * 8)));
+                if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL) || randomNumber < 0.002f) {
+                    if (randomNumber < 0.03f) {
+                        Blob.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.MARBLE), 0, (int) (2 + (seededRand.nextFloat() * 8)));
                     }
                 }
             }

@@ -8,6 +8,7 @@ uniform bool shadowsEnabled;
 uniform ivec2 res;
 uniform vec3 sun;
 uniform vec3 mun;
+uniform bool hasAtmosphere;
 uniform double time;
 uniform float timeOfDay;
 uniform int offsetIdx;
@@ -164,6 +165,9 @@ vec4 getLight(float x, float y, float z) {
 vec3 ogPos = vec3(0);
 vec3 sunColor = vec3(0);
 vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess, bool negateSun) {
+    if (!hasAtmosphere) {
+        fogginess *= 0.05f;
+    }
     float ogY = ogPos.y;
     float sunHeight = sun.y/size;
     float scattering = gradient(lightPos.y, ogY-63, ogY+437, 1.5f, -0.5f);
@@ -207,12 +211,10 @@ ivec4 block = ivec4(0);
 vec4 texColor = vec4(0);
 vec4 lightFog = vec4(0);
 bool hitSolidVoxel = false;
-float maxRayDist = 2500.f;
 vec4 prevTintAddition = vec4(0);
 
 void clearVars() {
     prevTintAddition = vec4(0);
-    maxRayDist = 2500.f;
     hitPos = vec3(0);
     solidHitPos = vec3(0);
     mapPos = vec3(0);
@@ -316,7 +318,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
             if (firstStep) {
                 firstStep = false;
                 mapPos = (lod2Pos*16)+(lodPos*4)+blockPos;
-                block = inBounds(mapPos, worldSize) ? getBlock(mapPos.x, mapPos.y, mapPos.z) : ivec4(0);
+                block = getBlock(mapPos.x, mapPos.y, mapPos.z);
             }
             updateLightFog(mapPos+0.5f);
             if (block.x > 0 && !(block.x == 1 && underwater)) {
@@ -357,9 +359,6 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                 prevTintAddition = vec4(0);
             }
         } else if (voxelPos.x < 8.0 && voxelPos.x >= 0.0 && voxelPos.y < 8.0 && voxelPos.y >= 0.0 && voxelPos.z < 8.0 && voxelPos.z >= 0.0) {
-            if (distance(ogPos, mapPos+(voxelPos/8)) >= maxRayDist) {
-                return vec4(-1);
-            }
             vec3 offsetVoxelPos = voxelPos;
             if (block.x == 4 && offsetVoxelPos.y > 2.0) {
                 bool windDir = timeOfDay > 0.f;
@@ -502,7 +501,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
             mini = ((blockPos - rayPos) + 0.5 - 0.5 * vec3(raySign)) * deltaDist;
             blockDist = max(mini.x, max(mini.y, mini.z));
             mapPos = (lod2Pos*16)+(lodPos*4)+blockPos;
-            block = inBounds(mapPos, worldSize) ? getBlock(mapPos.x, mapPos.y, mapPos.z) : ivec4(0);
+            block = getBlock(mapPos.x, mapPos.y, mapPos.z);
 
             if (entered != vec3(0)) {
                 vec3 intersect = rayPos + rayDir * blockDist;
@@ -573,11 +572,10 @@ vec4 raytrace(vec3 ogPos, vec3 newRayDir) {
 
     for (int i = 0; distance(rayPos, lod2Pos) < size/16 && i < size/8; i++) {
         mapPos = lod2Pos*16;
-        bool inBound = inBounds(lod2Pos, lod2Size);
-        if (!inBound && rayDir.y >= 0.f && inBounds(ogPos, worldSize)) {
+        if (!inBounds(lod2Pos, lod2Size)) {
             break;
         }
-        int lod = inBound ? texelFetch(blocks, ivec3(lod2Pos.z, lod2Pos.y, lod2Pos.x), 4).x : 0;
+        int lod = texelFetch(blocks, ivec3(lod2Pos.z, lod2Pos.y, lod2Pos.x), 4).x;
         if (lod > 0) {
             vec3 uv3d = vec3(0);
             vec3 intersect = vec3(0);
@@ -766,14 +764,11 @@ void main() {
     ogPos = invView[3].xyz;
     vec4 rasterColor = texture(raster_color, pos/res);
     vec4 rasterPos = texture(raster_pos, pos/res);
-    source = mun.y > sun.y ? mun : sun;
+    source = sun.y > 0 ? sun : mun;
     source.y = max(source.y, 500);
     bool isSky = rasterColor.a <= 0.f;
     bool isLight = false;
     updateLightFog(ogPos);
-    if (rasterColor.a >= 1) {
-        maxRayDist = distance(ogPos, rasterPos.xyz);
-    }
     fragColor = raytrace(ogPos, ogDir);
     if (isLightSource(block.xy) && max(texColor.r, max(texColor.g, texColor.b)) > 0.9f) {
         fragColor.rgb *= 1.5f;
@@ -819,6 +814,9 @@ void main() {
         }
     }
     float fogginess = clamp((clamp(sqrt(distance(ogPos, lightPos)/(size*0.66f))*gradient(lightPos.y, 63, 80, 1, 1+abs(noise(lightPos.xz)/3)), 0, 1)), 0.f, 1.f);
+    if (!hasAtmosphere) {
+        fogginess *= 0.05f;
+    }
     if (fragColor.a < 0 && !isSky) { fogginess *= 0.5f; }
     lighting.a = mix(lighting.a*shadowFactor, (vec4(0, 0, 0, 1)).a, fogginess);
     lighting = powLighting(lighting);
@@ -826,7 +824,7 @@ void main() {
         lighting.a*=waterDepth;
         vec4 lightingColor = getLightingColor(lightPos, lighting, isSky, fogginess, false);
         fragColor.rgb *= lightingColor.rgb;
-        fragColor.rgb = mix(fragColor.rgb*1.2f, lightingColor.rgb, fogginess);
+        fragColor.rgb = mix(fragColor.rgb, lightingColor.rgb, fogginess);
     }
     if (tint.a > 0) {
         normal = tintNormal;
@@ -834,6 +832,9 @@ void main() {
         lightPos = hitPos;
         shadowFactor = 1.f;
         fogginess = clamp((clamp(sqrt(distance(ogPos, lightPos)/(size*0.66f))*gradient(lightPos.y, 63, 80, 1, 1+abs(noise(lightPos.xz)/3)), 0, 1)), 0.f, 1.f);
+        if (!hasAtmosphere) {
+            fogginess *= 0.05f;
+        }
         lighting = (getLight(lightPos.x, lightPos.y, lightPos.z));
         lighting.a = mix(lighting.a*shadowFactor, (vec4(0, 0, 0, 1)).a, fogginess);
         lighting = powLighting(lighting);
@@ -847,7 +848,9 @@ void main() {
     if (hitBlock == ivec3(playerData[0], playerData[1], playerData[2]) && ui) {
         fragColor.rgb = mix(fragColor.rgb, vec3(0.7, 0.7, 1), 0.5f);
     }
-    fragColor.rgb += lightFog.rgb;
+    if (hasAtmosphere) {
+        fragColor.rgb += lightFog.rgb;
+    }
     fragColor = toLinear(fragColor);
     fragColor.a = depth;
 }

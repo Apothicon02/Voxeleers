@@ -218,7 +218,7 @@ public class Renderer {
     public static void init(Window window) throws Exception {
         createGLDebugger();
         scene = new ShaderProgram("scene.vert", new String[]{"scene.frag"},
-                new String[]{"res", "projection", "view", "selected", "offsetIdx", "checkerStep", "reverseChecker", "taa", "ui", "upscale", "renderDistance", "aoQuality", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
+                new String[]{"res", "projection", "view", "selected", "offsetIdx", "checkerStep", "reverseChecker", "taa", "ui", "upscale", "renderDistance", "aoQuality", "hasAtmosphere", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
         raster = new ShaderProgram("debug.vert", new String[]{"debug.frag"},
                 new String[]{"res", "projection", "view", "model", "selected", "offsetIdx", "color", "tex", "atlasOffset", "taa", "instanced", "ui", "alwaysUpfront", "renderDistance", "aoQuality", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
         unchecker = new ShaderProgram("scene.vert", new String[]{"unchecker.frag"},
@@ -424,30 +424,32 @@ public class Renderer {
     }
 
     public static void drawClouds() {
-        FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(196*16);
-        FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(196*4);
-        Random cloudRand = new Random(911);
-        float brightness = Math.clamp((640+sunPos.y())/640, 0.3f, 1.f);
-        for (int i = 0; i < 196; i++) {
-            float b = Math.max(0.25f, brightness-(cloudRand.nextFloat()/2));
-            Vector3f pos = new Vector3f(0, 0, 2000*(cloudRand.nextFloat()+0.05f)).rotateY((float) ((cloudRand.nextFloat()*10)+(time*(3+cloudRand.nextInt(2)))));
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                modelBuffer.put(new Matrix4f().rotateY(cloudRand.nextFloat()/10).setTranslation(pos.set(pos.x + 512, cloudRand.nextInt(200)+320-((Math.abs(pos.x)+Math.abs(pos.z))/10), pos.z + 512)).scale(10+cloudRand.nextInt(10), 3+cloudRand.nextInt(6), 10+cloudRand.nextInt(10)).get(stack.mallocFloat(16)));
+        if (World.worldType.hasVisualAtmo()) {
+            FloatBuffer modelBuffer = BufferUtils.createFloatBuffer(196 * 16);
+            FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(196 * 4);
+            Random cloudRand = new Random(911);
+            float brightness = Math.clamp((640 + sunPos.y()) / 640, 0.3f, 1.f);
+            for (int i = 0; i < 196; i++) {
+                float b = Math.max(0.25f, brightness - (cloudRand.nextFloat() / 2));
+                Vector3f pos = new Vector3f(0, 0, 2000 * (cloudRand.nextFloat() + 0.05f)).rotateY((float) ((cloudRand.nextFloat() * 10) + (time * (3 + cloudRand.nextInt(2)))));
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    modelBuffer.put(new Matrix4f().rotateY(cloudRand.nextFloat() / 10).setTranslation(pos.set(pos.x + 512, cloudRand.nextInt(200) + 320 - ((Math.abs(pos.x) + Math.abs(pos.z)) / 10), pos.z + 512)).scale(10 + cloudRand.nextInt(10), 3 + cloudRand.nextInt(6), 10 + cloudRand.nextInt(10)).get(stack.mallocFloat(16)));
+                }
+                colorBuffer.put(b);
+                colorBuffer.put(b);
+                colorBuffer.put(b);
+                colorBuffer.put(-1);
             }
-            colorBuffer.put(b);
-            colorBuffer.put(b);
-            colorBuffer.put(b);
-            colorBuffer.put(-1);
+            modelBuffer.flip();
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, modelBuffer, GL_DYNAMIC_DRAW);
+            colorBuffer.flip();
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
+            drawCubes(1024);
         }
-        modelBuffer.flip();
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelsSSBOId);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, modelsSSBOId);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, modelBuffer, GL_DYNAMIC_DRAW);
-        colorBuffer.flip();
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, colorsSSBOId);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, colorsSSBOId);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
-        drawCubes(1024);
     }
     public static void drawSunAndMoon() {
         try(MemoryStack stack = MemoryStack.stackPush()) {
@@ -659,6 +661,7 @@ public class Renderer {
             updateUniforms(scene, window);
             glUniform2i(scene.uniforms.get("res"), window.getWidth(), window.getHeight());
             glUniform1i(scene.uniforms.get("upscale"), upscale ? 1 : 0);
+            glUniform1i(scene.uniforms.get("hasAtmosphere"), World.worldType.hasVisualAtmo() ? 1 : 0);
             bindTextures();
             if (upscale) {
                 checkerStepX++;

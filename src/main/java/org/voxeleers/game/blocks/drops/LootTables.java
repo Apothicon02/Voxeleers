@@ -16,6 +16,7 @@ public class LootTables {
             PORECAP = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.PORECAP)),
             GRASSY_DIRT = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.GRASSY_DIRT)),
             DIRT = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.DIRT)),
+            REGOLITH = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.REGOLITH)),
             SAND = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.SAND)),
             SANDSTONE = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.SANDSTONE)),
             CLAY = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.CLAY)),

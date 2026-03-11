@@ -111,7 +111,9 @@ public class BlockTypes {
             STEEL_FRAME = create(new BlockType(new BlockProperties().blocksLight(false).obstructsHeightmap(false).permeable(true))),
             POWERED_VENT = create(new BlockType(new BlockProperties())), //65
             BLUE_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
-            RED_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties));
+            RED_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
+            REGOLITH = create(List.of(BlockTags.sediment), new PowderBlockType(GRAVEL.blockProperties.copy().blockSFX(new SFX[]{Sounds.GRAVEL_STEP1, Sounds.GRAVEL_STEP2}, 0.4f, 1,
+                    new SFX[]{Sounds.GRAVEL_STEP1, Sounds.GRAVEL_STEP2}, 0.4f, 1)));
 
     private static BlockType create(List<BlockTag> tags, BlockType type) {
         for (BlockTag tag : tags) {

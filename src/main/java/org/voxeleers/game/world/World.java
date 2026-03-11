@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 
 import static org.voxeleers.engine.Utils.*;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -43,8 +42,8 @@ public class World {
     public static int height = 320;
     public static int seaLevel = 63;
     public static boolean generated = false;
-    public static WorldType worldType = WorldTypes.TEMPERATE;
-    public static WorldType nextWorldType = WorldTypes.BOREAL;
+    public static WorldType worldType = WorldTypes.LUNA;
+    public static WorldType nextWorldType = WorldTypes.MARS;
     public static ObjectOpenHashSet<Item> items = new ObjectOpenHashSet<>();
     public static Int2ObjectOpenHashMap<BlockEntity> blockEntities = new Int2ObjectOpenHashMap<>();
     public static short[][] blocks = new short[height][(size*size)*2];

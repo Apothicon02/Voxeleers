@@ -18,8 +18,8 @@ import org.voxeleers.game.world.LightHelper;
 import org.voxeleers.game.world.World;
 import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.rendering.Renderer;
-import org.voxeleers.game.world.types.BorealWorldType;
-import org.voxeleers.game.world.types.TemperateWorldType;
+import org.voxeleers.game.world.types.LunaWorldType;
+import org.voxeleers.game.world.types.MarsWorldType;
 import org.joml.*;
 import org.voxeleers.engine.*;
 import org.lwjgl.opengl.GL;
@@ -125,10 +125,10 @@ public class Main {
                     } else if (wasTDown && !window.isKeyPressed(SDL_SCANCODE_T)) {
                         isSwappingWorldType = true;
                         isSaving = true;
-                        if (World.worldType instanceof TemperateWorldType) {
-                            World.nextWorldType = new BorealWorldType();
-                        } else if (World.worldType instanceof BorealWorldType) {
-                            World.nextWorldType = new TemperateWorldType();
+                        if (World.worldType instanceof MarsWorldType) {
+                            World.nextWorldType = new LunaWorldType();
+                        } else if (World.worldType instanceof LunaWorldType) {
+                            World.nextWorldType = new MarsWorldType();
                         }
                     } else if (wasCDown && !window.isKeyPressed(SDL_SCANCODE_C)) {
                         player.creative = !player.creative;
@@ -377,10 +377,10 @@ public class Main {
                         shouldActuallySave = false;
                         if (isSwappingWorldType) {
                             World.clearData();
-                            if (World.worldType instanceof TemperateWorldType) {
-                                World.worldType = new BorealWorldType();
-                            } else if (World.worldType instanceof BorealWorldType) {
-                                World.worldType = new TemperateWorldType();
+                            if (World.worldType instanceof MarsWorldType) {
+                                World.worldType = new LunaWorldType();
+                            } else if (World.worldType instanceof LunaWorldType) {
+                                World.worldType = new MarsWorldType();
                             }
                             World.worldType.generate();
                             Renderer.initiallyFillTextures(window, false);
