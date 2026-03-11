@@ -272,11 +272,13 @@ public class Renderer {
         glUniform1i(program.uniforms.get("reflectionShadows"), reflectionShadows ? 1 : 0);
         sunPos.set(0, World.size*2, 0);
         sunPos.rotateZ((float) time);
-        sunPos.set(sunPos.x+(World.size/2f), sunPos.y, sunPos.z+(World.size/2f));
+        sunPos.rotateX(0.5f);
+        sunPos.set(sunPos.x+(World.size/2f), sunPos.y, sunPos.z+(World.size/2f)+128);
         glUniform3f(program.uniforms.get("sun"), sunPos.x, sunPos.y, sunPos.z);
         munPos.set(0, World.size*-2, 0);
         munPos.rotateZ((float) time);
-        munPos.set(munPos.x+(World.size/2f), munPos.y, munPos.z+(World.size/2f));
+        sunPos.rotateX(-0.2f);
+        munPos.set(munPos.x+(World.size/2f), munPos.y, munPos.z+(World.size/2f)+128);
         glUniform3f(program.uniforms.get("mun"), munPos.x, munPos.y, munPos.z);
     }
 
@@ -456,7 +458,12 @@ public class Renderer {
         try(MemoryStack stack = MemoryStack.stackPush()) {
             glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(munPos).scale(20).get(stack.mallocFloat(16)));
         }
-        glUniform4f(raster.uniforms.get("color"), 0.63f, 0.58f, 0.66f, 1);
+        glUniform4f(raster.uniforms.get("color"), 1.f, 0.88f, 1.f, 1);
+        drawCube();
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().rotateXYZ(0.5f, 0.5f, 0.5f).setTranslation(munPos.x()+450, munPos.y(), munPos.z()+900).scale(15).get(stack.mallocFloat(16)));
+        }
+        glUniform4f(raster.uniforms.get("color"), 1.f, 0.88f, 0.93f, 1);
         drawCube();
     }
     public static Vector3f[] starColors = new Vector3f[]{new Vector3f(0.9f, 0.95f, 1.f), new Vector3f(1, 0.95f, 0.4f), new Vector3f(0.72f, 0.05f, 0), new Vector3f(0.42f, 0.85f, 1.f), new Vector3f(0.04f, 0.3f, 1.f), new Vector3f(1, 1, 0.1f)};
@@ -577,6 +584,7 @@ public class Renderer {
         Item item = player.inv.getItem(player.inv.selectedSlot);
         glUniform1i(raster.uniforms.get("alwaysUpfront"), 1);
         if (item != null) {
+            glUniform1i(raster.uniforms.get("tex"), 1); // rendering item
             glUniform4f(raster.uniforms.get("color"), 1, 1, 1, 1);
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitch().invert().translate(0.045f + Math.max(0, handTilt() * 0.03f), -0.115f + (player.bobbing * 0.05f) - Math.min(0, handTilt() * 0.1f), -0.03f + (handTilt() * 0.1f)).rotateY((float) Math.toRadians(-90.f)).rotateZ((float) Math.toRadians(55.f + (handTilt() < 0 ? (handTilt() * 80) : (handTilt() * 40)) + HandManager.getTilt())).scale(0.125f).get(stack.mallocFloat(16)));
@@ -636,6 +644,7 @@ public class Renderer {
             drawStars();
             drawItems();
             glUniform1i(raster.uniforms.get("instanced"), 0);
+            glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
             drawSunAndMoon();
 //            drawCenter();
 //            drawDebugWheel();

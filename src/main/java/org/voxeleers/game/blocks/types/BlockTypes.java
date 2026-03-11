@@ -107,11 +107,10 @@ public class BlockTypes {
             STEAM_BUCKET = create(List.of(BlockTags.buckets, BlockTags.cantBreakBlocks), new FullBucketBlockType(BUCKET.blockProperties)),
             WATER_BUCKET = create(List.of(BlockTags.buckets, BlockTags.cantBreakBlocks), new FullBucketBlockType(BUCKET.blockProperties)),
             FLINT_BATON = create(new BlockType(new BlockProperties().proficiencies(Map.of(BlockTags.blunt, 0.75f)).isSolid(false).isCollidable(false).blocksLight(false).obstructsHeightmap(false))),
-            OBSIDIAN_MACE = create(new BlockType(FLINT_BATON.blockProperties.copy().proficiencies(Map.of(BlockTags.chipping, 0.75f)).blockSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 1, 1,
-                    new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 1, 1))),
             STICK = create(new BlockType(FLINT_BATON.blockProperties.copy().isFluidReplaceable(true).blockSFX(new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1,
                     new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1))),
-            STICK_PLATFORM = create(new BlockType(STICK.blockProperties.copy().isCollidable(true))),
+            STICK_PLATFORM = create(new BlockType(STICK.blockProperties.copy().isCollidable(true))), //65
+            STEEL_FRAME = create(new BlockType(new BlockProperties().blocksLight(false).obstructsHeightmap(false).permeable(true))),
             POWERED_VENT = create(new BlockType(new BlockProperties()));
 
     private static BlockType create(List<BlockTag> tags, BlockType type) {

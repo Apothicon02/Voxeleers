@@ -125,7 +125,7 @@ float whiteNoise(vec2 coords) {
 }
 
 bool castsFullShadow(ivec4 block) {
-    return block.x != 4 && block.x != 5 && block.x != 14 && block.x != 18 && block.x != 30 && block.x != 52 && block.x != 53;
+    return block.x != 4 && block.x != 5 && block.x != 14 && block.x != 18 && block.x != 30 && block.x != 52 && block.x != 53 && block.x != 66 && block.x != 67;
 }
 
 vec4 getVoxel(int x, int y, int z, int bX, int bY, int bZ, int blockType, int blockSubtype) {
@@ -608,7 +608,7 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
     if (actuallyCastShadowRay) {
         shadowFactor = 1.f;
     }
-    float normalRounding = eigth*3;//*(1+min(3, dist/10));
+    float normalRounding = eigth*3;//*(clamp(dist/25, 0.005f, 3.f));
     vec3 subbed = vec3(dot(normal.x, ogDir.x), dot(normal.y, ogDir.y), dot(normal.z, ogDir.z));
     bool xHighest = subbed.x > subbed.y && subbed.x > subbed.z;
     bool yHighest = subbed.y > subbed.x && subbed.y > subbed.z;
@@ -759,7 +759,6 @@ void main() {
     vec4 rasterPos = texture(raster_pos, pos/res);
     source = mun.y > sun.y ? mun : sun;
     source.y = max(source.y, 500);
-    source.z += 128;
     bool isSky = rasterColor.a <= 0.f;
     bool isLight = false;
     updateLightFog(ogPos);

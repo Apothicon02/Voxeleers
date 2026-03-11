@@ -58,6 +58,11 @@ public class BlockProperties implements Cloneable {
         this.needsSupport = needsSupport;
         return this;
     }
+    protected boolean permeable = false;
+    public BlockProperties permeable(boolean permeable) {
+        this.permeable = permeable;
+        return this;
+    }
     public BlockSFX blockSFX = new BlockSFX(new SFX[]{Sounds.ROCK_PLACE1, Sounds.ROCK_PLACE2}, 1f, 0.5f, new SFX[]{Sounds.ROCK_PLACE1, Sounds.ROCK_PLACE2}, 1f, 0.5f);
     public BlockProperties blockSFX(SFX[] placeIds, float placeGain, float placePitch, SFX[] stepIds, float stepGain, float stepPitch) {
         this.blockSFX = new BlockSFX(placeIds, placeGain, placePitch, stepIds, stepGain, stepPitch);
