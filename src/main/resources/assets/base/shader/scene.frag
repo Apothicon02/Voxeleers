@@ -437,8 +437,8 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                     if (isFullSemitransparentBlock(block.xy)) {
                         steppingBlock = true;
                     }
-                    float brightness = dot(normal, source)*-0.0002f;
-                    float tintMul = clamp(0.75f+brightness, 0.5f, 1.f);
+                    float brightness = dot((tint.a > 0 ? -1 : 1) * normal, source+vec3(0, height, 0))*-0.0001f;
+                    float tintMul = clamp(0.875f+brightness, 0.75f, 1.f);
                     if (prevTintAddition != voxelColor) {
                         prevTintAddition = voxelColor;
                         tint.rgb += voxelColor.rgb*tintMul;
@@ -608,7 +608,8 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
     if (actuallyCastShadowRay) {
         shadowFactor = 1.f;
     }
-    float normalRounding = eigth*3;//*(clamp(dist/25, 0.005f, 3.f));
+    float shadeNormOffFade = clamp(distance(ogRayPos, prevPos)/20, 1.f, 3.f);
+    float normalRounding = eigth*shadeNormOffFade;
     vec3 subbed = vec3(dot(normal.x, ogDir.x), dot(normal.y, ogDir.y), dot(normal.z, ogDir.z));
     bool xHighest = subbed.x > subbed.y && subbed.x > subbed.z;
     bool yHighest = subbed.y > subbed.x && subbed.y > subbed.z;
@@ -681,7 +682,7 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
             vNorm *= 0;
         }
     }
-    vec3 shadowPos = underwater ? mix((floor(hitPos*8)+0.5f)/8, hitPos, abs(tintNormal)) : (mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal))+(shadowPosOffset*2));
+    vec3 shadowPos = underwater ? mix((floor(hitPos*8)+0.5f)/8, hitPos, abs(tintNormal)) : prevPos+(shadowPosOffset*shadeNormOffFade);//(mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal)));
     if (actuallyCastShadowRay) {
         vec3 sunDir = vec3(normalize(source - (worldSize/2)));
         vec4 prevTint = tint;
@@ -696,13 +697,13 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
             shadowFactor = min(0.9f, mix(0.75f, 0.9f, min(1, distance(shadowPos, hitPos)/420))); //shadowFactor = mix(1.f, min(0.9f, mix(0.75f, 0.9f, min(1, distance(shadowPos, hitPos)/420))), waterDepth);
         }
         vec4 normalizedTint = tint/max(1.f, max(tint.r, max(tint.g, tint.b)));
-        shadowFactor = max(0.75f, shadowFactor-(normalizedTint.a/4));
+        shadowFactor = max(0.75f, shadowFactor-(tint.a > 0 ? 0.125f : 0.f));
         isShadow = false;
-        tint = prevTint;
+        tint = prevTint+(tint*shadowFactor);
         hitPos = oldHitPos;
     }
-    float brightness = (dot(vNorm, source)*-0.0002f)*waterDepth;
-    color.rgb *= clamp(0.75f+brightness, 0.5f, shadowFactor < 1.f ? 0.5f : 1.f);
+    float brightness = (dot(vNorm, source+vec3(0, height, 0))*-0.0002f)*waterDepth;
+    color.rgb *= clamp(0.75f+brightness, 0.5f, 1.f);
     return color;
 }
 
@@ -820,12 +821,12 @@ void main() {
         fragColor.rgb = mix(fragColor.rgb*1.2f, lightingColor.rgb, fogginess);
     }
     if (tint.a > 0) {
-        float reflectivity = wasEverUnderwater ? clamp(distance(lightPos, ogPos)/128, 0, 1) : 0.f;//dot(normal, ogDir);
-        lightPos = hitPos;
         normal = tintNormal;
+        float reflectivity = wasEverUnderwater ? clamp(distance(lightPos, ogPos)/128, 0, 1) : dot(normal, ogDir)/4;//dot(normal, ogDir);
+        lightPos = hitPos;
         vec4 normalizedTint = tint/max(1.f, max(tint.r, max(tint.g, tint.b)));
         shadowFactor = 1.f;
-        normalizedTint = getShadow(normalizedTint, false, false, 0.f);
+        //normalizedTint = getShadow(normalizedTint, false, false, 0.f);
         fogginess = clamp((clamp(sqrt(distance(ogPos, lightPos)/(size*0.66f))*gradient(lightPos.y, 63, 80, 1, 1+abs(noise(lightPos.xz)/3)), 0, 1)), 0.f, 1.f);
         lighting = (getLight(lightPos.x, lightPos.y, lightPos.z));
         lighting.a = mix(lighting.a*shadowFactor, (vec4(0, 0, 0, 1)).a, fogginess);
