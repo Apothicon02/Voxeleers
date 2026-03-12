@@ -18,6 +18,7 @@ import org.joml.Vector3i;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Random;
 
 import static org.lwjgl.opengl.GL20.glUniform4f;
@@ -30,7 +31,7 @@ import static org.voxeleers.game.world.World.getLight;
 public class LunaWorldType extends WorldType {
     private Path worldPath = Path.of(Main.mainFolder+"world0/luna");
     public static Random seededRand = new Random(35311350L);
-    public static Cell globalAtmo = new Cell();
+    public static Cell globalAtmo = new Cell(0, new ArrayList<>());
     public static ByteArrayList globalElements = new ByteArrayList();
 
     @Override

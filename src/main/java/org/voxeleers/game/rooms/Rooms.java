@@ -128,8 +128,7 @@ public class Rooms {
                             if (massLost < 0) {
                                 massLost = 0;
                             }
-                            double specificHeat = Elements.elementMap.get(molecule.element).specificHeat;
-                            long energyFlow = (long) (Math.max(cell.energy * massLost, tempFlow) * specificHeat);
+                            long energyFlow = (long) (Math.max(cell.energy * massLost, tempFlow));
                             if (energyFlow != 0) {
                                 cell.energy -= energyFlow;
                                 nCell.energy += energyFlow;

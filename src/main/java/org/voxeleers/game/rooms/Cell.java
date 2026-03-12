@@ -40,11 +40,13 @@ public class Cell {
             thermalMass += element.specificHeat*molecule.amount;
         }
         double temperature = energy/thermalMass;
-        return mass*UGC*temperature;
+        double pressure = mass*UGC*temperature;
+        return Double.isNaN(pressure) ? 0.d : pressure;
     }
 
     public double getMolesFromPressure(double pressure) {
-        return pressure/(UGC*getTemperature());
+        double moles = pressure/(UGC*getTemperature());
+        return Double.isNaN(moles) ? 0.d : moles;
     }
 
     public double getTemperature() {
@@ -53,7 +55,8 @@ public class Cell {
             Element element = Elements.elementMap.get(molecule.element);
             mass += element.specificHeat*molecule.amount;
         }
-        return energy/mass;
+        double temperature = energy/mass;
+        return Double.isNaN(temperature) ? 0.d : temperature;
     }
 
     public long getEnergyFromTemperature(double temp) {
