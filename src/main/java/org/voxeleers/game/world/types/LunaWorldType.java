@@ -41,7 +41,7 @@ public class LunaWorldType extends WorldType {
     }
     @Override
     public String getWorldTypeName() {
-        return "Mars";
+        return "Luna";
     }
     @Override
     public Cell getGlobalAtmo() {return globalAtmo;}

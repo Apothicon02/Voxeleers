@@ -44,6 +44,10 @@ public class BlockType {
         return blockProperties.obstructsHeightmap;
     }
 
+    public boolean permeable() {
+        return !blockProperties.isSolid || blockProperties.permeable;
+    }
+
     public BlockType(BlockProperties blockProperties) {
         this.blockProperties = blockProperties;
     }

@@ -1,14 +1,19 @@
 package org.voxeleers.game.gameplay;
 
+import org.lwjgl.openal.AL10;
 import org.voxeleers.Main;
 import org.voxeleers.engine.Camera;
 import org.voxeleers.engine.Utils;
+import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.audio.Sounds;
 import org.voxeleers.game.audio.Source;
 import org.voxeleers.game.blocks.BlockTags;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.rendering.Renderer;
+import org.voxeleers.game.rooms.Cell;
+import org.voxeleers.game.rooms.Room;
+import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
 import org.joml.*;
 
@@ -168,7 +173,7 @@ public class Player {
                         if (recordFriction) {
                             if (typeId == 7) { //kyanite
                                 friction = Math.min(friction, 0.95f);
-                            } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 14 || typeId == 15) { //glass
+                            } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 66 || typeId == 67) { //glass
                                 friction = Math.min(friction, 0.85f);
                             } else if (BlockTags.planks.tagged.contains(block.x)) { //wood
                                 friction = Math.min(friction, 0.5f);
@@ -181,7 +186,7 @@ public class Player {
                         if (recordBounciness) {
                             if (typeId == 7) { //kyanite
                                 bounciness = Math.min(bounciness, -2f);
-                            } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 14 || typeId == 15) { //glass
+                            } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 66 || typeId == 67) { //glass
                                 bounciness = Math.min(bounciness, -0.33f);
                             }
                         }
@@ -447,24 +452,32 @@ public class Player {
     public float windGain = 0f;
     int ambientWind = 0;
     public void doSounds() {
-        long currentTime = System.currentTimeMillis();
-        if (currentTime-timeSinceAmbientSoundAttempt >= 1000) {
-            timeSinceAmbientSoundAttempt = currentTime;
-            if (windSource.soundPlaying == -1) {
-                windSource.play(Sounds.WIND);
-            }
-            if (World.inBounds(blockPos.x, blockPos.y, blockPos.z)) {
-                int sunLight = World.getLight(blockPos).w;
-                if (waterFlowingSource.soundPlaying == -1) {
-                    waterFlowingSource.play(Sounds.FLOW);
+        AudioController.setListenerData(new Vector3f(pos.x(), pos.y()+eyeHeight, pos.z()), vel, new float[6]);
+        Room room = Rooms.getRoom(blockPos);
+        Cell cell = World.worldType.getGlobalAtmo();// room == null ? World.worldType.getGlobalAtmo() : room.cells.get(Rooms.packCellPos(blockPos));
+        double pressure = cell.getPressure();
+        if (pressure > 0.05f) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - timeSinceAmbientSoundAttempt >= 1000) {
+                timeSinceAmbientSoundAttempt = currentTime;
+                if (windSource.soundPlaying == -1) {
+                    windSource.play(Sounds.WIND);
                 }
-                ambientWind = Math.min(333, ambientWind + sunLight);
-                windGain = ambientWind/333f;
+                if (World.inBounds(blockPos.x, blockPos.y, blockPos.z)) {
+                    int sunLight = World.getLight(blockPos).w;
+                    if (waterFlowingSource.soundPlaying == -1) {
+                        waterFlowingSource.play(Sounds.FLOW);
+                    }
+                    ambientWind = Math.min(333, ambientWind + sunLight);
+                    windGain = ambientWind / 333f;
+                }
             }
+            float velocity = (Math.max(Math.abs(vel.x + movement.x), Math.max(Math.abs(vel.y + movement.y), Math.abs(vel.z + movement.z))));
+            windSource.setGain(Math.clamp(windGain + (Math.max(0.05f, velocity / 10) - 0.05f), 0, 1));
+            ambientWind = Math.max(0, ambientWind - 1);
+        } else {
+            windSource.setGain(0.f);
         }
-        float velocity = (Math.max(Math.abs(vel.x+movement.x), Math.max(Math.abs(vel.y+movement.y), Math.abs(vel.z+movement.z))));
-        windSource.setGain(Math.clamp(windGain+(Math.max(0.05f, velocity/10)-0.05f), 0, 1));
-        ambientWind = Math.max(0, ambientWind-1);
     }
 
     public void setCameraMatrix(float[] matrix) {

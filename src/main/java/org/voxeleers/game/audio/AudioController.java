@@ -4,6 +4,10 @@ import org.voxeleers.Main;
 import org.joml.Vector3f;
 import org.lwjgl.openal.*;
 import org.lwjgl.system.MemoryUtil;
+import org.voxeleers.game.rooms.Cell;
+import org.voxeleers.game.rooms.Room;
+import org.voxeleers.game.rooms.Rooms;
+import org.voxeleers.game.world.World;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +50,18 @@ public class AudioController {
         AL10.alListener3f(AL10.AL_POSITION, pos.x, pos.y, pos.z);
         AL10.alListener3f(AL10.AL_VELOCITY, vel.x, vel.y, vel.z);
         AL10.alListenerfv(AL10.AL_ORIENTATION, orientation);
+        if (Main.player != null) {
+            Room room = Rooms.getRoom(Main.player.blockPos);
+            Cell cell = room == null ? World.worldType.getGlobalAtmo() : room.cells.get(Rooms.packCellPos(Main.player.blockPos));
+            double pressure = cell.getPressure();
+            if (Double.isNaN(pressure)) {
+                pressure = 0.f;
+            }
+            float gain = Math.max(0.1f, (float) (pressure / 500000000.f));
+            AL10.alListenerf(AL10.AL_GAIN, gain);
+        } else {
+            AL10.alListenerf(AL10.AL_GAIN, 1.f);
+        }
     }
 
     public static SFX loadSound(String file) {

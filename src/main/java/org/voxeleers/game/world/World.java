@@ -6,6 +6,10 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.voxeleers.Main;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.game.ScheduledTicker;
+import org.voxeleers.game.audio.AudioController;
+import org.voxeleers.game.audio.SFX;
+import org.voxeleers.game.audio.Sounds;
+import org.voxeleers.game.audio.Source;
 import org.voxeleers.game.blocks.entities.BlockEntity;
 import org.voxeleers.game.blocks.entities.BlockEntityTypes;
 import org.voxeleers.game.blocks.types.BlockType;
@@ -14,6 +18,9 @@ import org.voxeleers.game.blocks.types.LightBlockType;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.rendering.Renderer;
 import org.voxeleers.game.rendering.Textures;
+import org.voxeleers.game.rooms.Cell;
+import org.voxeleers.game.rooms.Molecule;
+import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.types.WorldType;
 import org.voxeleers.game.world.types.WorldTypes;
@@ -164,57 +171,110 @@ public class World {
         blocksLOD2[y/16][condensePosLOD2(x, z)] = (short)(clear ? 0 : 1);
     }
 
-    public static void setBlock(int x, int y, int z, int block, int blockSubType, boolean replace, boolean priority, int tickDelay, boolean silent) {
+    public static boolean setBlock(int x, int y, int z, int block, int blockSubType, boolean replace, boolean priority, int tickDelay, boolean silent) {
         Vector2i existing = getBlock(x, y, z);
         if (existing != null && (replace || existing.x() == 0)) {
             Vector3i pos = new Vector3i(x, y, z);
             int xyz = Rooms.packCellPos(x, y, z);
-            BlockEntity existingBlockEntity = World.blockEntities.get(xyz);
-            if (existingBlockEntity != null) {existingBlockEntity.remove(xyz);}
-            Vector4i oldLight = getLight(pos);
-            byte r = 0;
-            byte g = 0;
-            byte b = 0;
+            BlockType existingType = BlockTypes.blockTypeMap.get(existing.x);
             Vector2i newBlock = new Vector2i(block, blockSubType);
             BlockType blockType = BlockTypes.blockTypeMap.get(block);
-            BlockType existingType = BlockTypes.blockTypeMap.get(existing.x);
-            boolean lightChanged = existingType instanceof LightBlockType;
-            if (blockType instanceof LightBlockType lType) {
-                lightChanged = true;
-                r = lType.lightBlockProperties().r;
-                g = lType.lightBlockProperties().g;
-                b = lType.lightBlockProperties().b;
-            }
-            BlockType oldBlockType = existingType;
-            setBlock(x, y, z, block, blockSubType);
-            BlockEntity blockEntity = BlockEntityTypes.blockTypeToEntity.get(blockType);
-            if (blockEntity != null) {
-                World.blockEntities.put(xyz, blockEntity.create());
-            }
-            if (tickDelay > 0) {
-                ScheduledTicker.scheduleTick(Main.currentTick+tickDelay, pos, 0);
-            }
-            if (!lightChanged) {
-                lightChanged = blockType.blocksLight(newBlock) != oldBlockType.blocksLight(newBlock);
-            }
-            if (lightChanged) {
-                setLight(x, y, z, r, g, b, 0);
+            boolean shouldActuallyPlaceBlock = true;
+            if (existingType.permeable() != blockType.permeable()) {
+                if (existingType.permeable()) { //if placing solid block in cell of gas
+                    Room room = Rooms.getRoom(xyz);
+                    if (room != null) {
+                        Cell removingCell = room.cells.get(xyz);
+                        if (removingCell.energy > 0) { //allow blocks to be placed in vacuums
+                            shouldActuallyPlaceBlock = false;
+                            Vector3i[] neighbors = new Vector3i[]{
+                                    (new Vector3i(pos.x() + 1, pos.y(), pos.z())),
+                                    (new Vector3i(pos.x() - 1, pos.y(), pos.z())),
+                                    (new Vector3i(pos.x(), pos.y() + 1, pos.z())),
+                                    (new Vector3i(pos.x(), pos.y() - 1, pos.z())),
+                                    (new Vector3i(pos.x(), pos.y(), pos.z() + 1)),
+                                    (new Vector3i(pos.x(), pos.y(), pos.z() - 1))};
+                            for (Vector3i nPos : neighbors) {
+                                int nXyz = Rooms.packCellPos(nPos);
+                                Cell nCell = room.cells.get(nXyz);
+                                if (nCell != null) {
+                                    nCell.energy += removingCell.energy;
+                                    for (Molecule molecule : removingCell.molecules) {
+                                        boolean merged = false;
+                                        for (Molecule nMolecule : nCell.molecules) {
+                                            if (nMolecule.element == molecule.element) {
+                                                nMolecule.amount += molecule.amount;
+                                                merged = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!merged) {
+                                            nCell.molecules.add(molecule);
+                                        }
+                                    }
+                                    room.cells.remove(xyz);
+                                    shouldActuallyPlaceBlock = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
-            if (blockType.obstructingHeightmap(new Vector2i(block, blockSubType)) != oldBlockType.obstructingHeightmap(existing)) {
-                updateHeightmap(x, z);
-            }
+            if (shouldActuallyPlaceBlock) {
+                BlockEntity existingBlockEntity = World.blockEntities.get(xyz);
+                if (existingBlockEntity != null) {
+                    existingBlockEntity.remove(xyz);
+                }
+                Vector4i oldLight = getLight(pos);
+                byte r = 0;
+                byte g = 0;
+                byte b = 0;
+                boolean lightChanged = existingType instanceof LightBlockType;
+                if (blockType instanceof LightBlockType lType) {
+                    lightChanged = true;
+                    r = lType.lightBlockProperties().r;
+                    g = lType.lightBlockProperties().g;
+                    b = lType.lightBlockProperties().b;
+                }
+                setBlock(x, y, z, block, blockSubType);
+                Rooms.detectRooms(x, y, z);
+                BlockEntity blockEntity = BlockEntityTypes.blockTypeToEntity.get(blockType);
+                if (blockEntity != null) {
+                    World.blockEntities.put(xyz, blockEntity.create());
+                }
+                if (tickDelay > 0) {
+                    ScheduledTicker.scheduleTick(Main.currentTick + tickDelay, pos, 0);
+                }
+                if (!lightChanged) {
+                    lightChanged = blockType.blocksLight(newBlock) != existingType.blocksLight(newBlock);
+                }
+                if (lightChanged) {
+                    setLight(x, y, z, r, g, b, 0);
+                }
 
-            if (lightChanged) {
-                LightHelper.recalculateLight(pos, Math.max(oldLight.x, r), Math.max(oldLight.y, g), Math.max(oldLight.z, b), oldLight.w);
-            }
+                if (blockType.obstructingHeightmap(new Vector2i(block, blockSubType)) != existingType.obstructingHeightmap(existing)) {
+                    updateHeightmap(x, z);
+                }
 
-            if (block == 0) {
-                existingType.onPlace(pos, existing, silent);
+                if (lightChanged) {
+                    LightHelper.recalculateLight(pos, Math.max(oldLight.x, r), Math.max(oldLight.y, g), Math.max(oldLight.z, b), oldLight.w);
+                }
+
+                if (block == 0) {
+                    existingType.onPlace(pos, existing, silent);
+                } else {
+                    BlockTypes.blockTypeMap.get(block).onPlace(pos, new Vector2i(block, blockSubType), silent);
+                }
+                return true;
             } else {
-                BlockTypes.blockTypeMap.get(block).onPlace(pos, new Vector2i(block, blockSubType), silent);
+                Source source = new Source(new Vector3f(x, y, z), 1.f, 1.f, 0.f, 0);
+                AudioController.disposableSources.add(source);
+                source.play(Sounds.CLOUD);
             }
         }
+        return false;
     }
 
     public static void setBlockNoUpdates(int x, int y, int z, int block, int blockSubType) {
@@ -236,8 +296,6 @@ public class World {
                 glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
                 glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, new int[]{block, blockSubType, 0, 0});
                 updateLODS(x, y, z);
-                Rooms.removeCell(new Vector3i(x, y, z));
-                Rooms.detectRooms(x, y, z);
             } else if (block > 0) {
                 blocksLOD2[y/16][condensePosLOD2(x, z)] = (short)(block);
                 blocksLOD[y/4][condensePosLOD(x, z)] = (short)(block);

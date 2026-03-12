@@ -79,7 +79,7 @@ public class Rooms {
                     Cell nCell = room.cells.get(packCellPos(nPos.x(), nPos.y(), nPos.z()));
                     if (nCell == null) {
                         nCell = new Cell(globalCell);
-                        if (BlockTypes.blockTypeMap.get(World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z())).blockProperties.isSolid) {
+                        if (!BlockTypes.blockTypeMap.get(World.getBlockTypeUnchecked(nPos.x(), nPos.y(), nPos.z())).permeable()) {
                             flowMoles = false;
                             flowAnything = false;//disables global temperature exchange through walls when uncommented
                         } else {
@@ -330,9 +330,9 @@ public class Rooms {
             return false;
         }
     }
-    public static boolean getCell(int x, int y, int z, int packed) {
+    private static boolean getCell(int x, int y, int z, int packed) {
         if (!currentScan.cells.containsKey(packed)) {
-            if (!BlockTypes.blockTypeMap.get(World.getBlockTypeUnchecked(x, y, z)).blockProperties.isSolid) {
+            if (BlockTypes.blockTypeMap.get(World.getBlockTypeUnchecked(x, y, z)).permeable()) {
                 currentScan.cells.put(packed, null);
                 return true;
             }
