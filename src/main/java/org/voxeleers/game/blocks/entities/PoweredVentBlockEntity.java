@@ -4,6 +4,7 @@ import org.joml.Vector2i;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
 import org.voxeleers.Main;
+import org.voxeleers.engine.Utils;
 import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.audio.Sounds;
 import org.voxeleers.game.audio.Source;
@@ -89,10 +90,10 @@ public class PoweredVentBlockEntity extends BlockEntity {
                 inCell.molecules.removeIf(inMolecule -> inMolecule.amount <= 0);
             }
         }
-        boolean inAudibleRange = pos.distance(Main.player.blockPos) < 100;
+        boolean inAudibleRange = pos.distance(Main.player.blockPos) < 50;
         if (inAudibleRange && flowed) {
             if (source == null) {
-                source = new Source(new Vector3f(pos.x() + 0.5f, pos.y() + 0.5f, pos.z() + 0.5f), 1.f, 1.3f, 0.f, 1);
+                source = new Source(new Vector3f(pos.x() + 0.5f, pos.y() + 0.5f, pos.z() + 0.5f), 1.f, 1.1f+Utils.randomFloat(0.2f), 0.f, 1); //random pitch offset is to prevent audio summing
                 source.play(Sounds.VENT);
             }
         } else if (source != null) {

@@ -11,8 +11,12 @@ import java.io.InputStreamReader;
 import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Random;
 
 public class Utils {
+    public static Random random = new Random(67);
+    public static float randomFloat(float mul) {return random.nextFloat()*mul;}
+    public static float randomFloat() {return random.nextFloat();}
     public static Vector3f vec3iToVec3f(Vector3i vec3i) {
         return new Vector3f(vec3i.x, vec3i.y, vec3i.z);
     }

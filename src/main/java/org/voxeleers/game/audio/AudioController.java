@@ -18,8 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.lwjgl.openal.AL10.AL_NO_ERROR;
-import static org.lwjgl.openal.AL10.alGetError;
 import static org.lwjgl.openal.ALC11.ALC_MONO_SOURCES;
 import static org.lwjgl.openal.ALC11.ALC_STEREO_SOURCES;
 
@@ -30,12 +28,12 @@ public class AudioController {
     public static ALCapabilities alCapabilities;
 
     public static void init() {
-        String defaultDeviceName = ALC10.alcGetString(0, ALC10.ALC_DEFAULT_DEVICE_SPECIFIER);
-        device = ALC10.alcOpenDevice(defaultDeviceName);
+        String defaultDeviceName = ALC11.alcGetString(0, ALC11.ALC_DEFAULT_DEVICE_SPECIFIER);
+        device = ALC11.alcOpenDevice(defaultDeviceName);
         alcCapabilities = ALC.createCapabilities(device);
 
-        context = ALC10.alcCreateContext(device, new int[]{ALC_MONO_SOURCES, 16256, ALC_STEREO_SOURCES, 128, 0});
-        ALC10.alcMakeContextCurrent(context);
+        context = ALC11.alcCreateContext(device, new int[]{ALC_MONO_SOURCES, 16256, ALC_STEREO_SOURCES, 128, SOFTOutputMode.ALC_OUTPUT_MODE_SOFT, SOFTOutputMode.ALC_SURROUND_7_1_SOFT, 0});
+        ALC11.alcMakeContextCurrent(context);
 
         alCapabilities = AL.createCapabilities(alcCapabilities);
         AL10.alDistanceModel(AL11.AL_EXPONENT_DISTANCE);
@@ -118,8 +116,8 @@ public class AudioController {
     }
 
     public static void cleanup() {
-        ALC10.alcMakeContextCurrent(MemoryUtil.NULL);
-        ALC10.alcDestroyContext(context);
-        ALC10.alcCloseDevice(device);
+        ALC11.alcMakeContextCurrent(MemoryUtil.NULL);
+        ALC11.alcDestroyContext(context);
+        ALC11.alcCloseDevice(device);
     }
 }
