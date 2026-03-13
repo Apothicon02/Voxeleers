@@ -20,6 +20,8 @@ import java.util.List;
 
 import static org.lwjgl.openal.AL10.AL_NO_ERROR;
 import static org.lwjgl.openal.AL10.alGetError;
+import static org.lwjgl.openal.ALC11.ALC_MONO_SOURCES;
+import static org.lwjgl.openal.ALC11.ALC_STEREO_SOURCES;
 
 public class AudioController {
     public static long context;
@@ -32,11 +34,20 @@ public class AudioController {
         device = ALC10.alcOpenDevice(defaultDeviceName);
         alcCapabilities = ALC.createCapabilities(device);
 
-        context = ALC10.alcCreateContext(device, (IntBuffer) null);
+        context = ALC10.alcCreateContext(device, new int[]{ALC_MONO_SOURCES, 16256, ALC_STEREO_SOURCES, 128, 0});
         ALC10.alcMakeContextCurrent(context);
 
         alCapabilities = AL.createCapabilities(alcCapabilities);
         AL10.alDistanceModel(AL11.AL_EXPONENT_DISTANCE);
+
+//        int maxSourcesBeforeError = 0;
+//        while (true) {
+//            AL10.alGenSources();
+//            if (AL10.alGetError() != AL_NO_ERROR) {
+//                break;
+//            }
+//            maxSourcesBeforeError++;
+//        }
     }
 
     public static ArrayList<Source> disposableSources = new ArrayList<>(List.of());
