@@ -438,7 +438,12 @@ public class Player {
     public float windGain = 0f;
     int ambientWind = 0;
     public void doSounds() {
-        AudioController.setListenerData(new Vector3f(pos.x(), pos.y()+eyeHeight, pos.z()), vel, new float[6]);
+        Matrix4f cam = getCameraMatrix();
+        Vector3f forward = new Vector3f();
+        Vector3f up = new Vector3f();
+        cam.positiveZ(forward).negate();
+        cam.positiveY(up);
+        AudioController.setListenerData(new Vector3f(pos.x(), pos.y()+eyeHeight, pos.z()), vel, new float[]{forward.x(), forward.y(), forward.z(), up.x(), up.y(), up.z()});
         Room room = Rooms.getRoom(blockPos);
         Cell cell = World.worldType.getGlobalAtmo();// room == null ? World.worldType.getGlobalAtmo() : room.cells.get(Rooms.packCellPos(blockPos));
         double pressure = cell.getPressure();
