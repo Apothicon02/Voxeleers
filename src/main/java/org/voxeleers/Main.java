@@ -336,7 +336,7 @@ public class Main {
                     player.tick();
                     Rooms.tick();
                     ScheduledTicker.tick();
-                    AudioController.disposeSources();
+                    AudioController.tick();
                     if (ticksDone >= 3) {
                         timePassed = tickTime-1;
                     }

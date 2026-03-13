@@ -18,6 +18,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.lwjgl.openal.AL10.AL_NO_ERROR;
+import static org.lwjgl.openal.AL10.alGetError;
+
 public class AudioController {
     public static long context;
     public static long device;
@@ -38,12 +41,18 @@ public class AudioController {
 
     public static ArrayList<Source> disposableSources = new ArrayList<>(List.of());
 
-    public static void disposeSources() {
-        disposableSources.forEach((Source source) -> {
+    public static void tick() {
+//        if (alGetError() != AL_NO_ERROR) {
+//            boolean nothing = true;
+//        }
+        for (int i = 0; i < disposableSources.size(); i++) {
+            Source source = disposableSources.get(i);
             if (!source.isPlaying()) {
                 source.delete();
+                source = null;
+                disposableSources.remove(i--);
             }
-        });
+        }
     }
 
     public static void setListenerData(Vector3f pos, Vector3f vel, float[] orientation) {
@@ -57,7 +66,7 @@ public class AudioController {
             if (Double.isNaN(pressure)) {
                 pressure = 0.f;
             }
-            float gain = Math.max(0.1f, (float) (pressure / 500000000.f));
+            float gain = Math.clamp((float) (pressure / 500000000.f), 0.1f, 1.f);
             AL10.alListenerf(AL10.AL_GAIN, gain);
         } else {
             AL10.alListenerf(AL10.AL_GAIN, 1.f);

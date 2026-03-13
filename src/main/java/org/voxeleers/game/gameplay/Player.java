@@ -60,25 +60,11 @@ public class Player {
     public boolean creative = false;
 
     public final Source breakingSource;
-    public final Source jumpSource;
-    public final Source passthroughSource;
-    public final Source swimSource;
-    public final Source splashSource;
-    public final Source submergeSource;
-    public final Source waterFlowingSource;
-    public final Source magmaSource;
     public final Source windSource;
 
     public Player(Vector3f newPos) {
         breakingSource = new Source(newPos, 1, 1, 0, 1);
-        jumpSource = new Source(newPos, 1, 1, 0, 0);
-        passthroughSource = new Source(newPos, 1, 1, 0, 0);
-        swimSource = new Source(newPos, 0.5f, 1, 0, 0);
-        splashSource = new Source(newPos, 1, 1, 0, 0);
-        submergeSource = new Source(newPos, 1, 1, 0, 0);
-        waterFlowingSource = new Source(newPos, 0, 1, 0, 1);
         windSource = new Source(newPos, 0, 1, 0, 1);
-        magmaSource = new Source(newPos, 0, 1, 0, 1);
         setPos(newPos);
         oldPos = newPos;
     }
@@ -465,9 +451,6 @@ public class Player {
                 }
                 if (World.inBounds(blockPos.x, blockPos.y, blockPos.z)) {
                     int sunLight = World.getLight(blockPos).w;
-                    if (waterFlowingSource.soundPlaying == -1) {
-                        waterFlowingSource.play(Sounds.FLOW);
-                    }
                     ambientWind = Math.min(333, ambientWind + sunLight);
                     windGain = ambientWind / 333f;
                 }

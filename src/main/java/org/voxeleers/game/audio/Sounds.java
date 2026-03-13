@@ -12,6 +12,7 @@ public class Sounds {
     public static SFX SPLASH1 = AudioController.loadSound("generic/sound/splash1.wav");
     public static SFX FLOW = AudioController.loadSound("generic/sound/flow.wav");
     public static SFX WIND = AudioController.loadSound("generic/sound/wind.wav");
+    public static SFX VENT = AudioController.loadSound("generic/sound/vent.wav");
     public static SFX BUZZ = AudioController.loadSound("generic/sound/buzz.wav");
     public static SFX CHIRP1 = AudioController.loadSound("generic/sound/chirp_1.wav");
     public static SFX MAGMA = AudioController.loadSound("generic/sound/magma.wav");
