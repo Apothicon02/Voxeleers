@@ -722,6 +722,14 @@ public class Renderer {
             prevViewMatrix = new Matrix4f(viewMatrix);
             prevProjMatrix = new Matrix4f(projMatrix);
             offsetIdxOld = offsetIdx;
+//            glClearTexImage(Textures.rasterColor.id, 0, GL_RGBA, GL_FLOAT, new float[4]);
+//            glClearTexImage(Textures.rasterDepth.id, 0, GL_DEPTH_COMPONENT, GL_FLOAT, new float[1]);
+//            glClearTexImage(Textures.rasterNorm.id, 0, GL_RGBA, GL_FLOAT, new float[4]);
+//            glClearTexImage(Textures.rasterPos.id, 0, GL_RGBA, GL_FLOAT, new float[4]);
+//            glClearTexImage(Textures.scene.id, 0, GL_RGBA, GL_FLOAT, new float[4]);
+//            glClearTexImage(Textures.sceneColor.id, 0, GL_RGBA, GL_FLOAT, new float[4]);
+//            glClearTexImage(Textures.blurry.id, 0, GL_RGBA, GL_FLOAT, new float[4]);
+//            glClearTexImage(Textures.blurred.id, 0, GL_RGBA, GL_FLOAT, new float[4]);
         }
     }
 

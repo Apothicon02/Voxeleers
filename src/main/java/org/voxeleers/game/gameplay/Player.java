@@ -422,9 +422,10 @@ public class Player {
                 hitPos = rayPos;
             }
         }
+        Vector3f prevPos = new Vector3f(pos);
         setPos(hitPos);
         dynamicSpeedOld = dynamicSpeed;
-        dynamicSpeed = Math.min(1.f, Math.max(Math.abs(mX), Math.abs(mZ)));
+        dynamicSpeed = Math.min(1.f, pos.distance(prevPos));
     }
 
     public void setPos(Vector3f newPos) {

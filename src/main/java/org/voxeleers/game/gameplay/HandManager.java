@@ -29,7 +29,7 @@ public class HandManager {
     public static int tiltDelay = 0;
     public static Vector4i blockStartedBreaking = new Vector4i();
 
-    public static void useHands(long timeMillis, Window window) {
+    public static void useHands(Window window) {
         if (window.scroll.y > 0) {
             hotbarSlot++;
             if (hotbarSlot >= Inventory.invWidth) {
@@ -49,7 +49,7 @@ public class HandManager {
             blockStartedBreaking.set(0, 0, 0, 0);
             tiltTarget = 0;
         }
-        if ((!player.creative || (timeMillis - lastBlockBrokenOrPlaced >= 200)) && (!rmbDown || timeMillis - lastBlockPlaced >= 200)) { //two tenth second minimum delay between breaking blocks in creative or when placing blocks
+        if ((!player.creative || (Main.timeMS - lastBlockBrokenOrPlaced >= 200)) && (!rmbDown || Main.timeMS - lastBlockPlaced >= 200)) { //two tenth second minimum delay between breaking blocks in creative or when placing blocks
             if (lmbDown || mmbDown || rmbDown) {
                 Item selectedItem = player.inv.getItem(player.inv.selectedSlot);
                 Vector2i blockToPlace = selectedItem == null ? new Vector2i(0) : selectedItem.place();
@@ -67,7 +67,7 @@ public class HandManager {
                             }
                         }
                     } else {
-                        lastBlockBrokenOrPlaced = timeMillis;
+                        lastBlockBrokenOrPlaced = Main.timeMS;
                         int cornerData = World.getCorner((int) pos.x, (int) pos.y, (int) pos.z);
                         int cornerIndex = (pos.y < (int)(pos.y)+0.5 ? 0 : 4) + (pos.z < (int)(pos.z)+0.5 ? 0 : 2) + (pos.x < (int)(pos.x)+0.5 ? 0 : 1);
                         if (lmbDown) {

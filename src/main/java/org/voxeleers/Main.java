@@ -103,7 +103,7 @@ public class Main {
     public static boolean isSwappingWorldType = false;
     public static int uiState = 1;
 
-    public void input(Window window, long timeMillis, long diffTimeMillis) throws IOException {
+    public void input(Window window) throws IOException {
         if (!isClosing) {
             window.input();
             boolean isEscDown = window.isKeyPressed(SDL_SCANCODE_ESCAPE);
@@ -239,7 +239,7 @@ public class Main {
                         Vector2f displVec = new Vector2f(window.displVec);
                         player.rotate((float) Math.toRadians(displVec.x * MOUSE_SENSITIVITY),
                                 (float) Math.toRadians(displVec.y * MOUSE_SENSITIVITY));
-                        HandManager.useHands(timeMillis, window);
+                        HandManager.useHands(window);
 
                         player.sprint = isShiftDown;
                         player.superSprint = window.isKeyPressed(SDL_SCANCODE_CAPSLOCK);
@@ -250,8 +250,8 @@ public class Main {
                         player.upward = window.isKeyPressed(SDL_SCANCODE_SPACE);
                         player.downward = isCtrlDown;
                         player.crouching = isCtrlDown;
-                        if (window.isKeyPressed(SDL_SCANCODE_SPACE) && timeMillis - player.lastJump > 200) { //only jump at most five times a second
-                            player.jump = timeMillis;
+                        if (window.isKeyPressed(SDL_SCANCODE_SPACE) && timeMS - player.lastJump > 200) { //only jump at most five times a second
+                            player.jump = timeMS;
                         }
                         if (wasXDown && !window.isKeyPressed(SDL_SCANCODE_X)) {
                             player.flying = !player.flying;
@@ -326,7 +326,6 @@ public class Main {
 
     public void update(Window window, long diffTimeMillis) throws Exception {
         tickTime=50/timeMul;
-        timeMS += (long) (diffTimeMillis*timeMul);
         if (isClosing) {
             //World.saveWorld(World.worldPath+"/");
             window.shouldClose = true;
@@ -359,7 +358,7 @@ public class Main {
                 float dFOV = (float) Math.toRadians(Main.player.baseFOV+(30*Math.min(0.3f, speed*1.5f)));
                 Constants.FOV = Constants.FOV > dFOV ? Math.max(dFOV, Constants.FOV-(factor*1.5f)) : (Constants.FOV < dFOV ? Math.min(dFOV, Constants.FOV+(factor*1.5f)) : Constants.FOV);
                 if (player.onGround) {
-                    float bobbingInc = Math.min(0.009f, 0.75f*speed*(player.height*((float) (factor*(1.5f+Math.random())))));
+                    float bobbingInc = Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f));//((float) (factor*(1.5f+Math.random())))));
                     if (player.bobbingDir) {
                         player.bobbing += bobbingInc;
                         if (player.bobbing >= 0) {
@@ -371,13 +370,11 @@ public class Main {
                         if (player.bobbing <= player.height*-0.05f) {
                             player.bobbing = player.height*-0.05f;
                             player.bobbingDir = true;
-                            if (player.onGround) {
-                                BlockSFX stepSFX = BlockTypes.blockTypeMap.get(player.blockOn.x).blockProperties.blockSFX;
-                                Source stepSource = new Source(player.oldPos, (float) (stepSFX.stepGain+((stepSFX.stepGain*Math.random())/3)), (float) (stepSFX.stepPitch+((stepSFX.stepPitch*Math.random())/3)), 0, 0);
-                                AudioController.disposableSources.add(stepSource);
-                                stepSource.setVel(new Vector3f(player.vel).add(player.movement));
-                                stepSource.play((stepSFX.stepIds[(int) (Math.random() * stepSFX.stepIds.length)]), true);
-                            }
+                            BlockSFX stepSFX = BlockTypes.blockTypeMap.get(player.blockOn.x).blockProperties.blockSFX;
+                            Source stepSource = new Source(player.oldPos, (float) (stepSFX.stepGain+((stepSFX.stepGain*Math.random())/3)), (float) (stepSFX.stepPitch+((stepSFX.stepPitch*Math.random())/3)), 0, 0);
+                            AudioController.disposableSources.add(stepSource);
+                            stepSource.setVel(new Vector3f(player.vel).add(player.movement));
+                            stepSource.play((stepSFX.stepIds[(int) (Math.random() * stepSFX.stepIds.length)]), true);
                         }
                     }
                 }

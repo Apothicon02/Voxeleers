@@ -847,7 +847,7 @@ void main() {
         fragColor.rgb = mix(fragColor.rgb, tint.rgb, mix(abs(1-tint.a), 1.f, reflectivity));
     }
 
-    if (hitBlock == ivec3(playerData[0], playerData[1], playerData[2]) && ui) {
+    if (hitBlock == selected && ui) {
         fragColor.rgb = mix(fragColor.rgb, vec3(0.7, 0.7, 1), 0.5f);
     }
     if (hasAtmosphere) {
