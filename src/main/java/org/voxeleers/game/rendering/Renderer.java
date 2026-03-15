@@ -1,6 +1,7 @@
 package org.voxeleers.game.rendering;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import org.lwjgl.opengl.GL;
 import org.voxeleers.Main;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
@@ -215,7 +216,19 @@ public class Renderer {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, atlasOffsetSSBOId);
     }
 
+    public static void initGL() {
+        long glInitStarted = System.currentTimeMillis();
+        GL.createCapabilities();
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_GEQUAL);
+        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+        glFrontFace(GL_CW);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-glInitStarted)/1000.f)+"s to init OpenGL.\n");
+    }
     public static void init(Window window) throws Exception {
+        long rendererInitStarted = System.currentTimeMillis();
         createGLDebugger();
         scene = new ShaderProgram("scene.vert", new String[]{"scene.frag"},
                 new String[]{"res", "projection", "view", "selected", "offsetIdx", "checkerStep", "reverseChecker", "taa", "ui", "upscale", "renderDistance", "aoQuality", "hasAtmosphere", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
@@ -239,6 +252,7 @@ public class Renderer {
         createBuffers();
         Textures.generate();
         initiallyFillTextures(window, false);
+        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-rendererInitStarted)/1000.f)+"s to init renderer.\n");
     }
 
     public static Vector3f sunPos = new Vector3f(0, World.height*2, 0);
@@ -582,7 +596,12 @@ public class Renderer {
     public static boolean reverseChecker = false;
     public static int checkerStepX = 0;
     public static int checkerStepY = 0;
+    public static boolean renderedAnyFrame = false;
     public static void render(Window window) throws IOException {
+        if (!renderedAnyFrame) {
+            renderedAnyFrame = true;
+            System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-mainStarted)/1000.f)+"s from Main run to rendering first frame.\n");
+        }
         if (!Main.isClosing) {
             offsetIdx++;
             if (offsetIdx > 15) {

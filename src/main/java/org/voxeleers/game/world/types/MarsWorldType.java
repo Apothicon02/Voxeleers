@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 
 import static org.lwjgl.opengl.GL20.glUniform4f;
 import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
@@ -82,7 +83,8 @@ public class MarsWorldType extends WorldType {
     }
 
     @Override
-    public void generate() throws IOException {
+    public ExecutorService generate() throws IOException {
+        ExecutorService executorService = null;
         for (Molecule molecule : globalAtmo.molecules) {
             globalElements.addLast(molecule.element);
         }
@@ -90,9 +92,12 @@ public class MarsWorldType extends WorldType {
         if (Files.exists(getWorldPath())) {
             loadWorld(getWorldPath()+"/");
         } else {
+            long worldgenStarted = System.currentTimeMillis();
             createNew();
+            System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-worldgenStarted)/1000.f)+"s to generate world.\n");
         }
         generated = true;
+        return executorService;
     }
 
     @Override

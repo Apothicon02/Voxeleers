@@ -81,12 +81,10 @@ public class Engine {
                     avgMS = 1000000000d/VoxeleersMath.averageLongs(frameTimes);
                     framesUntilUpdate = 40;
                 }
-                if (Main.renderingEnabled) {
-                    long diffTimeNanos = (System.nanoTime() - initialNanoTime);
-                    frameTimes.addLast(diffTimeNanos);
-                    if (frameTimes.size() > 60) {
-                        frameTimes.removeFirst();
-                    }
+                long diffTimeNanos = (System.nanoTime() - initialNanoTime);
+                frameTimes.addLast(diffTimeNanos);
+                if (frameTimes.size() > 60) {
+                    frameTimes.removeFirst();
                 }
                 initialNanoTime = System.nanoTime();
             }

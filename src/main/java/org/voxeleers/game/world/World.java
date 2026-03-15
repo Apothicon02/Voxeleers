@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.voxeleers.engine.Utils.*;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -425,24 +427,33 @@ public class World {
         out.close();
     }
 
-    public static void loadWorld(String path) throws IOException {
+    public static ExecutorService loadWorld(String path) throws IOException {
         int[] globalData = Utils.flipIntArray(Utils.byteArrayToIntArray(new FileInputStream(path+"global.data").readAllBytes()));
         Renderer.time = globalData[0]/1000f;
         Main.timePassed = globalData[1]/1000f;
         Main.meridiem = globalData[2];
-        heightmap = Utils.byteArrayToShortArray(new FileInputStream(path+"heightmap.data").readAllBytes());
-        for (int i = 0; i < height; i++) {
-            blocks[i] = Utils.byteArrayToShortArray(new FileInputStream(path+"blocks/"+i+".data").readAllBytes());
-        }
-        for (int i = 0; i < height/4; i++) {
-            blocksLOD[i] = Utils.byteArrayToShortArray(new FileInputStream(path+"blocksLOD/"+i+".data").readAllBytes());
-        }
-        for (int i = 0; i < height/16; i++) {
-            blocksLOD2[i] = Utils.byteArrayToShortArray(new FileInputStream(path+"blocksLOD2/"+i+".data").readAllBytes());
-        }
-        for (int i = 0; i < height; i++) {
-            lights[i] = new FileInputStream(path+"lights/"+i+".data").readAllBytes();
-        }
+        ExecutorService pool = Executors.newFixedThreadPool(Math.min(5, Runtime.getRuntime().availableProcessors()));
+        pool.submit(() -> {try {Utils.byteArrayToShortArray(new FileInputStream(path + "heightmap.data").readAllBytes());} catch (IOException e) {throw new RuntimeException(e);}}, heightmap);
+        pool.submit(() -> {try {
+            for (int i = 0; i < height; i++) {
+                blocks[i] = Utils.byteArrayToShortArray(new FileInputStream(path + "blocks/" + i + ".data").readAllBytes());
+            }
+        } catch (IOException e) {throw new RuntimeException(e);}});
+        pool.submit(() -> {try {
+            for (int i = 0; i < height/4; i++) {
+                blocksLOD[i] = Utils.byteArrayToShortArray(new FileInputStream(path + "blocksLOD/" + i + ".data").readAllBytes());
+            }
+        } catch (IOException e) {throw new RuntimeException(e);}});
+        pool.submit(() -> {try {
+            for (int i = 0; i < height/16; i++) {
+                blocksLOD2[i] = Utils.byteArrayToShortArray(new FileInputStream(path + "blocksLOD2/" + i + ".data").readAllBytes());
+            }
+        } catch (IOException e) {throw new RuntimeException(e);}});
+        pool.submit(() -> {try {
+            for (int i = 0; i < height; i++) {
+                lights[i] = new FileInputStream(path + "lights/" + i + ".data").readAllBytes();
+            }
+        } catch (IOException e) {throw new RuntimeException(e);}});
         if (Files.exists(Path.of(path + "items.data"))) {
             int[] itemsData = Utils.flipIntArray(Utils.byteArrayToIntArray(new FileInputStream(path + "items.data").readAllBytes()));
             for (int i = 0; i < itemsData.length; ) {
@@ -453,5 +464,7 @@ public class World {
                 }
             }
         }
+        pool.shutdown();
+        return pool;
     }
 }

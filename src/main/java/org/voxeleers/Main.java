@@ -27,6 +27,10 @@ import org.lwjgl.opengl.GL;
 
 import java.io.IOException;
 import java.lang.Math;
+import java.lang.Runtime;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static io.github.libsdl4j.api.mouse.SdlMouse.SDL_SetRelativeMouseMode;
 import static io.github.libsdl4j.api.scancode.SDL_Scancode.*;
@@ -40,29 +44,37 @@ public class Main {
     public static Gson gson = new Gson();
     public static Player player;
     private static final float MOUSE_SENSITIVITY = 0.01f;
+    public static long mainStarted = 0;
 
     public static void main(String[] args) throws Exception {
+        mainStarted = System.currentTimeMillis();
         Main main = new Main();
         Engine gameEng = new Engine("Voxeleers", new Window.WindowOptions(), main);
         gameEng.start();
     }
 
     public void init(Window window) throws Exception {
-        GL.createCapabilities();
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_GEQUAL);
-        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-        glFrontFace(GL_CW);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
+        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-mainStarted)/1000.f)+"s from Main run to begin init.\n");
 
+        //Multithreaded init
+        ExecutorService noisesPool = Noises.init();
+
+        //Single-threaded init
         AudioController.init();
-        AudioController.setListenerData(new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new float[6]);
-
-        Noises.init();
-        World.worldType.generate();
+        Renderer.initGL();
         Models.loadModels();
 
+        long noisesInitStarted = System.currentTimeMillis();
+        noisesPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)
+        System.out.print("Waited "+String.format("%.2f", (System.currentTimeMillis()-noisesInitStarted)/1000.f)+"s on noises to finish loading.\n");
+
+        ExecutorService worldPool = World.worldType.generate();
+        if (worldPool != null) {
+            long worldLoadStarted = System.currentTimeMillis();
+            worldPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until world loading is done, since it is used in the next step (renderer initialization)
+            System.out.print("Waited " + String.format("%.2f", (System.currentTimeMillis() - worldLoadStarted) / 1000.f) + "s on world to finish loading.\n");
+        }
+        Renderer.init(window);
         Player.create();
     }
 
@@ -316,7 +328,6 @@ public class Main {
         Renderer.timeOfDay = time;
     }
 
-    public static boolean renderingEnabled = false;
     public static double interpolationTime = 0;
     public static double timePassed = 0;
     public static double timeMul = 1;
@@ -330,79 +341,73 @@ public class Main {
             //World.saveWorld(World.worldPath+"/");
             window.shouldClose = true;
         } else {
-            if (!renderingEnabled) {
-                renderingEnabled = true;
-                Renderer.init(window);
+            updateTime(diffTimeMillis);
+            int ticksDone = 0;
+            float factor = (float) (0.0002f*timePassed);
+            while (timePassed >= tickTime) {
+                ticksDone++;
+                currentTick++;
+                timePassed -= tickTime;
+                World.worldType.tick();
+                World.tickItems();
+                World.tickBlockEntities();
+                player.tick();
+                Rooms.tick();
+                ScheduledTicker.tick();
+                AudioController.tick();
+                if (ticksDone >= 3) {
+                    timePassed = tickTime-1;
+                }
             }
-            if (renderingEnabled) {
-                updateTime(diffTimeMillis);
-                int ticksDone = 0;
-                float factor = (float) (0.0002f*timePassed);
-                while (timePassed >= tickTime) {
-                    ticksDone++;
-                    currentTick++;
-                    timePassed -= tickTime;
-                    World.worldType.tick();
-                    World.tickItems();
-                    World.tickBlockEntities();
-                    player.tick();
-                    Rooms.tick();
-                    ScheduledTicker.tick();
-                    AudioController.tick();
-                    if (ticksDone >= 3) {
-                        timePassed = tickTime-1;
+            interpolationTime = timePassed/tickTime;
+            float speed = Utils.getInterpolatedFloat(player.dynamicSpeedOld, player.dynamicSpeed);
+            float dFOV = (float) Math.toRadians(Main.player.baseFOV+(30*Math.min(0.3f, speed*1.5f)));
+            Constants.FOV = Constants.FOV > dFOV ? Math.max(dFOV, Constants.FOV-(factor*1.5f)) : (Constants.FOV < dFOV ? Math.min(dFOV, Constants.FOV+(factor*1.5f)) : Constants.FOV);
+            if (player.onGround) {
+                float bobbingInc = Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f));//((float) (factor*(1.5f+Math.random())))));
+                if (player.bobbingDir) {
+                    player.bobbing += bobbingInc;
+                    if (player.bobbing >= 0) {
+                        player.bobbing = 0;
+                        player.bobbingDir = false;
+                    }
+                } else {
+                    player.bobbing -= bobbingInc;
+                    if (player.bobbing <= player.height*-0.05f) {
+                        player.bobbing = player.height*-0.05f;
+                        player.bobbingDir = true;
+                        BlockSFX stepSFX = BlockTypes.blockTypeMap.get(player.blockOn.x).blockProperties.blockSFX;
+                        Source stepSource = new Source(player.oldPos, (float) (stepSFX.stepGain+((stepSFX.stepGain*Math.random())/3)), (float) (stepSFX.stepPitch+((stepSFX.stepPitch*Math.random())/3)), 0, 0);
+                        AudioController.disposableSources.add(stepSource);
+                        stepSource.setVel(new Vector3f(player.vel).add(player.movement));
+                        stepSource.play((stepSFX.stepIds[(int) (Math.random() * stepSFX.stepIds.length)]), true);
                     }
                 }
-                interpolationTime = timePassed/tickTime;
-                float speed = Utils.getInterpolatedFloat(player.dynamicSpeedOld, player.dynamicSpeed);
-                float dFOV = (float) Math.toRadians(Main.player.baseFOV+(30*Math.min(0.3f, speed*1.5f)));
-                Constants.FOV = Constants.FOV > dFOV ? Math.max(dFOV, Constants.FOV-(factor*1.5f)) : (Constants.FOV < dFOV ? Math.min(dFOV, Constants.FOV+(factor*1.5f)) : Constants.FOV);
-                if (player.onGround) {
-                    float bobbingInc = Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f));//((float) (factor*(1.5f+Math.random())))));
-                    if (player.bobbingDir) {
-                        player.bobbing += bobbingInc;
-                        if (player.bobbing >= 0) {
-                            player.bobbing = 0;
-                            player.bobbingDir = false;
-                        }
-                    } else {
-                        player.bobbing -= bobbingInc;
-                        if (player.bobbing <= player.height*-0.05f) {
-                            player.bobbing = player.height*-0.05f;
-                            player.bobbingDir = true;
-                            BlockSFX stepSFX = BlockTypes.blockTypeMap.get(player.blockOn.x).blockProperties.blockSFX;
-                            Source stepSource = new Source(player.oldPos, (float) (stepSFX.stepGain+((stepSFX.stepGain*Math.random())/3)), (float) (stepSFX.stepPitch+((stepSFX.stepPitch*Math.random())/3)), 0, 0);
-                            AudioController.disposableSources.add(stepSource);
-                            stepSource.setVel(new Vector3f(player.vel).add(player.movement));
-                            stepSource.play((stepSFX.stepIds[(int) (Math.random() * stepSFX.stepIds.length)]), true);
-                        }
-                    }
-                }
-                Renderer.render(window);
-                LightHelper.iterateLightQueue();
-                if (isSaving) {
-                    if (shouldActuallySave) {
-                        World.saveWorld(World.worldType.getWorldPath() + "/");
-                        player.save();
-                        isSaving = false;
-                        shouldActuallySave = false;
-                        if (isSwappingWorldType) {
-                            World.clearData();
-                            if (World.worldType instanceof MarsWorldType) {
-                                World.worldType = new LunaWorldType();
-                            } else if (World.worldType instanceof LunaWorldType) {
-                                World.worldType = new MarsWorldType();
-                            }
-                            World.worldType.generate();
-                            Renderer.initiallyFillTextures(window, false);
-                            isSwappingWorldType = false;
-                        }
-                    } else {
-                        shouldActuallySave = true;
-                    }
-                }
-                timePassed += diffTimeMillis;
             }
+            Renderer.render(window);
+            LightHelper.iterateLightQueue();
+            if (isSaving) {
+                if (shouldActuallySave) {
+                    World.saveWorld(World.worldType.getWorldPath() + "/");
+                    player.save();
+                    isSaving = false;
+                    shouldActuallySave = false;
+                    if (isSwappingWorldType) {
+                        World.clearData();
+                        if (World.worldType instanceof MarsWorldType) {
+                            World.worldType = new LunaWorldType();
+                        } else if (World.worldType instanceof LunaWorldType) {
+                            World.worldType = new MarsWorldType();
+                        }
+                        World.worldType.generate();
+                        Renderer.initiallyFillTextures(window, false);
+                        isSwappingWorldType = false;
+                    }
+                } else {
+                    shouldActuallySave = true;
+                }
+            }
+            timePassed += diffTimeMillis;
         }
     }
 }

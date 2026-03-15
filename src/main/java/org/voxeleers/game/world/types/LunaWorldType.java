@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 
 import static org.lwjgl.opengl.GL20.glUniform4f;
 import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
@@ -73,17 +74,21 @@ public class LunaWorldType extends WorldType {
     }
 
     @Override
-    public void generate() throws IOException {
+    public ExecutorService generate() throws IOException {
+        ExecutorService executorService = null;
         for (Molecule molecule : globalAtmo.molecules) {
             globalElements.addLast(molecule.element);
         }
         generated = false;
         if (Files.exists(getWorldPath())) {
-            loadWorld(getWorldPath()+"/");
+            executorService = loadWorld(getWorldPath()+"/");
         } else {
+            long worldgenStarted = System.currentTimeMillis();
             createNew();
+            System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-worldgenStarted)/1000.f)+"s to generate world.\n");
         }
         generated = true;
+        return executorService;
     }
 
     @Override

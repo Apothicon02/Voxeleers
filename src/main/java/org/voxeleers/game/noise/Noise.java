@@ -8,7 +8,9 @@ public class Noise {
     public int width;
     public int height;
 
-    public Noise(BufferedImage bufferedImage) {
+    public Noise() {}
+
+    public void init(BufferedImage bufferedImage) {
         BufferedImage image = bufferedImage;
         width = bufferedImage.getWidth();
         height = bufferedImage.getHeight();

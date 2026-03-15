@@ -28,6 +28,7 @@ public class Models {
     public static Model HUMAN;
 
     public static void loadModels() {
+        long modelsInitStarted = System.currentTimeMillis();
         SCREEN_TRIANGLE = new Model(new float[]{-1, -1, 0, 3, -1, 0, -1, 3, 0});
         createVao(SCREEN_TRIANGLE);
         SCREEN_TRIANGLE_HALF = new Model(new float[]{0, -3, 0, 0, 0, 0, -3, 0, 0});
@@ -38,6 +39,7 @@ public class Models {
         CUBE = loadObj("generic/model/cube");
         TORUS = loadObj("generic/model/torus");
         HUMAN = loadObj("npc/model/human");
+        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-modelsInitStarted)/1000.f)+"s to load models.\n");
     }
 
     public static FloatArrayList verts = new FloatArrayList();
