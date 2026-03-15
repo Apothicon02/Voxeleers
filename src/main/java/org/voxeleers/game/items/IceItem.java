@@ -1,5 +1,6 @@
 package org.voxeleers.game.items;
 
+import org.voxeleers.Main;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.elements.Elements;
@@ -12,7 +13,7 @@ import org.voxeleers.game.world.World;
 public class IceItem extends Item implements Cloneable {
     @Override
     public void tick() {
-        long time = System.currentTimeMillis();
+        long time = Main.timeMS;
         if (prevTickTime != 0) {
             long dif = time - prevTickTime;
             if (!BlockTypes.blockTypeMap.get(World.getBlock(pos.x(), pos.y()-0.125f, pos.z()).x()).blockProperties.isSolid) {

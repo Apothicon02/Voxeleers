@@ -448,7 +448,7 @@ public class Player {
         Cell cell = World.worldType.getGlobalAtmo();// room == null ? World.worldType.getGlobalAtmo() : room.cells.get(Rooms.packCellPos(blockPos));
         double pressure = cell.getPressure();
         if (pressure > 0.05f) {
-            long currentTime = System.currentTimeMillis();
+            long currentTime = Main.timeMS;
             if (currentTime - timeSinceAmbientSoundAttempt >= 1000) {
                 timeSinceAmbientSoundAttempt = currentTime;
                 if (windSource.soundPlaying == -1) {

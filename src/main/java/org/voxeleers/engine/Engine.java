@@ -41,7 +41,7 @@ public class Engine {
 
     private void run() throws Exception {
         long initialNanoTime = System.nanoTime();
-        long initialTime = System.currentTimeMillis();
+        long initialTime = Main.timeMS;
         float timeU = 1000.0f / targetUps;
         float timeR = targetFps > 0 ? 1000.0f / targetFps : 0;
         float deltaUpdate = 0;
@@ -56,7 +56,7 @@ public class Engine {
         while (running && !window.windowShouldClose()) {
             window.pollEvents(event);
 
-            long now = System.currentTimeMillis();
+            long now = Main.timeMS;
             deltaUpdate += (now - initialTime) / timeU;
             deltaFps += (now - initialTime) / timeR;
 
@@ -65,7 +65,7 @@ public class Engine {
             }
 
             long diffTimeMillis = now - updateTime;
-            main.update(window, diffTimeMillis, now);
+            main.update(window, diffTimeMillis);
             updateTime = now;
             if (deltaUpdate >= 1) {
                 deltaUpdate--;

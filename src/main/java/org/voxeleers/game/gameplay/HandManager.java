@@ -1,5 +1,6 @@
 package org.voxeleers.game.gameplay;
 
+import org.voxeleers.Main;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.engine.Window;
 import org.voxeleers.game.audio.BlockSFX;
@@ -82,12 +83,12 @@ public class HandManager {
                                         if (sameBlock) {
                                             if (blockStartedBreaking.w > 0) {
                                                 canBreak = false;
-                                                blockStartedBreaking.sub(0, 0, 0, (int) ((System.currentTimeMillis()-lastBlockBreakCheck)*breakingType.getTTBSpeed(blockToPlace.x)));
-                                                lastBlockBreakCheck = System.currentTimeMillis();
+                                                blockStartedBreaking.sub(0, 0, 0, (int) ((Main.timeMS-lastBlockBreakCheck)*breakingType.getTTBSpeed(blockToPlace.x)));
+                                                lastBlockBreakCheck = Main.timeMS;
                                             }
                                         } else {
                                             canBreak = false;
-                                            lastBlockBreakCheck = System.currentTimeMillis();
+                                            lastBlockBreakCheck = Main.timeMS;
                                             blockStartedBreaking.set((int) pos.x, (int) pos.y, (int) pos.z, breakingType.getTTB());
                                             BlockSFX sfx = breakingType.blockProperties.blockSFX;
                                             player.breakingSource.setPos(pos);
@@ -115,7 +116,7 @@ public class HandManager {
                                 //World.setCorner((int) pos.x, (int) pos.y, (int) pos.z, cornerData);
                             }
                         } else if (rmbDown) {
-                            lastBlockPlaced = System.currentTimeMillis();
+                            lastBlockPlaced = Main.timeMS;
                             if (cornerData != 0) {
                                 cornerData &= (~(1 << (cornerIndex - 1)));
                                 //World.setCorner((int) pos.x, (int) pos.y, (int) pos.z, cornerData);

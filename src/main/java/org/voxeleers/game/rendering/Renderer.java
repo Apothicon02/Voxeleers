@@ -590,7 +590,7 @@ public class Renderer {
             }
             boolean tiltShift = false;
             boolean dof = false;
-            if (player.inv.open) {
+            if (GUI.inventoryOpen) {
                 dof = true;
             }
             if (player.blockBreathing.x() == 1) {

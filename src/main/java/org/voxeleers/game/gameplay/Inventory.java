@@ -19,7 +19,6 @@ import java.util.ArrayList;
 public class Inventory {
     public static int invWidth = 14;
 
-    public boolean open = false;
     public Item[] items = new Item[invWidth*4];
     public Item cursorItem = null;
     public Vector2i selectedSlot = new Vector2i(0);
@@ -253,7 +252,7 @@ public class Inventory {
             if (existing == null || item.type != existing.type || item.amount != existing.amount) {
                 item.playSound(Main.player.pos);
             }
-            item.prevTickTime(System.currentTimeMillis());
+            item.prevTickTime(Main.timeMS);
         } else if (existing != null) {
             existing.playSound(Main.player.pos);
         }

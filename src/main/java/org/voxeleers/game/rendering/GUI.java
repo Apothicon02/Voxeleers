@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.voxeleers.game.elements.Elements.UGC;
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.glDrawArrays;
@@ -49,6 +48,9 @@ public class GUI {
     public static int slotSizeY = 22;
     public static int enlargedSlotSize = 24;
 
+    public static boolean pauseMenuOpen = false;
+    public static boolean inventoryOpen = false;
+
     public static void updateGUI(Window window) {
         glBindTextureUnit(0, Textures.sceneColor.id);
         glBindTextureUnit(1, Textures.blurred.id);
@@ -66,9 +68,9 @@ public class GUI {
             glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
             glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
             Vector2i border = new Vector2i((int) ((32*(width/3840f))/guiScaleMul), (int) ((32*(height/2180f))/guiScaleMul));
-            drawText(0, 0, 2+border.x(), 2+border.y(), "Saving data...".toCharArray());
+            drawText(false, 0, 0, 2+border.x(), 2+border.y(), "Saving data...".toCharArray());
             if (Main.isSwappingWorldType) {
-                drawText(0, 1, 2+border.x(), -2 - border.y() - charHeight, ("Travelling to "+World.nextWorldType.getWorldTypeName()+" from "+World.worldType.getWorldTypeName()).toCharArray());
+                drawText(false, 0, 1, 2+border.x(), -2 - border.y() - charHeight, ("Travelling to "+World.nextWorldType.getWorldTypeName()+" from "+World.worldType.getWorldTypeName()).toCharArray());
                 glUniform1i(Renderer.gui.uniforms.get("layer"), 3); //frame
                 glUniform2i(Renderer.gui.uniforms.get("size"), 3840, 2160);
                 glUniform2i(Renderer.gui.uniforms.get("scale"), width, (int)(height*aspectRatio));
@@ -79,16 +81,22 @@ public class GUI {
                 Renderer.draw();
             }
         }
+
+        if (pauseMenuOpen) {
+            glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 0.5f);
+            glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
+            drawText(true, 0.5f, 1, 0, -2 - charHeight, "Paused".toCharArray());
+        }
     }
 
     public static void drawDebug(Window window) {
         glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 0.5f);
-        if (!Main.isSwappingWorldType) {
+        if (!Main.isSwappingWorldType && !pauseMenuOpen) {
             glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
-            drawText(0, 1, 2, -2 - charHeight, ((long) (Engine.avgMS) + "fps ").toCharArray());
+            drawText(false, 0, 1, 2, -2 - charHeight, ((long) (Engine.avgMS) + "fps ").toCharArray());
             if (Main.showDebug) {
-                drawText(0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
-                drawText(0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
+                drawText(false, 0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
+                drawText(false, 0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
                 Room room = Rooms.getRoom(Main.player.blockPos);
                 Cell cell = new Cell(World.worldType.getGlobalAtmo());
                 if (room != null) {
@@ -96,24 +104,26 @@ public class GUI {
                     cell = room.cells.get(xyz);
                 }
                 double temperature = cell.getTemperature();
-                drawText(0, 1, 2, -2 - (charHeight * 4), ("Pressure:" + String.format("%.2f", cell.getPressure() / 10000000.f) + "kPa Temperature:" + String.format("%.2f", temperature) + "K" + " Energy:" + cell.energy).toCharArray()); //258
+                drawText(false, 0, 1, 2, -2 - (charHeight * 4), ("Pressure:" + String.format("%.2f", cell.getPressure() / 10000000.f) + "kPa Temperature:" + String.format("%.2f", temperature) + "K" + " Energy:" + cell.energy).toCharArray()); //258
                 int i = 0;
                 for (Molecule molecule : cell.molecules) {
                     Element element = Elements.elementMap.get(molecule.element);
                     String str = element.name + ":" + molecule.amount;
-                    drawText(0, 1, 2, -2 - (charHeight * (5 + (i++))), str.toCharArray());
+                    drawText(false, 0, 1, 2, -2 - (charHeight * (5 + (i++))), str.toCharArray());
                 }
             }
         }
     }
 
-    public static void drawText(float offsetX, float offsetY, float offsetPX, float offsetPY, char[] chars) {
+    public static void drawText(boolean centered, float offsetX, float offsetY, float offsetPX, float offsetPY, char[] chars) {
+        float size = chars.length*charWidth;
+        float centeredOffset = centered ? size/2 : 0.f;
         float offset = 0;
         for (char character : chars) {
             int charAtlasOffset = getCharAtlasOffset(character);
             if (charAtlasOffset >= 0) {
                 glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), charAtlasOffset, 0);
-                drawSlot(offsetX, offsetY, offsetPX+offset, offsetPY, 0, 0, charWidth, charHeight);
+                drawSlot(offsetX, offsetY, offsetPX+offset-centeredOffset, offsetPY, 0, 0, charWidth, charHeight);
             }
             offset += charWidth;
         }
@@ -126,13 +136,13 @@ public class GUI {
         glUniform1i(Renderer.gui.uniforms.get("tex"), 0);
         glUniform1i(Renderer.gui.uniforms.get("layer"), 1); //inventory
         float containerPosY = hotbarPosY + (((hotbarSizeY*5) / guiScale) * aspectRatio);
-        if (Main.player.inv.open) {
+        if (GUI.inventoryOpen) {
             glUniform4f(Renderer.gui.uniforms.get("color"), 0.85f, 0.85f, 0.85f, 0.85f);
             drawQuad(false, false, hotbarPosX, hotbarPosY + ((hotbarSizeY / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
             drawQuad(false, false, hotbarPosX, hotbarPosY + (((hotbarSizeY*2) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
             drawQuad(false, false, hotbarPosX, hotbarPosY + (((hotbarSizeY*3) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
             glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //gui
-            drawText(hotbarPosX, hotbarPosY + ((((hotbarSizeY*4)+3) / guiScale) * aspectRatio), 0, 0, "Inventory".toCharArray());
+            drawText(false, hotbarPosX, hotbarPosY + ((((hotbarSizeY*4)+3) / guiScale) * aspectRatio), 0, 0, "Inventory".toCharArray());
             glUniform1i(Renderer.gui.uniforms.get("layer"), 1); //inventory
             glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, 0);
             if (Main.player.creative) {
@@ -142,7 +152,7 @@ public class GUI {
                 drawQuad(false, false, hotbarPosX, containerPosY + (((hotbarSizeY * 2) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
                 drawQuad(false, false, hotbarPosX, containerPosY + (((hotbarSizeY * 3) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
                 glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //gui
-                drawText(hotbarPosX, containerPosY + ((((hotbarSizeY*4)+3) / guiScale) * aspectRatio), 0, 0, "Creative Supplies".toCharArray());
+                drawText(false, hotbarPosX, containerPosY + ((((hotbarSizeY*4)+3) / guiScale) * aspectRatio), 0, 0, "Creative Supplies".toCharArray());
                 glUniform1i(Renderer.gui.uniforms.get("layer"), 1); //inventory
                 glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, 0);
             }
@@ -151,7 +161,7 @@ public class GUI {
         drawQuad(false, false, hotbarPosX, hotbarPosY, hotbarSizeX, hotbarSizeY); //hotbar
         glUniform1i(Renderer.gui.uniforms.get("layer"), 2); //selector
         Vector2i selSlot;
-        if (Main.player.inv.open) {
+        if (GUI.inventoryOpen) {
             Vector2f clampedPos = confineToMenu(hotbarPosX, hotbarPosY, hotbarSizeX, hotbarSizeY*4);
             if (clampedPos.x() > -1 && clampedPos.y() > -1) {
                 Main.player.inv.selectedSlot = new Vector2i((int) (clampedPos.x() * invWidth), (int) (clampedPos.y() * 4));
@@ -173,7 +183,7 @@ public class GUI {
         }
 
         glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //items
-        for (int y = 0; y < (Main.player.inv.open ? 4 : 1); y++) {
+        for (int y = 0; y < (GUI.inventoryOpen ? 4 : 1); y++) {
             for (int x = 0; x < invWidth; x++) {
                 Item item = Main.player.inv.getItem(x, y);
                 if (item != null) {
@@ -188,13 +198,13 @@ public class GUI {
                             glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
                             char[] chars = String.valueOf(item.amount).toCharArray();
                             float startOffset = 16-(chars.length*charWidth);
-                            drawText(hotbarPosX, hotbarPosY, offX+startOffset, offY+1, chars);
+                            drawText(false, hotbarPosX, hotbarPosY, offX+startOffset, offY+1, chars);
                         }
                     }
                 }
             }
         }
-        if (Main.player.inv.open && Main.player.creative) {
+        if (GUI.inventoryOpen && Main.player.creative) {
             boolean isFirstSlot = true;
             int itemId = 0;
             done:
@@ -231,7 +241,7 @@ public class GUI {
                 glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
                 char[] chars = String.valueOf(Main.player.inv.cursorItem.amount).toCharArray();
                 float startOffset = 16-(chars.length*charWidth);
-                drawText(offX, offY, 1+startOffset-(charWidth*1.5f), 1-charHeight, chars);
+                drawText(false, offX, offY, 1+startOffset-(charWidth*1.5f), 1-charHeight, chars);
             }
         }
         drawDebug(window);

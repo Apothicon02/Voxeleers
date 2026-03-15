@@ -11,6 +11,7 @@ import org.voxeleers.game.gameplay.Player;
 import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemTypes;
+import org.voxeleers.game.rendering.GUI;
 import org.voxeleers.game.rendering.Models;
 import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Rooms;
@@ -91,6 +92,7 @@ public class Main {
     boolean wasF4Down = false;
     boolean wasF5Down = false;
     boolean wasF11Down = false;
+    boolean wasEscDown = false;
     public static boolean isShiftDown = false;
     public static boolean isCtrlDown = false;
     public static boolean isClosing = false;
@@ -104,9 +106,19 @@ public class Main {
     public void input(Window window, long timeMillis, long diffTimeMillis) throws IOException {
         if (!isClosing) {
             window.input();
-            if (window.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
-                isClosing = true;
-            } else {
+            boolean isEscDown = window.isKeyPressed(SDL_SCANCODE_ESCAPE);
+            if (!isEscDown && wasEscDown) {
+                if (GUI.inventoryOpen) {
+                    GUI.inventoryOpen = false;
+                } else {
+                    GUI.pauseMenuOpen = !GUI.pauseMenuOpen;
+                    if (GUI.pauseMenuOpen) {
+                        timeMul = 0.f;
+                    } else {
+                        timeMul = 1.f;
+                    }
+                }
+            } else if (!GUI.pauseMenuOpen) {
                 int flags = SDL_GetWindowFlags(Window.window);
                 boolean focused = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
                 boolean isLMBDown = focused && window.leftButtonPressed;
@@ -185,7 +197,7 @@ public class Main {
                     }
 
                     if (wasTabDown && !window.isKeyPressed(SDL_SCANCODE_TAB)) {
-                        player.inv.open = !player.inv.open;
+                        GUI.inventoryOpen = !GUI.inventoryOpen;
                     }
 
                     if (!isF11Down && wasF11Down) {
@@ -218,7 +230,7 @@ public class Main {
                             item.amount(0).type(ItemTypes.AIR);
                         }
                     }
-                    if (player.inv.open) {
+                    if (GUI.pauseMenuOpen || GUI.inventoryOpen) {
                         SDL_SetRelativeMouseMode(false);
                         player.clearVars();
                         player.inv.tick(window);
@@ -246,7 +258,7 @@ public class Main {
                         }
 
                         if (wasTDown && !window.isKeyPressed(SDL_SCANCODE_T)) {
-                            updateTime(100000L, 1);
+                            updateTime(100000L);
                         }
                         if (wasUpDown && !window.isKeyPressed(SDL_SCANCODE_UP)) {
                             timeMul = Math.min(100, timeMul + (isShiftDown ? 10.f : 0.25f));
@@ -284,13 +296,14 @@ public class Main {
                 wasUpDown = window.isKeyPressed(SDL_SCANCODE_UP);
                 wasDownDown = window.isKeyPressed(SDL_SCANCODE_DOWN);
             }
+            wasEscDown = isEscDown;
         }
     }
 
     public static int meridiem = 1;
 
-    public void updateTime(long diffTimeMillis, float mul) {
-        float inc = (diffTimeMillis/600000f)*mul;
+    public void updateTime(long diffTimeMillis) {
+        float inc = (diffTimeMillis/600000f);
         Renderer.time += inc;
         float time = Renderer.timeOfDay+(inc*meridiem);
         if (time < 0f) {
@@ -311,9 +324,9 @@ public class Main {
     public static long timeMS;
     public static long currentTick = 0;
 
-    public void update(Window window, long diffTimeMillis, long time) throws Exception {
+    public void update(Window window, long diffTimeMillis) throws Exception {
         tickTime=50/timeMul;
-        timeMS = time;
+        timeMS += (long) (diffTimeMillis*timeMul);
         if (isClosing) {
             //World.saveWorld(World.worldPath+"/");
             window.shouldClose = true;
@@ -323,7 +336,7 @@ public class Main {
                 Renderer.init(window);
             }
             if (renderingEnabled) {
-                updateTime(diffTimeMillis, (float) timeMul);
+                updateTime(diffTimeMillis);
                 int ticksDone = 0;
                 float factor = (float) (0.0002f*timePassed);
                 while (timePassed >= tickTime) {

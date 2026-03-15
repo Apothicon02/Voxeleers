@@ -3,6 +3,7 @@ package org.voxeleers.game.items;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
+import org.voxeleers.Main;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.world.World;
 
@@ -25,7 +26,7 @@ public class Item implements Cloneable {
     }
 
     public void tick() {
-        long time = System.currentTimeMillis();
+        long time = Main.timeMS;
         if (prevTickTime != 0) {
             long dif = time - prevTickTime;
             Vector2i block = World.getBlock(pos.x(), pos.y()-0.125f, pos.z());
