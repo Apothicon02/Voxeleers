@@ -25,7 +25,6 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
@@ -161,13 +160,13 @@ public class GUI {
         glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
         drawQuad(false, false, hotbarPosX, hotbarPosY, hotbarSizeX, hotbarSizeY); //hotbar
         glUniform1i(Renderer.gui.uniforms.get("layer"), 2); //selector
-        Vector2i selSlot;
+        Vector2i selSlot = null;
         if (GUI.inventoryOpen) {
             Vector2f clampedPos = confineToMenu(hotbarPosX, hotbarPosY, hotbarSizeX, hotbarSizeY*4);
             if (clampedPos.x() > -1 && clampedPos.y() > -1) {
                 Main.player.inv.selectedSlot = new Vector2i((int) (clampedPos.x() * invWidth), (int) (clampedPos.y() * 4));
                 selSlot = Main.player.inv.selectedSlot;
-            } else {
+            } else if (Main.player.creative) {
                 Main.player.inv.selectedSlot = null;
                 clampedPos = confineToMenu(hotbarPosX, containerPosY, hotbarSizeX, hotbarSizeY*4);
                 Main.player.inv.selectedContainerSlot = new Vector2i((int) (clampedPos.x() * invWidth), (int) (clampedPos.y() * 4));
@@ -177,10 +176,12 @@ public class GUI {
             Main.player.inv.selectedSlot = new Vector2i(HandManager.hotbarSlot, 0);
             selSlot = Main.player.inv.selectedSlot;
         }
-        if (selSlot.x() < 0 || selSlot.y() < 0) {
-            selSlot.set(-1, -1);
-        } else {
-            drawSlot(hotbarPosX, selSlot == Main.player.inv.selectedContainerSlot ? containerPosY : hotbarPosY, 0, -1, selSlot.x(), selSlot.y(), enlargedSlotSize, enlargedSlotSize);
+        if (selSlot != null) {
+            if (selSlot.x() < 0 || selSlot.y() < 0) {
+                selSlot.set(-1, -1);
+            } else {
+                drawSlot(hotbarPosX, selSlot == Main.player.inv.selectedContainerSlot ? containerPosY : hotbarPosY, 0, -1, selSlot.x(), selSlot.y(), enlargedSlotSize, enlargedSlotSize);
+            }
         }
 
         glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //items

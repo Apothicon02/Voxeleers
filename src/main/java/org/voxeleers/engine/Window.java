@@ -42,6 +42,7 @@ public class Window {
     public boolean tenBitColorMode = true;
 
     public Window(String title, WindowOptions opts, Callable<Void> resizeFunc) {
+        //long start = System.currentTimeMillis();
         projectionMatrix = new Matrix4f();
         this.resizeFunc = resizeFunc;
         if (SDL_Init(SdlSubSystemConst.SDL_INIT_VIDEO) != 0) {
@@ -87,7 +88,7 @@ public class Window {
 
         SDL_SetWindowResizable(window, true);
         SDL_SetRelativeMouseMode(true);
-        input();
+        //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-start)/1000.f)+"s to create window.\n");
     }
 
     public void cleanup() {

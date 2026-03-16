@@ -53,8 +53,6 @@ public class Main {
     }
 
     public void init(Window window) throws Exception {
-        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-mainStarted)/1000.f)+"s from Main run to begin init.\n");
-
         ExecutorService noisesPool = Noises.init();
         AudioController.init();
         Renderer.initGL();
