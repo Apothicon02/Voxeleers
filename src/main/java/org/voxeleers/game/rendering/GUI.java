@@ -25,6 +25,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
@@ -305,7 +306,7 @@ public class GUI {
         return character == space ? -1 : charAtlasOffsetIndex.get(character);
     }
 
-    public static void fillTexture() throws IOException {
+    public static void fillTexture() throws IOException, InterruptedException {
         int i = 0;
         for (char character : alphabet) {
             charAtlasOffsetIndex.put(character, i);
@@ -314,11 +315,13 @@ public class GUI {
         glBindTexture(GL_TEXTURE_3D, Textures.gui.id);
         glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.gui.width, Textures.gui.height, ((Texture3D)(Textures.gui)).depth, 0, GL_RGBA, GL_FLOAT,
                 new float[Textures.gui.width*Textures.gui.height*((Texture3D)(Textures.gui)).depth*4]);
+        //long started = System.currentTimeMillis();
         loadImage("texture/font");
         loadImage("texture/hotbar");
         loadImage("texture/selected_slot");
         loadImage("texture/frame");
         loadImage("texture/trash");
+        //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-started)/1000.f)+"s for gui textures to load.\n");
 
         ItemTypes.fillTexture();
     }

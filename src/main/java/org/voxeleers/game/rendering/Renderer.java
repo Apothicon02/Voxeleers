@@ -6,6 +6,7 @@ import org.voxeleers.Main;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
+import org.voxeleers.game.items.ItemTypes;
 import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Room;
@@ -16,6 +17,7 @@ import org.voxeleers.engine.*;
 import org.voxeleers.engine.Window;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryStack;
+import org.w3c.dom.Text;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -29,6 +31,8 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.lwjgl.opengl.GL46.*;
 import static org.voxeleers.Main.*;
@@ -79,8 +83,23 @@ public class Renderer {
     public static boolean[] collisionData = new boolean[(1024*1024)+1024];
     public static boolean alreadyCreatedTextures = false;
 
-    public static void initiallyFillTextures(Window window, boolean resized) throws IOException {
+    public static void initiallyFillTextures(Window window, boolean resized) throws IOException, InterruptedException {
+        if (!alreadyCreatedTextures) {
+            float[] mergedNoises = new float[(Textures.noises.width * Textures.noises.height) * 4];
+            for (int x = 0; x < Textures.noises.width; x++) {
+                for (int y = 0; y < Textures.noises.height; y++) {
+                    int pos = 4 * ((x * Textures.noises.height) + y);
+                    mergedNoises[pos] = Noises.COHERERENT_NOISE.sample(x, y);
+                    mergedNoises[pos + 1] = Noises.WHITE_NOISE.sample(x, y);
+                }
+            }
+            glBindTexture(GL_TEXTURE_2D, Textures.noises.id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, Textures.noises.width, Textures.noises.height, 0, GL_RGBA, GL_FLOAT, mergedNoises);
+
+            GUI.fillTexture();
+        }
         glBindFramebuffer(GL_FRAMEBUFFER, rasterFBOId);
+
         float[] emptyData = new float[window.getWidth()*window.getHeight()*4];
         glBindTexture(GL_TEXTURE_2D, Textures.rasterColor.id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
@@ -117,6 +136,7 @@ public class Renderer {
                 glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.atlas.width, Textures.atlas.height, ((Texture3D) Textures.atlas).depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, Utils.imageToBuffer(atlasImage));
             }
 
+            long started = System.currentTimeMillis();
             glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
             if (!alreadyCreatedTextures) {
                 glTexStorage3D(GL_TEXTURE_3D, 5, GL_RGBA16I, Textures.blocks.width, Textures.blocks.height, ((Texture3D) Textures.blocks).depth);
@@ -139,20 +159,7 @@ public class Renderer {
                 byte[] data = World.lights[i];
                 glTexSubImage3D(GL_TEXTURE_3D, 0, 0, i, 0, Textures.lights.width, 1, ((Texture3D) Textures.lights).depth, GL_RGBA, GL_BYTE, ByteBuffer.allocateDirect(data.length).put(data).flip());
             }
-            if (!alreadyCreatedTextures) {
-                float[] mergedNoises = new float[(Textures.noises.width * Textures.noises.height) * 4];
-                for (int x = 0; x < Textures.noises.width; x++) {
-                    for (int y = 0; y < Textures.noises.height; y++) {
-                        int pos = 4 * ((x * Textures.noises.height) + y);
-                        mergedNoises[pos] = Noises.COHERERENT_NOISE.sample(x, y);
-                        mergedNoises[pos + 1] = Noises.WHITE_NOISE.sample(x, y);
-                    }
-                }
-                glBindTexture(GL_TEXTURE_2D, Textures.noises.id);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, Textures.noises.width, Textures.noises.height, 0, GL_RGBA, GL_FLOAT, mergedNoises);
-
-                GUI.fillTexture();
-            }
+            System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-started)/1000.f)+"s to upload world textures.\n");
         }
         glBindFramebuffer(GL_FRAMEBUFFER, sceneFBOId);
         glBindTexture(GL_TEXTURE_2D, Textures.sceneColor.id);
@@ -251,7 +258,9 @@ public class Renderer {
 
         createBuffers();
         Textures.generate();
+        long fillTexturesStarted = System.currentTimeMillis();
         initiallyFillTextures(window, false);
+        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-fillTexturesStarted)/1000.f)+"s to fill textures.\n");
         System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-rendererInitStarted)/1000.f)+"s to init renderer.\n");
     }
 

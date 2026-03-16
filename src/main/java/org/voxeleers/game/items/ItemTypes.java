@@ -11,19 +11,24 @@ import org.voxeleers.game.rendering.Textures;
 
 import javax.imageio.ImageIO;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.GL_RGBA;
-import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
 import static org.lwjgl.opengl.GL12.*;
 import static org.lwjgl.opengl.GL12.GL_TEXTURE_3D;
 import static org.lwjgl.opengl.GL30.GL_RGBA32F;
 
 public class ItemTypes {
     public static int itemTexSize = 16;
+    public static int itemTexByteSize = (itemTexSize*itemTexSize)*4;
     public static Map<Integer, ItemType> itemTypeMap = new HashMap<>(Map.of());
 
     public static int getId(ItemType type) {
@@ -116,22 +121,49 @@ public class ItemTypes {
         return type;
     }
 
-    public static void fillTexture() throws IOException {
+    public static ByteBuffer[] itemTextures;
+    public static void fillTexture() throws IOException, InterruptedException {
         glBindTexture(GL_TEXTURE_3D, Textures.items.id);
+        int texSize = Textures.items.width*Textures.items.height*((Texture3D)(Textures.items)).depth;
         glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.items.width, Textures.items.height, ((Texture3D)(Textures.items)).depth, 0, GL_RGBA, GL_FLOAT,
-                new float[Textures.items.width*Textures.items.height*((Texture3D)(Textures.items)).depth*4]);
+                new float[texSize*4]);
+        itemTextures = new ByteBuffer[texSize/16];
 
+        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         int xOffset = 0;
         int yOffset = 0;
+        int i = 0;
         for (ItemType itemType : itemTypeMap.values()) {
-            glTexSubImage3D(GL_TEXTURE_3D, 0, xOffset, yOffset, 0, itemTexSize, itemTexSize, 1, GL_RGBA, GL_UNSIGNED_BYTE,
-                    Utils.imageToBuffer(ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/item/"+itemType.name+".png"))));
-            itemType.atlasOffset(xOffset, yOffset);
+            int finalXOffset = xOffset;
+            int finalYOffset = yOffset;
+            int finalI = i;
+            pool.submit(() -> {
+                try {
+//                    glTexSubImage3D(GL_TEXTURE_3D, 0, finalXOffset, finalYOffset, 0, itemTexSize, itemTexSize, 1, GL_RGBA, GL_UNSIGNED_BYTE,
+//                            Utils.imageToBuffer(ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/item/"+itemType.name+".png"))));
+                    itemTextures[finalI] = Utils.imageToBuffer(ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/item/"+itemType.name+".png")));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                itemType.atlasOffset(finalXOffset, finalYOffset);
+            });
+            i++;
             xOffset += itemTexSize;
             if (xOffset >= 4096) {
                 xOffset = 0;
                 yOffset += itemTexSize;
             }
         }
+        pool.shutdown();
+//        long itemTexStarted = System.currentTimeMillis();
+        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until item textures are done filling
+//        System.out.print("Waited "+String.format("%.2f", (System.currentTimeMillis()-itemTexStarted)/1000.f)+"s on item textures to finish loading.\n");
+//        long itemTexUpStarted = System.currentTimeMillis();
+        i = 0;
+        for (ItemType itemType : itemTypeMap.values()) {
+            glTexSubImage3D(GL_TEXTURE_3D, 0, itemType.atlasOffset.x(), itemType.atlasOffset.y(), 0, itemTexSize, itemTexSize, 1, GL_RGBA, GL_UNSIGNED_BYTE, itemTextures[i++]);
+        }
+        ItemTypes.itemTextures = null;
+//        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-itemTexUpStarted)/1000.f)+"s to upload item atlas.\n");
     }
 }
