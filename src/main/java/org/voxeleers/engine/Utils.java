@@ -4,10 +4,11 @@ import org.voxeleers.Main;
 import org.voxeleers.game.world.World;
 import org.joml.*;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -111,6 +112,17 @@ public class Utils {
             data.append(s).append("\n");
         }
         return data.toString();
+    }
+
+    public static BufferedImage loadImage(String name) throws IOException {
+        InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("assets/base/"+name+".png");
+        BufferedInputStream bInputStream = new BufferedInputStream(inputStream);
+        ImageReader reader = ImageIO.getImageReadersByFormatName("png").next();
+        reader.setInput(ImageIO.createImageInputStream(bInputStream), true);
+        BufferedImage image = reader.read(0);
+        inputStream.close();
+        bInputStream.close();
+        return image;
     }
 
     public static ByteBuffer imageToBuffer(BufferedImage image) {

@@ -28,7 +28,10 @@ import org.voxeleers.engine.*;
 
 import java.io.IOException;
 import java.lang.Math;
+import java.lang.Runtime;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static io.github.libsdl4j.api.mouse.SdlMouse.SDL_SetRelativeMouseMode;
@@ -45,15 +48,18 @@ public class Main {
     private static final float MOUSE_SENSITIVITY = 0.01f;
     public static long mainStarted = 0;
     public static ExecutorService worldPool = null;
+
     public static void main(String[] args) throws Exception {
         mainStarted = System.currentTimeMillis();
-        ExecutorService noisesPool = Noises.init();
-        long worldInitStart = System.currentTimeMillis();
-        World.init();
-        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-worldInitStart)/1000.f)+"s to init world.\n");
+        ExecutorService pool = Executors.newFixedThreadPool(Math.min(4, Runtime.getRuntime().availableProcessors())); //at most the number of noise textures + 1 for the world init
+        pool.submit(World::init);
+        Noises.init(pool);
+        pool.shutdown();
+
         long noisesInitStarted = System.currentTimeMillis();
-        noisesPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)
-        System.out.print("Waited "+String.format("%.2f", (System.currentTimeMillis()-noisesInitStarted)/1000.f)+"s on noises to finish loading.\n");
+        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)
+        System.out.print("Waited " + String.format("%.2f", (System.currentTimeMillis() - noisesInitStarted) / 1000.f) + "s on noises to finish loading & world to finish initializing.\n");
+
         worldPool = World.worldType.generate();
 
         Main main = new Main();
@@ -65,10 +71,11 @@ public class Main {
         AudioController.init();
         Renderer.initGL();
         Models.loadModels();
+
         if (worldPool != null) {
             long worldLoadStarted = System.currentTimeMillis();
             worldPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until world loading is done, since it is used in the next step (renderer initialization)
-            System.out.print("Waited " + String.format("%.2f", (System.currentTimeMillis() - worldLoadStarted) / 1000.f) + "s on world to finish loading.\n");
+            System.out.print("Waited " + String.format("%.2f", (System.currentTimeMillis() - worldLoadStarted) / 1000.f) + "s on world to finish loading. "+"Took " + String.format("%.2f", (System.currentTimeMillis() - mainStarted) / 1000.f) + "s before beginning renderer init.\n");
         }
         Renderer.init(window);
         Player.create();

@@ -136,7 +136,7 @@ public class ItemTypes {
                 int yOffset = 0;
                 int i = 0;
                 for (ItemType itemType : itemTypeMap.values()) {
-                    itemTextures[i++] = Utils.imageToBuffer(ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/item/"+itemType.name+".png")));
+                    itemTextures[i++] = Utils.imageToBuffer(Utils.loadImage("item/"+itemType.name));
                     itemType.atlasOffset(xOffset, yOffset);
                     xOffset += itemTexSize;
                     if (xOffset >= 4096) {

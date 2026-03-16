@@ -122,7 +122,7 @@ public class Renderer {
 
         if (!resized) {
             if (!alreadyCreatedTextures) {
-                BufferedImage atlasImage = ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/generic/texture/atlas.png"));
+                BufferedImage atlasImage = Utils.loadImage("generic/texture/atlas");
                 for (int x = 0; x < Textures.atlas.width; x++) {
                     for (int y = 0; y < 1024; y++) {
                         Color color = new Color(atlasImage.getRGB(x, y), true);
