@@ -24,13 +24,10 @@ import org.voxeleers.game.world.types.LunaWorldType;
 import org.voxeleers.game.world.types.MarsWorldType;
 import org.joml.*;
 import org.voxeleers.engine.*;
-import org.lwjgl.opengl.GL;
 
 import java.io.IOException;
 import java.lang.Math;
-import java.lang.Runtime;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static io.github.libsdl4j.api.mouse.SdlMouse.SDL_SetRelativeMouseMode;
@@ -57,13 +54,13 @@ public class Main {
     public void init(Window window) throws Exception {
         System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-mainStarted)/1000.f)+"s from Main run to begin init.\n");
 
-        //Multithreaded init
         ExecutorService noisesPool = Noises.init();
-
-        //Single-threaded init
         AudioController.init();
         Renderer.initGL();
         Models.loadModels();
+        long itemTexUpStart = System.currentTimeMillis();
+        World.init();
+        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-itemTexUpStart)/1000.f)+"s to init world.\n");
 
         //long noisesInitStarted = System.currentTimeMillis();
         noisesPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)

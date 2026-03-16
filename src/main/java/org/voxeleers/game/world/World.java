@@ -55,22 +55,29 @@ public class World {
     public static WorldType nextWorldType = WorldTypes.MARS;
     public static ObjectOpenHashSet<Item> items = new ObjectOpenHashSet<>();
     public static Int2ObjectOpenHashMap<BlockEntity> blockEntities = new Int2ObjectOpenHashMap<>();
-    public static short[][] blocks = new short[height][(size*size)*2];
-    public static boolean[] unsavedBlocks = new boolean[height];
-    public static short[][] blocksLOD = new short[height/4][(size*size)/4];
-    public static short[][] blocksLOD2 = new short[height/16][(size*size)/16];
-    public static byte[][] lights = new byte[height][(size*size)*4];
-    public static boolean[] unsavedLights = new boolean[height];
-    public static short[] heightmap = new short[size*size];
+    public static short[][] blocks;// = new short[height][(size*size)*2];
+    public static boolean[] unsavedBlocks;// = new boolean[height];
+    public static short[][] blocksLOD;// = new short[height/4][(size*size)/4];
+    public static short[][] blocksLOD2;// = new short[height/16][(size*size)/16];
+    public static byte[][] lights;// = new byte[height][(size*size)*4];
+    public static boolean[] unsavedLights;// = new boolean[height];
+    public static short[] heightmap;// = new short[size*size];
 
     public static void clearData() {
         items.clear();
+        blockEntities.clear();
+        Rooms.rooms.clear();
         blocks = new short[height][(size*size)*2];
         unsavedBlocks = new boolean[height];
         blocksLOD = new short[height/4][(size*size)/4];
         blocksLOD2 = new short[height/16][(size*size)/16];
         lights = new byte[height][(size*size)*4];
+        unsavedLights = new boolean[height];
         heightmap = new short[size*size];
+    }
+
+    public static void init() {
+        clearData();
     }
 
     public static void tickBlockEntities() {

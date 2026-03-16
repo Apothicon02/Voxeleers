@@ -28,7 +28,7 @@ public class AudioController {
     public static ALCapabilities alCapabilities;
 
     public static void init() {
-        long audioInitStarted = System.currentTimeMillis();
+        //long audioInitStarted = System.currentTimeMillis();
         String defaultDeviceName = ALC11.alcGetString(0, ALC11.ALC_DEFAULT_DEVICE_SPECIFIER);
         device = ALC11.alcOpenDevice(defaultDeviceName);
         alcCapabilities = ALC.createCapabilities(device);
@@ -48,7 +48,7 @@ public class AudioController {
 //            maxSourcesBeforeError++;
 //        }
         AudioController.setListenerData(new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new float[6]);
-        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-audioInitStarted)/1000.f)+"s to init audio.\n");
+        //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-audioInitStarted)/1000.f)+"s to init openAL.\n");
     }
 
     public static ArrayList<Source> disposableSources = new ArrayList<>(List.of());

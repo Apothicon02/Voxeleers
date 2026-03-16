@@ -133,7 +133,7 @@ public class Renderer {
                 glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.atlas.width, Textures.atlas.height, ((Texture3D) Textures.atlas).depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, Utils.imageToBuffer(atlasImage));
             }
 
-            long started = System.currentTimeMillis();
+            //long started = System.currentTimeMillis();
             glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
             if (!alreadyCreatedTextures) {
                 glTexStorage3D(GL_TEXTURE_3D, 5, GL_RGBA16I, Textures.blocks.width, Textures.blocks.height, ((Texture3D) Textures.blocks).depth);
@@ -161,7 +161,7 @@ public class Renderer {
             for (byte[] data : World.lights) {
                 glTexSubImage3D(GL_TEXTURE_3D, 0, 0, y++, 0, Textures.lights.width, 1, ((Texture3D) Textures.lights).depth, GL_RGBA, GL_BYTE, lightUpBuf.clear().put(data).flip());
             }
-            System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-started)/1000.f)+"s to upload world textures.\n");
+            //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-started)/1000.f)+"s to upload world textures.\n");
         }
         glBindFramebuffer(GL_FRAMEBUFFER, sceneFBOId);
         glBindTexture(GL_TEXTURE_2D, Textures.sceneColor.id);
@@ -226,7 +226,7 @@ public class Renderer {
     }
 
     public static void initGL() {
-        long glInitStarted = System.currentTimeMillis();
+        //long glInitStarted = System.currentTimeMillis();
         GL.createCapabilities();
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_GEQUAL);
@@ -234,7 +234,7 @@ public class Renderer {
         glFrontFace(GL_CW);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
-        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-glInitStarted)/1000.f)+"s to init OpenGL.\n");
+        //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-glInitStarted)/1000.f)+"s to init OpenGL.\n");
     }
     public static void init(Window window) throws Exception {
         //long rendererInitStarted = System.currentTimeMillis();
