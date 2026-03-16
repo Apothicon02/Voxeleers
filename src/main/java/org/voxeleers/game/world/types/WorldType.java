@@ -30,7 +30,7 @@ public class WorldType {
         ExecutorService executorService = null;
         generated = false;
         if (Files.exists(getWorldPath())) {
-            loadWorld(getWorldPath()+"/");
+            executorService = loadWorld(getWorldPath()+"/");
         } else {
             long worldgenStarted = System.currentTimeMillis();
             createNew();

@@ -44,28 +44,27 @@ public class Main {
     public static Player player;
     private static final float MOUSE_SENSITIVITY = 0.01f;
     public static long mainStarted = 0;
-
+    public static ExecutorService worldPool = null;
     public static void main(String[] args) throws Exception {
         mainStarted = System.currentTimeMillis();
+        ExecutorService noisesPool = Noises.init();
+        long worldInitStart = System.currentTimeMillis();
+        World.init();
+        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-worldInitStart)/1000.f)+"s to init world.\n");
+        long noisesInitStarted = System.currentTimeMillis();
+        noisesPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)
+        System.out.print("Waited "+String.format("%.2f", (System.currentTimeMillis()-noisesInitStarted)/1000.f)+"s on noises to finish loading.\n");
+        worldPool = World.worldType.generate();
+
         Main main = new Main();
         Engine gameEng = new Engine("Voxeleers", new Window.WindowOptions(), main);
         gameEng.start();
     }
 
     public void init(Window window) throws Exception {
-        ExecutorService noisesPool = Noises.init();
         AudioController.init();
         Renderer.initGL();
         Models.loadModels();
-        long worldInitStart = System.currentTimeMillis();
-        World.init();
-        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-worldInitStart)/1000.f)+"s to init world.\n");
-
-        //long noisesInitStarted = System.currentTimeMillis();
-        noisesPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)
-        //System.out.print("Waited "+String.format("%.2f", (System.currentTimeMillis()-noisesInitStarted)/1000.f)+"s on noises to finish loading.\n");
-
-        ExecutorService worldPool = World.worldType.generate();
         if (worldPool != null) {
             long worldLoadStarted = System.currentTimeMillis();
             worldPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until world loading is done, since it is used in the next step (renderer initialization)

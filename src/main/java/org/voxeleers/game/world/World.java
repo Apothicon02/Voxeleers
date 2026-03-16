@@ -439,7 +439,7 @@ public class World {
         Renderer.time = globalData[0]/1000f;
         Main.timePassed = globalData[1]/1000f;
         Main.meridiem = globalData[2];
-        ExecutorService pool = Executors.newFixedThreadPool(Math.min(5, Runtime.getRuntime().availableProcessors()));
+        ExecutorService pool = Executors.newFixedThreadPool(Math.min(6, Runtime.getRuntime().availableProcessors()));
         pool.submit(() -> {try {Utils.byteArrayToShortArray(new FileInputStream(path + "heightmap.data").readAllBytes());} catch (IOException e) {throw new RuntimeException(e);}}, heightmap);
         pool.submit(() -> {try {
             for (int i = 0; i < height; i++) {
@@ -461,16 +461,18 @@ public class World {
                 lights[i] = new FileInputStream(path + "lights/" + i + ".data").readAllBytes();
             }
         } catch (IOException e) {throw new RuntimeException(e);}});
-        if (Files.exists(Path.of(path + "items.data"))) {
-            int[] itemsData = Utils.flipIntArray(Utils.byteArrayToIntArray(new FileInputStream(path + "items.data").readAllBytes()));
-            for (int i = 0; i < itemsData.length; ) {
-                int itemDataLength = itemsData[i++];
-                if (itemDataLength > 0) {
-                    items.add(Item.load(itemsData, i));
-                    i += itemDataLength;
+        pool.submit(() -> {try {
+            if (Files.exists(Path.of(path + "items.data"))) {
+                int[] itemsData = Utils.flipIntArray(Utils.byteArrayToIntArray(new FileInputStream(path + "items.data").readAllBytes()));
+                for (int i = 0; i < itemsData.length; ) {
+                    int itemDataLength = itemsData[i++];
+                    if (itemDataLength > 0) {
+                        items.add(Item.load(itemsData, i));
+                        i += itemDataLength;
+                    }
                 }
             }
-        }
+        } catch (IOException e) {throw new RuntimeException(e);}});
         pool.shutdown();
         return pool;
     }
