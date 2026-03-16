@@ -31,6 +31,7 @@ repositories {
 dependencies {
     implementation(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
 
+    //implementation("io.netty:netty-all:4.2.10.Final")
     implementation("io.github.libsdl4j:libsdl4j:2.28.4-1.6")
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("org.tinylog:tinylog-api-kotlin:2.7.0")

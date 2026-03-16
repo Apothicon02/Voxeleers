@@ -26,9 +26,7 @@ import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Math;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
+import java.nio.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
@@ -100,28 +98,27 @@ public class Renderer {
         }
         glBindFramebuffer(GL_FRAMEBUFFER, rasterFBOId);
 
-        float[] emptyData = new float[window.getWidth()*window.getHeight()*4];
         glBindTexture(GL_TEXTURE_2D, Textures.rasterColor.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Textures.rasterColor.id, 0);
         glBindTexture(GL_TEXTURE_2D, Textures.rasterPos.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, Textures.rasterPos.id, 0);
         glBindTexture(GL_TEXTURE_2D, Textures.rasterNorm.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, Textures.rasterNorm.id, 0);
         glBindTexture(GL_TEXTURE_2D, Textures.rasterDepth.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, window.getWidth(), window.getHeight(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, window.getWidth(), window.getHeight(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Textures.rasterDepth.id, 0);
         glDrawBuffers(new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2});
 
         glBindFramebuffer(GL_FRAMEBUFFER, uncheckerFBOId);
         glBindTexture(GL_TEXTURE_2D, Textures.scene.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Textures.scene.id, 0);
 
         glBindTexture(GL_TEXTURE_2D, Textures.sceneColorOld.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
 
         if (!resized) {
             if (!alreadyCreatedTextures) {
@@ -141,38 +138,43 @@ public class Renderer {
             if (!alreadyCreatedTextures) {
                 glTexStorage3D(GL_TEXTURE_3D, 5, GL_RGBA16I, Textures.blocks.width, Textures.blocks.height, ((Texture3D) Textures.blocks).depth);
             }
-            for (int i = 0; i < World.height; i++) {
-                glTexSubImage3D(GL_TEXTURE_3D, 0, 0, i, 0, Textures.blocks.width, 1, ((Texture3D) Textures.blocks).depth, GL_RG_INTEGER, GL_SHORT, World.blocks[i]);
+            ShortBuffer blockUpBuf = ByteBuffer.allocateDirect(World.blocks[0].length*2).order(ByteOrder.nativeOrder()).asShortBuffer();
+            int y = 0;
+            for (short[] data : World.blocks) {
+                glTexSubImage3D(GL_TEXTURE_3D, 0, 0, y++, 0, Textures.blocks.width, 1, ((Texture3D) Textures.blocks).depth, GL_RG_INTEGER, GL_SHORT, blockUpBuf.clear().put(data).flip());
             }
-            for (int i = 0; i < World.height/4; i++) {
-                glTexSubImage3D(GL_TEXTURE_3D, 2, 0, i, 0, Textures.blocks.width/4, 1, ((Texture3D) Textures.blocks).depth/4, GL_RED_INTEGER, GL_SHORT, World.blocksLOD[i]);
+            y = 0;
+            for (short[] data : World.blocksLOD) {
+                glTexSubImage3D(GL_TEXTURE_3D, 2, 0, y++, 0, Textures.blocks.width/4, 1, ((Texture3D) Textures.blocks).depth/4, GL_RED_INTEGER, GL_SHORT, data);
             }
-            for (int i = 0; i < World.height/16; i++) {
-                glTexSubImage3D(GL_TEXTURE_3D, 4, 0, i, 0, Textures.blocks.width/16, 1, ((Texture3D) Textures.blocks).depth/16, GL_RED_INTEGER, GL_SHORT, World.blocksLOD2[i]);
+            y = 0;
+            for (short[] data : World.blocksLOD2) {
+                glTexSubImage3D(GL_TEXTURE_3D, 4, 0, y++, 0, Textures.blocks.width/16, 1, ((Texture3D) Textures.blocks).depth/16, GL_RED_INTEGER, GL_SHORT, data);
             }
 
             glBindTexture(GL_TEXTURE_3D, Textures.lights.id);
             if (!alreadyCreatedTextures) {
                 glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA4, Textures.lights.width, Textures.lights.height, ((Texture3D) Textures.lights).depth);
             }
-            for (int i = 0; i < World.height; i++) {
-                byte[] data = World.lights[i];
-                glTexSubImage3D(GL_TEXTURE_3D, 0, 0, i, 0, Textures.lights.width, 1, ((Texture3D) Textures.lights).depth, GL_RGBA, GL_BYTE, ByteBuffer.allocateDirect(data.length).put(data).flip());
+            ByteBuffer lightUpBuf = ByteBuffer.allocateDirect(World.lights[0].length);
+            y = 0;
+            for (byte[] data : World.lights) {
+                glTexSubImage3D(GL_TEXTURE_3D, 0, 0, y++, 0, Textures.lights.width, 1, ((Texture3D) Textures.lights).depth, GL_RGBA, GL_BYTE, lightUpBuf.clear().put(data).flip());
             }
             System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-started)/1000.f)+"s to upload world textures.\n");
         }
         glBindFramebuffer(GL_FRAMEBUFFER, sceneFBOId);
         glBindTexture(GL_TEXTURE_2D, Textures.sceneColor.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Textures.sceneColor.id, 0);
 
         glBindFramebuffer(GL_FRAMEBUFFER, blurryFBOId);
         glBindTexture(GL_TEXTURE_2D, Textures.blurry.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Textures.blurry.id, 0);
         glBindFramebuffer(GL_FRAMEBUFFER, blurredFBOId);
         glBindTexture(GL_TEXTURE_2D, Textures.blurred.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, emptyData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Textures.blurred.id, 0);
         alreadyCreatedTextures = true;
     }
@@ -235,7 +237,7 @@ public class Renderer {
         System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-glInitStarted)/1000.f)+"s to init OpenGL.\n");
     }
     public static void init(Window window) throws Exception {
-        long rendererInitStarted = System.currentTimeMillis();
+        //long rendererInitStarted = System.currentTimeMillis();
         createGLDebugger();
         scene = new ShaderProgram("scene.vert", new String[]{"scene.frag"},
                 new String[]{"res", "projection", "view", "selected", "offsetIdx", "checkerStep", "reverseChecker", "taa", "ui", "upscale", "renderDistance", "aoQuality", "hasAtmosphere", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
@@ -261,7 +263,7 @@ public class Renderer {
         long fillTexturesStarted = System.currentTimeMillis();
         initiallyFillTextures(window, false);
         System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-fillTexturesStarted)/1000.f)+"s to fill textures.\n");
-        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-rendererInitStarted)/1000.f)+"s to init renderer.\n");
+        //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-rendererInitStarted)/1000.f)+"s to init renderer.\n");
     }
 
     public static Vector3f sunPos = new Vector3f(0, World.height*2, 0);

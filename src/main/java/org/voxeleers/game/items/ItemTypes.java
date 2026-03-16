@@ -122,48 +122,28 @@ public class ItemTypes {
     }
 
     public static ByteBuffer[] itemTextures;
-    public static void fillTexture() throws IOException, InterruptedException {
+    public static ExecutorService pool;
+    public static void fillTexture() {
         glBindTexture(GL_TEXTURE_3D, Textures.items.id);
         int texSize = Textures.items.width*Textures.items.height*((Texture3D)(Textures.items)).depth;
-        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.items.width, Textures.items.height, ((Texture3D)(Textures.items)).depth, 0, GL_RGBA, GL_FLOAT,
-                new float[texSize*4]);
+        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.items.width, Textures.items.height, ((Texture3D)(Textures.items)).depth, 0, GL_RGBA, GL_FLOAT, 0);
         itemTextures = new ByteBuffer[texSize/16];
 
-        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        int xOffset = 0;
-        int yOffset = 0;
-        int i = 0;
-        for (ItemType itemType : itemTypeMap.values()) {
-            int finalXOffset = xOffset;
-            int finalYOffset = yOffset;
-            int finalI = i;
-            pool.submit(() -> {
-                try {
-//                    glTexSubImage3D(GL_TEXTURE_3D, 0, finalXOffset, finalYOffset, 0, itemTexSize, itemTexSize, 1, GL_RGBA, GL_UNSIGNED_BYTE,
-//                            Utils.imageToBuffer(ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/item/"+itemType.name+".png"))));
-                    itemTextures[finalI] = Utils.imageToBuffer(ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/item/"+itemType.name+".png")));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+        pool = Executors.newFixedThreadPool(1);
+        pool.submit(() -> { try {
+                int xOffset = 0;
+                int yOffset = 0;
+                int i = 0;
+                for (ItemType itemType : itemTypeMap.values()) {
+                    itemTextures[i++] = Utils.imageToBuffer(ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/item/"+itemType.name+".png")));
+                    itemType.atlasOffset(xOffset, yOffset);
+                    xOffset += itemTexSize;
+                    if (xOffset >= 4096) {
+                        xOffset = 0;
+                        yOffset += itemTexSize;
+                    }
                 }
-                itemType.atlasOffset(finalXOffset, finalYOffset);
-            });
-            i++;
-            xOffset += itemTexSize;
-            if (xOffset >= 4096) {
-                xOffset = 0;
-                yOffset += itemTexSize;
-            }
-        }
+            } catch (IOException e) {throw new RuntimeException(e);}});
         pool.shutdown();
-//        long itemTexStarted = System.currentTimeMillis();
-        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until item textures are done filling
-//        System.out.print("Waited "+String.format("%.2f", (System.currentTimeMillis()-itemTexStarted)/1000.f)+"s on item textures to finish loading.\n");
-//        long itemTexUpStarted = System.currentTimeMillis();
-        i = 0;
-        for (ItemType itemType : itemTypeMap.values()) {
-            glTexSubImage3D(GL_TEXTURE_3D, 0, itemType.atlasOffset.x(), itemType.atlasOffset.y(), 0, itemTexSize, itemTexSize, 1, GL_RGBA, GL_UNSIGNED_BYTE, itemTextures[i++]);
-        }
-        ItemTypes.itemTextures = null;
-//        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-itemTexUpStarted)/1000.f)+"s to upload item atlas.\n");
     }
 }

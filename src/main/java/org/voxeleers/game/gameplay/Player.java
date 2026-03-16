@@ -71,7 +71,7 @@ public class Player {
 
     public static Path plrPath = Path.of(Main.mainFolder+"world0/player.data");
     public static void create() throws IOException {
-        long plrInitStarted = System.currentTimeMillis();
+        //long plrInitStarted = System.currentTimeMillis();
         if (Files.exists(plrPath)) {
             int[] plrData = Utils.flipIntArray(Utils.byteArrayToIntArray(new FileInputStream(plrPath.toFile()).readAllBytes()));
             int i = 0;
@@ -95,7 +95,7 @@ public class Player {
         } else {
             Main.player.inv.init();
         }
-        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-plrInitStarted)/1000.f)+"s to load player.\n");
+        //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-plrInitStarted)/1000.f)+"s to load player.\n");
     }
     public void save() throws IOException {
         FileOutputStream out = new FileOutputStream(plrPath.toFile());

@@ -306,22 +306,19 @@ public class GUI {
         return character == space ? -1 : charAtlasOffsetIndex.get(character);
     }
 
-    public static void fillTexture() throws IOException, InterruptedException {
+    public static void fillTexture() throws IOException {
         int i = 0;
         for (char character : alphabet) {
             charAtlasOffsetIndex.put(character, i);
             i+=charWidth;
         }
         glBindTexture(GL_TEXTURE_3D, Textures.gui.id);
-        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.gui.width, Textures.gui.height, ((Texture3D)(Textures.gui)).depth, 0, GL_RGBA, GL_FLOAT,
-                new float[Textures.gui.width*Textures.gui.height*((Texture3D)(Textures.gui)).depth*4]);
-        //long started = System.currentTimeMillis();
+        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.gui.width, Textures.gui.height, ((Texture3D)(Textures.gui)).depth, 0, GL_RGBA, GL_FLOAT, 0);
         loadImage("texture/font");
         loadImage("texture/hotbar");
         loadImage("texture/selected_slot");
         loadImage("texture/frame");
         loadImage("texture/trash");
-        //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-started)/1000.f)+"s for gui textures to load.\n");
 
         ItemTypes.fillTexture();
     }

@@ -10,6 +10,7 @@ import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.gameplay.Player;
 import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.items.Item;
+import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.items.ItemTypes;
 import org.voxeleers.game.rendering.GUI;
 import org.voxeleers.game.rendering.Models;
@@ -64,9 +65,9 @@ public class Main {
         Renderer.initGL();
         Models.loadModels();
 
-        long noisesInitStarted = System.currentTimeMillis();
+        //long noisesInitStarted = System.currentTimeMillis();
         noisesPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)
-        System.out.print("Waited "+String.format("%.2f", (System.currentTimeMillis()-noisesInitStarted)/1000.f)+"s on noises to finish loading.\n");
+        //System.out.print("Waited "+String.format("%.2f", (System.currentTimeMillis()-noisesInitStarted)/1000.f)+"s on noises to finish loading.\n");
 
         ExecutorService worldPool = World.worldType.generate();
         if (worldPool != null) {
@@ -76,6 +77,14 @@ public class Main {
         }
         Renderer.init(window);
         Player.create();
+        ItemTypes.pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until item textures are done filling to upload those textures
+        //long itemTexUpStart = System.currentTimeMillis();
+        int i = 0;
+        for (ItemType itemType : ItemTypes.itemTypeMap.values()) {
+            glTexSubImage3D(GL_TEXTURE_3D, 0, itemType.atlasOffset.x(), itemType.atlasOffset.y(), 0, ItemTypes.itemTexSize, ItemTypes.itemTexSize, 1, GL_RGBA, GL_UNSIGNED_BYTE, ItemTypes.itemTextures[i++]);
+        }
+        ItemTypes.itemTextures = null;
+        //System.out.print("Took " + String.format("%.2f", (System.currentTimeMillis() - itemTexUpStart) / 1000.f) + "s for item textures to upload.\n");
     }
 
     public static boolean isLMBClick = false;
