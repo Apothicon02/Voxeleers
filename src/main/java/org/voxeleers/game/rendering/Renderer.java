@@ -159,7 +159,7 @@ public class Renderer {
             ByteBuffer lightUpBuf = ByteBuffer.allocateDirect(World.lights[0].length);
             y = 0;
             for (byte[] data : World.lights) {
-                glTexSubImage3D(GL_TEXTURE_3D, 0, 0, y++, 0, Textures.lights.width, 1, ((Texture3D) Textures.lights).depth, GL_RGBA, GL_BYTE, lightUpBuf.clear().put(data).flip());
+                glTexSubImage3D(GL_TEXTURE_3D, 0, 0, y++, 0, Textures.lights.width, 1, ((Texture3D) Textures.lights).depth, GL_RGBA, GL_UNSIGNED_BYTE, lightUpBuf.clear().put(data).flip());
             }
             //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-started)/1000.f)+"s to upload world textures.\n");
         }

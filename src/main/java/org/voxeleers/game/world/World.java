@@ -114,7 +114,7 @@ public class World {
             if (generated) {
                 unsavedLights[y] = true;
                 glBindTexture(GL_TEXTURE_3D, Textures.lights.id);
-                glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA, GL_BYTE, ByteBuffer.allocateDirect(4).put((byte)r).put((byte)b).put((byte)g).put((byte)s).flip());
+                glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, ByteBuffer.allocateDirect(4).put((byte)r).put((byte)b).put((byte)g).put((byte)s).flip());
                 updateLODS(x, y, z);
             }
         }

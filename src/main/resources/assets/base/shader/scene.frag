@@ -160,7 +160,7 @@ ivec4 getBlock(float x, float y, float z) {
 }
 float waterDepth = 1.f;
 vec4 getLight(float x, float y, float z) {
-    return texture(lights, vec3(z, y, x)/vec3(size, height, size), 0)*vec4(7.5f, 7.5f, 7.5f, 10);
+    return texture(lights, vec3(z, y, x)/vec3(size, height, size), 0)*vec4(15, 15, 15, 20);
 }
 vec3 ogPos = vec3(0);
 vec3 sunColor = vec3(0);

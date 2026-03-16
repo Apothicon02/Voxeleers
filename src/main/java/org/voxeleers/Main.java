@@ -14,6 +14,7 @@ import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.items.ItemTypes;
 import org.voxeleers.game.rendering.GUI;
 import org.voxeleers.game.rendering.Models;
+import org.voxeleers.game.rendering.Textures;
 import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.LightHelper;
@@ -58,9 +59,9 @@ public class Main {
         AudioController.init();
         Renderer.initGL();
         Models.loadModels();
-        long itemTexUpStart = System.currentTimeMillis();
+        long worldInitStart = System.currentTimeMillis();
         World.init();
-        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-itemTexUpStart)/1000.f)+"s to init world.\n");
+        System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-worldInitStart)/1000.f)+"s to init world.\n");
 
         //long noisesInitStarted = System.currentTimeMillis();
         noisesPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)
@@ -74,8 +75,9 @@ public class Main {
         }
         Renderer.init(window);
         Player.create();
-        ItemTypes.pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until item textures are done filling to upload those textures
+        //ItemTypes.pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until item textures are done filling to upload those textures
         //long itemTexUpStart = System.currentTimeMillis();
+        glBindTexture(GL_TEXTURE_3D, Textures.items.id);
         int i = 0;
         for (ItemType itemType : ItemTypes.itemTypeMap.values()) {
             glTexSubImage3D(GL_TEXTURE_3D, 0, itemType.atlasOffset.x(), itemType.atlasOffset.y(), 0, ItemTypes.itemTexSize, ItemTypes.itemTexSize, 1, GL_RGBA, GL_UNSIGNED_BYTE, ItemTypes.itemTextures[i++]);

@@ -12,6 +12,7 @@ import org.voxeleers.game.rendering.Textures;
 import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -127,7 +128,7 @@ public class ItemTypes {
         glBindTexture(GL_TEXTURE_3D, Textures.items.id);
         int texSize = Textures.items.width*Textures.items.height*((Texture3D)(Textures.items)).depth;
         glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.items.width, Textures.items.height, ((Texture3D)(Textures.items)).depth, 0, GL_RGBA, GL_FLOAT, 0);
-        itemTextures = new ByteBuffer[texSize/16];
+        itemTextures = new ByteBuffer[texSize/itemTexSize];
 
         pool = Executors.newFixedThreadPool(1);
         pool.submit(() -> { try {
