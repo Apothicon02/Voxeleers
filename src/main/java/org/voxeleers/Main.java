@@ -12,7 +12,7 @@ import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.items.ItemTypes;
-import org.voxeleers.game.rendering.GUI;
+import org.voxeleers.game.gui.GUI;
 import org.voxeleers.game.rendering.Models;
 import org.voxeleers.game.rendering.Textures;
 import org.voxeleers.game.rooms.Molecule;
@@ -29,7 +29,6 @@ import org.voxeleers.engine.*;
 import java.io.IOException;
 import java.lang.Math;
 import java.lang.Runtime;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -142,7 +141,7 @@ public class Main {
                         timeMul = 1.f;
                     }
                 }
-            } else if (!GUI.pauseMenuOpen) {
+            } else {
                 int flags = SDL_GetWindowFlags(Window.window);
                 boolean focused = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
                 boolean isLMBDown = focused && window.leftButtonPressed;
@@ -257,7 +256,9 @@ public class Main {
                     if (GUI.pauseMenuOpen || GUI.inventoryOpen) {
                         SDL_SetRelativeMouseMode(false);
                         player.clearVars();
-                        player.inv.tick(window);
+                        if (GUI.inventoryOpen) {
+                            player.inv.tick(window);
+                        }
                     } else {
                         SDL_SetRelativeMouseMode(true);
                         Vector2f displVec = new Vector2f(window.displVec);

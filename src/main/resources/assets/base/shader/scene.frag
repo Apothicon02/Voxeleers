@@ -854,5 +854,5 @@ void main() {
         fragColor.rgb += lightFog.rgb;
     }
     fragColor = toLinear(fragColor);
-    fragColor.a = depth;
+    fragColor.a = fragColor.a >= 1 ? depth : 0.f;
 }

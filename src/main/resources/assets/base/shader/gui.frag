@@ -20,7 +20,6 @@ out vec4 fragColor;
 
 void main() {
     if (color.a == -1f) {
-        fragColor = texture(scene_color, pos.xy, 0);
         vec4 baseColor = texture(scene_color, pos.xy, 0);
         vec4 blurColor = texture(blurred, gl_FragCoord.xy/res.xy, 0);
         vec4 blurriness = vec4(tiltShift ? max(0, sqrt(sqrt(abs(pos.y-0.5)*2))-0.5f)*2.f : 0); //tilt-shift

@@ -1,12 +1,10 @@
 package org.voxeleers.game.rendering;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.lwjgl.opengl.GL;
 import org.voxeleers.Main;
 import org.voxeleers.game.gameplay.HandManager;
+import org.voxeleers.game.gui.GUI;
 import org.voxeleers.game.items.Item;
-import org.voxeleers.game.items.ItemType;
-import org.voxeleers.game.items.ItemTypes;
 import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Room;
@@ -17,7 +15,6 @@ import org.voxeleers.engine.*;
 import org.voxeleers.engine.Window;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryStack;
-import org.w3c.dom.Text;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -29,8 +26,6 @@ import java.lang.Math;
 import java.nio.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static org.lwjgl.opengl.GL46.*;
 import static org.voxeleers.Main.*;
@@ -620,7 +615,7 @@ public class Renderer {
             }
             boolean tiltShift = false;
             boolean dof = false;
-            if (GUI.inventoryOpen) {
+            if (GUI.inventoryOpen || GUI.pauseMenuOpen) {
                 dof = true;
             }
             if (player.blockBreathing.x() == 1) {
@@ -735,7 +730,7 @@ public class Renderer {
             screenshot(window);
             glClearDepthf(0.f);
             glClear(GL_DEPTH_BUFFER_BIT);
-            GUI.updateGUI(window);
+            GUI.update(window);
             glUniform2i(gui.uniforms.get("res"), window.getWidth(), window.getHeight());
             glUniform4f(gui.uniforms.get("color"), -1f, -1f, -1f, -1f);
             glUniform1i(gui.uniforms.get("tiltShift"), tiltShift ? 1 : 0);
@@ -744,10 +739,11 @@ public class Renderer {
                 glUniformMatrix4fv(Renderer.gui.uniforms.get("model"), false, new Matrix4f().get(stack.mallocFloat(16)));
             }
             draw();
-            if (showUI && !Main.isSwappingWorldType) {
+            if (showUI && !Main.isSwappingWorldType && !GUI.pauseMenuOpen) {
                 GUI.draw(window);
             }
             GUI.drawAlwaysVisible(window);
+            GUI.tick(window);
 
             prevViewMatrix = new Matrix4f(viewMatrix);
             prevProjMatrix = new Matrix4f(projMatrix);

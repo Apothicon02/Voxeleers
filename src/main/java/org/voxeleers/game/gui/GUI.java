@@ -1,5 +1,7 @@
-package org.voxeleers.game.rendering;
+package org.voxeleers.game.gui;
 
+import org.joml.*;
+import org.lwjgl.opengl.GL12;
 import org.voxeleers.Main;
 import org.voxeleers.engine.Engine;
 import org.voxeleers.engine.Utils;
@@ -10,20 +12,24 @@ import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.items.ItemTypes;
+import org.voxeleers.game.rendering.Models;
+import org.voxeleers.game.rendering.Renderer;
+import org.voxeleers.game.rendering.Texture3D;
+import org.voxeleers.game.rendering.Textures;
 import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
 import org.voxeleers.game.world.World;
-import org.joml.Matrix4f;
-import org.joml.Vector2f;
-import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.Math;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
@@ -51,31 +57,56 @@ public class GUI {
     public static boolean pauseMenuOpen = false;
     public static boolean inventoryOpen = false;
 
-    public static void updateGUI(Window window) {
+    public static Button drawingButton = null;
+    public static List<Button> buttons = new ArrayList<>();
+
+    public static void update(Window window) {
         glBindTextureUnit(0, Textures.sceneColor.id);
         glBindTextureUnit(1, Textures.blurred.id);
         glBindTextureUnit(2, Textures.gui.id);
         glBindTextureUnit(3, Textures.items.id);
         width = window.getWidth();
         height = window.getHeight();
-        guiScaleMul = (int)(Math.min(width, height)/270f);
-        guiScale = width/guiScaleMul;
+        guiScaleMul = (int) (Math.min(width, height) / 270f);
+        guiScale = width / guiScaleMul;
         aspectRatio = (float) width / height;
+        buttons.clear();
+    }
+
+    public static void tick(Window window) {
+        Vector2i cursorPos = new Vector2i(cursorPxX(), cursorPxY());
+        glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
+        glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
+        glUniform1i(Renderer.gui.uniforms.get("layer"), 5); //button
+        for (Button button : buttons) {
+            if (cursorPos.x() > button.bounds.x() && cursorPos.x() < button.bounds.z() && cursorPos.y() > button.bounds.y() && cursorPos.y() < button.bounds.w()) {
+                Vector2i borderData = getButtonBorderData(button.width);
+                glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, borderData.y() + 128);
+                drawQuad(false, false, (float) button.bounds.x() / width, (float) button.bounds.y() / height, button.width, 16);
+                if (Main.isLMBClick) {
+                    button.clicked();
+                }
+            }
+        }
     }
 
     public static void drawAlwaysVisible(Window window) {
-        if (Main.isSaving) {
+        if (Main.isSaving || pauseMenuOpen) {
             glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
             glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
-            Vector2i border = new Vector2i((int) ((32*(width/3840f))/guiScaleMul), (int) ((32*(height/2180f))/guiScaleMul));
-            drawText(false, 0, 0, 2+border.x(), 2+border.y(), "Saving data...".toCharArray());
-            if (Main.isSwappingWorldType) {
-                drawText(false, 0, 1, 2+border.x(), -2 - border.y() - charHeight, ("Travelling to "+World.nextWorldType.getWorldTypeName()+" from "+World.worldType.getWorldTypeName()).toCharArray());
+            Vector2i border = new Vector2i((int) ((32 * (width / 3840f)) / guiScaleMul), (int) ((32 * (height / 2180f)) / guiScaleMul));
+            if (Main.isSaving) {
+                drawText(false, 0, 0, 2 + border.x(), 2 + border.y(), "Saving data...".toCharArray());
+            }
+            if (Main.isSwappingWorldType || pauseMenuOpen) {
+                if (Main.isSwappingWorldType) {
+                    drawText(false, 0, 1, 2 + border.x(), -2 - border.y() - charHeight, ("Travelling to " + World.nextWorldType.getWorldTypeName() + " from " + World.worldType.getWorldTypeName()).toCharArray());
+                }
                 glUniform1i(Renderer.gui.uniforms.get("layer"), 3); //frame
                 glUniform2i(Renderer.gui.uniforms.get("size"), 3840, 2160);
-                glUniform2i(Renderer.gui.uniforms.get("scale"), width, (int)(height*aspectRatio));
+                glUniform2i(Renderer.gui.uniforms.get("scale"), width, (int) (height * aspectRatio));
                 glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, 0);
-                try(MemoryStack stack = MemoryStack.stackPush()) {
+                try (MemoryStack stack = MemoryStack.stackPush()) {
                     glUniformMatrix4fv(Renderer.gui.uniforms.get("model"), false, new Matrix4f().get(stack.mallocFloat(16)));
                 }
                 Renderer.draw();
@@ -83,9 +114,22 @@ public class GUI {
         }
 
         if (pauseMenuOpen) {
-            glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 0.5f);
+            glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
             glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
-            drawText(true, 0.5f, 1, 0, -2 - charHeight, "Paused".toCharArray());
+            glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
+            drawText(true, 0.5f, 1, 0, -10 - charHeight, "Paused".toCharArray());
+            drawingButton = new ContinuePlayingButton();
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Continue Playing".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            char[] saveChars = "Save World".toCharArray();
+            float saveOffset = getButtonBorderData((saveChars.length * charWidth) + 3).x * 0.5f;
+            drawingButton = new SaveWorldButton();
+            drawButton(true, 0.5f, 0.5f, (-saveOffset) - 1, (charHeight * 3) + 1, saveChars, new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new SettingsButton();
+            drawButton(true, 0.5f, 0.5f, saveOffset + 1, (charHeight * 3) + 1, "Settings".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new QuitToMenuButton();
+            drawButton(true, 0.5f, 0.5f, 0, (-charHeight) - 1, "Quit To Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new QuitToDesktopButton();
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * -3) - 2, "Quit To Desktop".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
         }
     }
 
@@ -115,34 +159,75 @@ public class GUI {
         }
     }
 
-    public static void drawText(boolean centered, float offsetX, float offsetY, float offsetPX, float offsetPY, char[] chars) {
-        float size = chars.length*charWidth;
-        float centeredOffset = centered ? size/2 : 0.f;
+    public static Vector2i getButtonBorderData(int buttonWidth) {
+        if (buttonWidth > 211) {
+            return new Vector2i(282, 0);
+        } else if (buttonWidth > 140) {
+            return new Vector2i(211, 16);
+        } else if (buttonWidth > 69) {
+            return new Vector2i(140, 32);
+        } else if (buttonWidth > 47) {
+            return new Vector2i(69, 48);
+        } else if (buttonWidth > 31) {
+            return new Vector2i(47, 64);
+        } else if (buttonWidth > 15) {
+            return new Vector2i(31, 80);
+        } else {
+            return new Vector2i(16, 96);
+        }
+    }
+
+    public static void drawButton(boolean centered, float offsetX, float offsetY, float offsetPX, float offsetPY, char[] chars, Vector4f bgColor, Vector4f txtColor) {
+        glUniform1i(Renderer.gui.uniforms.get("layer"), 5); //button
+        Vector2i borderData = getButtonBorderData((charWidth * chars.length) + 6);
+        glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, borderData.y());
+        glUniform4f(Renderer.gui.uniforms.get("color"), bgColor.x(), bgColor.y(), bgColor.z(), bgColor.w());
+        drawSlot(true, false, offsetX, offsetY, offsetPX - 1, offsetPY - 4, 0, 0, borderData.x() + 2, 16);
+        drawingButton = null;
+
+        glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
+        glUniform4f(Renderer.gui.uniforms.get("color"), txtColor.x(), txtColor.y(), txtColor.z(), txtColor.w());
+        float size = chars.length * charWidth;
+        float centeredOffset = centered ? size / 2 : 0.f;
         float offset = 0;
         for (char character : chars) {
             int charAtlasOffset = getCharAtlasOffset(character);
             if (charAtlasOffset >= 0) {
                 glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), charAtlasOffset, 0);
-                drawSlot(offsetX, offsetY, offsetPX+offset-centeredOffset, offsetPY, 0, 0, charWidth, charHeight);
+                drawSlot(offsetX, offsetY, offsetPX + offset - centeredOffset, offsetPY, 0, 0, charWidth, charHeight);
+            }
+            offset += charWidth;
+        }
+    }
+
+    public static void drawText(boolean centered, float offsetX, float offsetY, float offsetPX, float offsetPY, char[] chars) {
+        float size = chars.length * charWidth;
+        float centeredOffset = centered ? size / 2 : 0.f;
+        float offset = 0;
+        for (char character : chars) {
+            int charAtlasOffset = getCharAtlasOffset(character);
+            if (charAtlasOffset >= 0) {
+                glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), charAtlasOffset, 0);
+                drawSlot(offsetX, offsetY, offsetPX + offset - centeredOffset, offsetPY, 0, 0, charWidth, charHeight);
             }
             offset += charWidth;
         }
     }
 
     public static void draw(Window window) {
-        hotbarPosX = (0.5f-((hotbarSizeX/2f)/guiScale));
-        hotbarPosY = 5.f/height;
+        hotbarPosX = (0.5f - ((hotbarSizeX / 2f) / guiScale));
+        hotbarPosY = 5.f / height;
         glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, 0);
         glUniform1i(Renderer.gui.uniforms.get("tex"), 0);
         glUniform1i(Renderer.gui.uniforms.get("layer"), 1); //inventory
-        float containerPosY = hotbarPosY + (((hotbarSizeY*5) / guiScale) * aspectRatio);
+        float containerPosY = hotbarPosY + (((hotbarSizeY * 5) / guiScale) * aspectRatio);
         if (GUI.inventoryOpen) {
             glUniform4f(Renderer.gui.uniforms.get("color"), 0.85f, 0.85f, 0.85f, 0.85f);
             drawQuad(false, false, hotbarPosX, hotbarPosY + ((hotbarSizeY / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
-            drawQuad(false, false, hotbarPosX, hotbarPosY + (((hotbarSizeY*2) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
-            drawQuad(false, false, hotbarPosX, hotbarPosY + (((hotbarSizeY*3) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
+            drawQuad(false, false, hotbarPosX, hotbarPosY + (((hotbarSizeY * 2) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
+            drawQuad(false, false, hotbarPosX, hotbarPosY + (((hotbarSizeY * 3) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
             glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //gui
-            drawText(false, hotbarPosX, hotbarPosY + ((((hotbarSizeY*4)+3) / guiScale) * aspectRatio), 0, 0, "Inventory".toCharArray());
+            drawText(false, hotbarPosX, hotbarPosY + ((((hotbarSizeY * 4) + 3) / guiScale) * aspectRatio), 0, 0, "Inventory".toCharArray());
             glUniform1i(Renderer.gui.uniforms.get("layer"), 1); //inventory
             glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, 0);
             if (Main.player.creative) {
@@ -152,7 +237,7 @@ public class GUI {
                 drawQuad(false, false, hotbarPosX, containerPosY + (((hotbarSizeY * 2) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
                 drawQuad(false, false, hotbarPosX, containerPosY + (((hotbarSizeY * 3) / guiScale) * aspectRatio), hotbarSizeX, hotbarSizeY);
                 glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //gui
-                drawText(false, hotbarPosX, containerPosY + ((((hotbarSizeY*4)+3) / guiScale) * aspectRatio), 0, 0, "Creative Supplies".toCharArray());
+                drawText(false, hotbarPosX, containerPosY + ((((hotbarSizeY * 4) + 3) / guiScale) * aspectRatio), 0, 0, "Creative Supplies".toCharArray());
                 glUniform1i(Renderer.gui.uniforms.get("layer"), 1); //inventory
                 glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, 0);
             }
@@ -162,13 +247,13 @@ public class GUI {
         glUniform1i(Renderer.gui.uniforms.get("layer"), 2); //selector
         Vector2i selSlot = null;
         if (GUI.inventoryOpen) {
-            Vector2f clampedPos = confineToMenu(hotbarPosX, hotbarPosY, hotbarSizeX, hotbarSizeY*4);
+            Vector2f clampedPos = confineToMenu(hotbarPosX, hotbarPosY, hotbarSizeX, hotbarSizeY * 4);
             if (clampedPos.x() > -1 && clampedPos.y() > -1) {
                 Main.player.inv.selectedSlot = new Vector2i((int) (clampedPos.x() * invWidth), (int) (clampedPos.y() * 4));
                 selSlot = Main.player.inv.selectedSlot;
             } else if (Main.player.creative) {
                 Main.player.inv.selectedSlot = null;
-                clampedPos = confineToMenu(hotbarPosX, containerPosY, hotbarSizeX, hotbarSizeY*4);
+                clampedPos = confineToMenu(hotbarPosX, containerPosY, hotbarSizeX, hotbarSizeY * 4);
                 Main.player.inv.selectedContainerSlot = new Vector2i((int) (clampedPos.x() * invWidth), (int) (clampedPos.y() * 4));
                 selSlot = Main.player.inv.selectedContainerSlot;
             }
@@ -199,8 +284,8 @@ public class GUI {
                         if (item.amount > 1) {
                             glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
                             char[] chars = String.valueOf(item.amount).toCharArray();
-                            float startOffset = 16-(chars.length*charWidth);
-                            drawText(false, hotbarPosX, hotbarPosY, offX+startOffset, offY+1, chars);
+                            float startOffset = 16 - (chars.length * charWidth);
+                            drawText(false, hotbarPosX, hotbarPosY, offX + startOffset, offY + 1, chars);
                         }
                     }
                 }
@@ -236,56 +321,79 @@ public class GUI {
         if (Main.player.inv.cursorItem != null) { //cursor item
             ItemType itemType = Main.player.inv.cursorItem.type;
             glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), itemType.atlasOffset.x(), itemType.atlasOffset.y());
-            float offX = Engine.window.currentPos.x()/width;
-            float offY = Math.abs(height-(Engine.window.currentPos.y()))/height;
+            float offX = Engine.window.currentPos.x() / width;
+            float offY = Math.abs(height - (Engine.window.currentPos.y())) / height;
             drawQuad(true, true, offX, offY, ItemTypes.itemTexSize, ItemTypes.itemTexSize);
             if (Main.player.inv.cursorItem.amount > 1) {
                 glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
                 char[] chars = String.valueOf(Main.player.inv.cursorItem.amount).toCharArray();
-                float startOffset = 16-(chars.length*charWidth);
-                drawText(false, offX, offY, 1+startOffset-(charWidth*1.5f), 1-charHeight, chars);
+                float startOffset = 16 - (chars.length * charWidth);
+                drawText(false, offX, offY, 1 + startOffset - (charWidth * 1.5f), 1 - charHeight, chars);
             }
         }
         drawDebug(window);
     }
 
     public static void drawSlot(float offsetX, float offsetY, float offPxX, float offPxY, int x, int y, int sizeX, int sizeY) {
-        float selectedPosX = x*(slotSize/guiScale);
-        float selectedPosY = y*((slotSizeY/guiScale)*aspectRatio);
-        drawQuad(false, false, selectedPosX+offsetX+(offPxX/guiScale), selectedPosY+(offsetY-(3.f/height))+((offPxY/guiScale)*aspectRatio), sizeX, sizeY);
+        drawSlot(false, false, offsetX, offsetY, offPxX, offPxY, x, y, sizeX, sizeY);
+    }
+
+    public static void drawSlot(boolean centeredX, boolean centeredY, float offsetX, float offsetY, float offPxX, float offPxY, int x, int y, int sizeX, int sizeY) {
+        float selectedPosX = x * (slotSize / guiScale);
+        float selectedPosY = y * ((slotSizeY / guiScale) * aspectRatio);
+        drawQuad(centeredX, centeredY, selectedPosX + offsetX + (offPxX / guiScale), selectedPosY + (offsetY - (3.f / height)) + ((offPxY / guiScale) * aspectRatio), sizeX, sizeY);
     }
 
     public static Vector2f confineToMenu(float posX, float posY, int sizeX, int sizeY) {
         return new Vector2f(
-                relative(cursorX(), posX, sizeX/guiScale),
-                relative(cursorY(), posY, (sizeY/guiScale)*aspectRatio)
+                relative(cursorX(), posX, sizeX / guiScale),
+                relative(cursorY(), posY, (sizeY / guiScale) * aspectRatio)
         );
     }
+
     public static float relative(float cursor, float pos, float size) {
-        return (cut(cursor, pos, pos+size-(1f/width))-pos)*(1/size);
+        return (cut(cursor, pos, pos + size - (1f / width)) - pos) * (1 / size);
     }
+
     public static float cut(float in, float min, float max) {
         if (in < min || in > max) {
             return -1;
         }
         return in;
     }
+
     public static float cursorX() {
-        return Engine.window.currentPos.x()/width;
+        return Engine.window.currentPos.x() / width;
     }
+
+    public static int cursorPxX() {
+        return (int) Engine.window.currentPos.x();
+    }
+
     public static float cursorY() {
-        return Math.abs(height-Engine.window.currentPos.y())/height;
+        return Math.abs(height - Engine.window.currentPos.y()) / height;
+    }
+
+    public static int cursorPxY() {
+        return (int) Math.abs(height - Engine.window.currentPos.y());
     }
 
     public static void drawQuad(boolean centeredX, boolean centeredY, float x, float y, int scaleX, int scaleY) {
-        float xScale = (scaleX/guiScale);
-        float yScale = (scaleY/guiScale)*aspectRatio;
-        float xOffset = ((x*2)-1)+(centeredX ? 0 : xScale);
-        float yOffset = ((y*2)-1)+(centeredY ? 0 : yScale);
-        glUniform2i(Renderer.gui.uniforms.get("offset"), (int)((x-(centeredX ? xScale/2 : 0))*width), (int)((y+(centeredY ? yScale/2 : 0))*height));
+        float xScale = (scaleX / guiScale);
+        float yScale = (scaleY / guiScale) * aspectRatio;
+        float xOffset = ((x * 2) - 1) + (centeredX ? 0 : xScale);
+        float yOffset = ((y * 2) - 1) + (centeredY ? 0 : yScale);
+        Vector2i offset = new Vector2i((int) ((x - (centeredX ? xScale / 2 : 0)) * width), (int) ((y + (centeredY ? yScale / 2 : 0)) * height));
+        glUniform2i(Renderer.gui.uniforms.get("offset"), offset.x(), offset.y());
         glUniform2i(Renderer.gui.uniforms.get("size"), scaleX, scaleY);
-        glUniform2i(Renderer.gui.uniforms.get("scale"), (int)(xScale*width), (int)(yScale*height));
-        try(MemoryStack stack = MemoryStack.stackPush()) {
+        Vector2i scale = new Vector2i((int) (xScale * width), (int) (yScale * height));
+        glUniform2i(Renderer.gui.uniforms.get("scale"), scale.x(), scale.y());
+        if (drawingButton != null) {
+            drawingButton.bounds = new Vector4i(offset.x(), offset.y(), offset.x() + scale.x(), offset.y() + scale.y());
+            drawingButton.width = scaleX;
+            buttons.add(drawingButton);
+        }
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             glUniformMatrix4fv(Renderer.gui.uniforms.get("model"), false, new Matrix4f().translate(xOffset, yOffset, 0.f).scale(xScale, yScale, 1).get(stack.mallocFloat(16)));
         }
         glBindVertexArray(Models.QUAD_UNNORMALIZED.vaoId);
@@ -299,10 +407,11 @@ public class GUI {
     public static int charWidth = 6;
     public static int charHeight = 8;
     public static char[] alphabet = """
-                0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.!?$:,;`'"()[]{}*=+-/\\^%&#~<>|
-                """.toCharArray();
+            0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.!?$:,;`'"()[]{}*=+-/\\^%&#~<>|
+            """.toCharArray();
     public static Map<Character, Integer> charAtlasOffsetIndex = new HashMap<>();
     public static char space = " ".toCharArray()[0];
+
     public static int getCharAtlasOffset(char character) {
         return character == space ? -1 : charAtlasOffsetIndex.get(character);
     }
@@ -311,22 +420,24 @@ public class GUI {
         int i = 0;
         for (char character : alphabet) {
             charAtlasOffsetIndex.put(character, i);
-            i+=charWidth;
+            i += charWidth;
         }
         glBindTexture(GL_TEXTURE_3D, Textures.gui.id);
-        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.gui.width, Textures.gui.height, ((Texture3D)(Textures.gui)).depth, 0, GL_RGBA, GL_FLOAT, 0);
+        GL12.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, Textures.gui.width, Textures.gui.height, ((Texture3D) (Textures.gui)).depth, 0, GL_RGBA, GL_FLOAT, 0);
         loadImage("texture/font");
         loadImage("texture/hotbar");
         loadImage("texture/selected_slot");
         loadImage("texture/frame");
         loadImage("texture/trash");
+        loadImage("texture/button");
 
         ItemTypes.fillTexture();
     }
 
     public static int guiTexDepth = 0;
+
     public static void loadImage(String path) throws IOException {
-        BufferedImage img = ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/gui/"+path+".png"));
+        BufferedImage img = ImageIO.read(Renderer.class.getClassLoader().getResourceAsStream("assets/base/gui/" + path + ".png"));
         glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, guiTexDepth, img.getWidth(), img.getHeight(), 1, GL_RGBA, GL_UNSIGNED_BYTE, Utils.imageToBuffer(img));
         guiTexDepth++;
     }
