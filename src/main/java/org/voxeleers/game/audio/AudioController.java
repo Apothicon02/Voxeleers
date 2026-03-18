@@ -11,7 +11,6 @@ import org.voxeleers.game.world.World;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +25,8 @@ public class AudioController {
     public static long device;
     public static ALCCapabilities alcCapabilities;
     public static ALCapabilities alCapabilities;
+    public static int outputMode = SOFTOutputMode.ALC_SURROUND_7_1_SOFT;
+    public static boolean muted = false;
 
     public static void init() {
         //long audioInitStarted = System.currentTimeMillis();
@@ -33,7 +34,7 @@ public class AudioController {
         device = ALC11.alcOpenDevice(defaultDeviceName);
         alcCapabilities = ALC.createCapabilities(device);
 
-        context = ALC11.alcCreateContext(device, new int[]{ALC_MONO_SOURCES, 16256, ALC_STEREO_SOURCES, 128, SOFTOutputMode.ALC_OUTPUT_MODE_SOFT, SOFTOutputMode.ALC_SURROUND_7_1_SOFT, 0});
+        context = ALC11.alcCreateContext(device, new int[]{ALC_MONO_SOURCES, 16256, ALC_STEREO_SOURCES, 128, SOFTOutputMode.ALC_OUTPUT_MODE_SOFT, AudioController.outputMode, 0});
         ALC11.alcMakeContextCurrent(context);
 
         alCapabilities = AL.createCapabilities(alcCapabilities);
@@ -49,6 +50,22 @@ public class AudioController {
 //        }
         AudioController.setListenerData(new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new float[6]);
         //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-audioInitStarted)/1000.f)+"s to init openAL.\n");
+    }
+
+    public static String getOutputModeAsTxt() {
+        if (AudioController.outputMode == SOFTOutputMode.ALC_MONO_SOFT) {
+            return "  Mono  ";
+        } else if (AudioController.outputMode == SOFTOutputMode.ALC_STEREO_HRTF_SOFT) {
+            return " Stereo ";
+        } else if (AudioController.outputMode == SOFTOutputMode.ALC_SURROUND_5_1_SOFT) {
+            return "  5.1  ";
+        } else if (AudioController.outputMode == SOFTOutputMode.ALC_SURROUND_6_1_SOFT) {
+            return "  6.1  ";
+        } else if (AudioController.outputMode == SOFTOutputMode.ALC_SURROUND_7_1_SOFT) {
+            return "  7.1  ";
+        } else {
+            return "Unknown";
+        }
     }
 
     public static ArrayList<Source> disposableSources = new ArrayList<>(List.of());
@@ -71,17 +88,21 @@ public class AudioController {
         AL10.alListener3f(AL10.AL_POSITION, pos.x, pos.y, pos.z);
         AL10.alListener3f(AL10.AL_VELOCITY, vel.x, vel.y, vel.z);
         AL10.alListenerfv(AL10.AL_ORIENTATION, orientation);
-        if (Main.player != null) {
-            Room room = Rooms.getRoom(Main.player.blockPos);
-            Cell cell = room == null ? World.worldType.getGlobalAtmo() : room.cells.get(Rooms.packCellPos(Main.player.blockPos));
-            double pressure = cell.getPressure();
-            if (Double.isNaN(pressure)) {
-                pressure = 0.f;
-            }
-            float gain = Math.clamp((float) (pressure / 500000000.f), 0.1f, 1.f);
-            AL10.alListenerf(AL10.AL_GAIN, gain);
+        if (muted) {
+            AL10.alListenerf(AL10.AL_GAIN, 0.f);
         } else {
-            AL10.alListenerf(AL10.AL_GAIN, 1.f);
+            if (Main.player != null) {
+                Room room = Rooms.getRoom(Main.player.blockPos);
+                Cell cell = room == null ? World.worldType.getGlobalAtmo() : room.cells.get(Rooms.packCellPos(Main.player.blockPos));
+                double pressure = cell.getPressure();
+                if (Double.isNaN(pressure)) {
+                    pressure = 0.f;
+                }
+                float gain = Math.clamp((float) (pressure / 500000000.f), 0.1f, 1.f);
+                AL10.alListenerf(AL10.AL_GAIN, gain);
+            } else {
+                AL10.alListenerf(AL10.AL_GAIN, 1.f);
+            }
         }
     }
 

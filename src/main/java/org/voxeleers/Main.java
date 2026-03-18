@@ -131,7 +131,17 @@ public class Main {
             window.input();
             boolean isEscDown = window.isKeyPressed(SDL_SCANCODE_ESCAPE);
             if (!isEscDown && wasEscDown) {
-                if (GUI.inventoryOpen) {
+                if (GUI.accessibilitySettingMenuOpen) {
+                    GUI.accessibilitySettingMenuOpen = false;
+                } else if (GUI.graphicsSettingMenuOpen) {
+                    GUI.graphicsSettingMenuOpen = false;
+                } else if (GUI.controlsSettingMenuOpen) {
+                    GUI.controlsSettingMenuOpen = false;
+                } else if (GUI.audioSettingMenuOpen) {
+                    GUI.audioSettingMenuOpen = false;
+                } else if (GUI.settingMenuOpen) {
+                    GUI.settingMenuOpen = false;
+                } else if (GUI.inventoryOpen) {
                     GUI.inventoryOpen = false;
                 } else {
                     GUI.pauseMenuOpen = !GUI.pauseMenuOpen;

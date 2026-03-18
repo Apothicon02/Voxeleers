@@ -6,6 +6,7 @@ import org.voxeleers.Main;
 import org.voxeleers.engine.Engine;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.engine.Window;
+import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.gameplay.HandManager;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.lwjgl.openal.SOFTOutputMode.ALC_SURROUND_7_1_SOFT;
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.glDrawArrays;
@@ -54,6 +56,11 @@ public class GUI {
     public static int slotSizeY = 22;
     public static int enlargedSlotSize = 24;
 
+    public static boolean audioSettingMenuOpen = false;
+    public static boolean controlsSettingMenuOpen = false;
+    public static boolean graphicsSettingMenuOpen = false;
+    public static boolean accessibilitySettingMenuOpen = false;
+    public static boolean settingMenuOpen = false;
     public static boolean pauseMenuOpen = false;
     public static boolean inventoryOpen = false;
 
@@ -113,19 +120,37 @@ public class GUI {
             }
         }
 
-        if (pauseMenuOpen) {
-            glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
-            glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
-            glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
+        glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
+        glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
+        glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
+        if (audioSettingMenuOpen) {
+            drawText(true, 0.5f, 1, 0, -10 - charHeight, "Audio Settings".toCharArray());
+            drawingButton = new BackButton();
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, "Master Volume:100%".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new MuteButton();
+            drawButton(true, 0.5f, 0.5f, -35.5f, charHeight, (AudioController.muted ? "  Muted  " :  " Unmuted ").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new AudioChannelButton();
+            drawButton(true, 0.5f, 0.5f, 35.5f, charHeight, AudioController.getOutputModeAsTxt().toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+        } else if (settingMenuOpen) {
+            drawText(true, 0.5f, 1, 0, -10 - charHeight, "Settings".toCharArray());
+            drawingButton = new BackButton();
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Main Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new AudioSettingsButton();
+            drawButton(true, 0.5f, 0.5f, -35.5f, (charHeight * 3) + 1, "  Audio  ".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 35.5f, (charHeight * 3) + 1, "Controls".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, charHeight, "    Graphics    ".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, (-charHeight)-1, "Accessibility".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+        } else if (pauseMenuOpen) {
             drawText(true, 0.5f, 1, 0, -10 - charHeight, "Paused".toCharArray());
-            drawingButton = new ContinuePlayingButton();
+            drawingButton = new BackButton();
             drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Continue Playing".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             char[] saveChars = "Save World".toCharArray();
-            float saveOffset = getButtonBorderData((saveChars.length * charWidth) + 3).x * 0.5f;
             drawingButton = new SaveWorldButton();
-            drawButton(true, 0.5f, 0.5f, (-saveOffset) - 1, (charHeight * 3) + 1, saveChars, new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, -35.5f, (charHeight * 3) + 1, saveChars, new Vector4f(1.f), new Vector4f(1.f));
             drawingButton = new SettingsButton();
-            drawButton(true, 0.5f, 0.5f, saveOffset + 1, (charHeight * 3) + 1, "Settings".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 35.5f, (charHeight * 3) + 1, "Settings".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, charHeight, "    Language    ".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawingButton = new QuitToMenuButton();
             drawButton(true, 0.5f, 0.5f, 0, (-charHeight) - 1, "Quit To Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawingButton = new QuitToDesktopButton();
@@ -174,6 +199,32 @@ public class GUI {
             return new Vector2i(31, 80);
         } else {
             return new Vector2i(16, 96);
+        }
+    }
+
+    public static void drawSlider(boolean centered, float offsetX, float offsetY, float offsetPX, float offsetPY, char[] chars, Vector4f bgColor, Vector4f txtColor) {
+        glUniform1i(Renderer.gui.uniforms.get("layer"), 5); //button/slider
+        Vector2i borderData = getButtonBorderData((charWidth * chars.length) + 6);
+        glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, borderData.y()+224);
+        glUniform4f(Renderer.gui.uniforms.get("color"), bgColor.x(), bgColor.y(), bgColor.z(), bgColor.w());
+        drawSlot(true, false, offsetX, offsetY, offsetPX - 1, offsetPY - 4, 0, 0, borderData.x() + 2, 16);
+        drawingButton = null;
+        glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 272, 320);
+        glUniform4f(Renderer.gui.uniforms.get("color"), bgColor.x(), bgColor.y(), bgColor.z(), 1);
+        drawSlot(true, false, offsetX, offsetY, offsetPX - 1, offsetPY - 4, 0, 0, 5, 16);
+
+        glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
+        glUniform4f(Renderer.gui.uniforms.get("color"), txtColor.x(), txtColor.y(), txtColor.z(), txtColor.w());
+        float size = chars.length * charWidth;
+        float centeredOffset = centered ? size / 2 : 0.f;
+        float offset = 0;
+        for (char character : chars) {
+            int charAtlasOffset = getCharAtlasOffset(character);
+            if (charAtlasOffset >= 0) {
+                glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), charAtlasOffset, 0);
+                drawSlot(offsetX, offsetY, offsetPX + offset - centeredOffset, offsetPY, 0, 0, charWidth, charHeight);
+            }
+            offset += charWidth;
         }
     }
 

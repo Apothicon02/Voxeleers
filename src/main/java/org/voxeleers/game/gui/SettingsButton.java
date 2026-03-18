@@ -5,6 +5,6 @@ public class SettingsButton extends Button {
 
     @Override
     public void clicked() {
-
+        GUI.settingMenuOpen = true;
     }
 }
