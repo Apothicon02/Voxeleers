@@ -1,5 +1,6 @@
 package org.voxeleers.game.gui.sliders;
 
+import org.lwjgl.openal.AL10;
 import org.voxeleers.game.audio.AudioController;
 
 public class VolumeSlider extends Slider {
@@ -12,5 +13,7 @@ public class VolumeSlider extends Slider {
         if (relX > 0.495f && relX < 0.505f) {relX = 0.5f;}
         if (relX > 0.99f) {relX = 1.f;}
         AudioController.masterVolume = relX*2;
+        AL10.alListenerf(AL10.AL_GAIN, AudioController.masterVolume);
+        AudioController.playSliderSound();
     }
 }

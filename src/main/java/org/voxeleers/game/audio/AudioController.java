@@ -4,6 +4,7 @@ import org.voxeleers.Main;
 import org.joml.Vector3f;
 import org.lwjgl.openal.*;
 import org.lwjgl.system.MemoryUtil;
+import org.voxeleers.engine.Engine;
 import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Room;
 import org.voxeleers.game.rooms.Rooms;
@@ -28,6 +29,9 @@ public class AudioController {
     public static int outputMode = SOFTOutputMode.ALC_SURROUND_7_1_SOFT;
     public static boolean muted = false;
     public static float masterVolume = 1.f;
+    public static Source hoverSource = null;
+    public static Source buttonSource = null;
+    public static Source sliderSource = null;
 
     public static void init() {
         //long audioInitStarted = System.currentTimeMillis();
@@ -50,7 +54,29 @@ public class AudioController {
 //            maxSourcesBeforeError++;
 //        }
         AudioController.setListenerData(new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new float[6]);
+        hoverSource = new Source(new Vector3f(), 0.15f, 1.6f, 1.f, 0);
+        buttonSource = new Source(new Vector3f(), 0.3f, 1.1f, 1.f, 0);
+        sliderSource = new Source(new Vector3f(), 0.3f, 1.1f, 1.f, 0);
         //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-audioInitStarted)/1000.f)+"s to init openAL.\n");
+    }
+
+    public static void playHoverSound() {
+        hoverSource.play(Math.random() > 0.5f ? Sounds.ROCK_PLACE1 : Sounds.ROCK_PLACE2, true);
+    }
+    public static void playButtonSound() {
+        buttonSource.play(Math.random() > 0.5f ? Sounds.ROCK_PLACE1 : Sounds.ROCK_PLACE2, true);
+    }
+    public static float prevX = 0;
+    public static long timeLastPlayedButtonSound = 0;
+    public static void playSliderSound() {
+        if (System.currentTimeMillis() - timeLastPlayedButtonSound > 300) {
+            timeLastPlayedButtonSound = System.currentTimeMillis();
+            float x = Engine.window.currentPos.x();
+            float gain = Math.min(1.f, (Math.abs(x-prevX))/10.f);
+            sliderSource.setGain(gain);
+            sliderSource.play(Math.random() > 0.5f ? Sounds.METAL_SMALL_PLACE1 : Sounds.METAL_SMALL_PLACE2, true);
+            prevX = x;
+        }
     }
 
     public static String getOutputModeAsTxt() {
@@ -75,6 +101,7 @@ public class AudioController {
 //        if (alGetError() != AL_NO_ERROR) {
 //            boolean nothing = true;
 //        }
+        buttonSource.setPos(Main.player.pos);
         for (int i = 0; i < disposableSources.size(); i++) {
             Source source = disposableSources.get(i);
             if (!source.isPlaying()) {

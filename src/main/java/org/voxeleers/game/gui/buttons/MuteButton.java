@@ -1,5 +1,6 @@
 package org.voxeleers.game.gui.buttons;
 
+import org.lwjgl.openal.AL10;
 import org.voxeleers.game.audio.AudioController;
 
 public class MuteButton extends Button {
@@ -8,5 +9,11 @@ public class MuteButton extends Button {
     @Override
     public void clicked() {
         AudioController.muted = !AudioController.muted;
+        if (AudioController.muted) {
+            AL10.alListenerf(AL10.AL_GAIN, 0.f);
+        } else {
+            AL10.alListenerf(AL10.AL_GAIN, AudioController.masterVolume);
+            AudioController.playButtonSound();
+        }
     }
 }

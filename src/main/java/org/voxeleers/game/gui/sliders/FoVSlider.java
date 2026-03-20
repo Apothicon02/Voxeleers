@@ -2,6 +2,7 @@ package org.voxeleers.game.gui.sliders;
 
 import org.voxeleers.Main;
 import org.voxeleers.game.Settings;
+import org.voxeleers.game.audio.AudioController;
 
 public class FoVSlider extends Slider {
     public FoVSlider() {}
@@ -14,5 +15,6 @@ public class FoVSlider extends Slider {
         if (relX > 0.99f) {relX = 1.f;}
         Settings.baseFoV = (relX*150)+30;
         Main.player.camera.FOV = Settings.baseFoV;
+        AudioController.playSliderSound();
     }
 }

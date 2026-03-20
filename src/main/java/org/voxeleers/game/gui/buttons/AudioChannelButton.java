@@ -19,5 +19,6 @@ public class AudioChannelButton extends Button {
         } else if (AudioController.outputMode == SOFTOutputMode.ALC_SURROUND_6_1_SOFT) {
             AudioController.outputMode = SOFTOutputMode.ALC_SURROUND_7_1_SOFT;
         }
+        AudioController.playButtonSound();
     }
 }

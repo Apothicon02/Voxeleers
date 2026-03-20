@@ -1,6 +1,7 @@
 package org.voxeleers;
 
 import com.google.gson.Gson;
+import org.lwjgl.openal.AL10;
 import org.voxeleers.engine.Window;
 import org.voxeleers.game.ScheduledTicker;
 import org.voxeleers.game.Settings;
@@ -124,6 +125,7 @@ public class Main {
     public static boolean showDebug = true;
     public static boolean isSwappingWorldType = false;
     public static int uiState = 1;
+    public static Vector2f displVec = new Vector2f();
 
     public void input(Window window) throws IOException {
         if (!isClosing) {
@@ -145,6 +147,7 @@ public class Main {
                 } else {
                     GUI.pauseMenuOpen = !GUI.pauseMenuOpen;
                     if (GUI.pauseMenuOpen) {
+                        AL10.alListenerf(AL10.AL_GAIN, AudioController.masterVolume);
                         timeMul = 0.f;
                     } else {
                         timeMul = 1.f;
@@ -153,6 +156,7 @@ public class Main {
             } else {
                 int flags = SDL_GetWindowFlags(Window.window);
                 boolean focused = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
+                displVec = focused ? new Vector2f(window.displVec) : new Vector2f(0);
                 boolean isLMBDown = focused && window.leftButtonPressed;
                 boolean isRMBDown = focused && window.rightButtonPressed;
                 boolean isMMBDown = focused && window.middleButtonPressed;
@@ -270,7 +274,6 @@ public class Main {
                         }
                     } else {
                         SDL_SetRelativeMouseMode(true);
-                        Vector2f displVec = new Vector2f(window.displVec);
                         player.rotate((float) Math.toRadians(displVec.x * (MOUSE_SENSITIVITY / 10)),
                                 (float) Math.toRadians(displVec.y * (MOUSE_SENSITIVITY / 10)));
                         HandManager.useHands(window);

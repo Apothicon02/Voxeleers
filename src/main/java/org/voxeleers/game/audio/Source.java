@@ -28,10 +28,9 @@ public class Source {
     }
 
     public void play(SFX sfx, boolean force) {
-        int[] result = new int[1];
-        AL10.alGetSourcei(sourceID, AL10.AL_SOURCE_STATE, result);
-        if (force || result[0] != AL10.AL_PLAYING) {
+        if (force || !isPlaying()) {
             soundPlaying = sfx.id;
+            AL10.alSourceStop(sourceID);
             AL10.alSourcei(sourceID, AL10.AL_BUFFER, sfx.id);
             AL10.alSourcePlay(sourceID);
         }

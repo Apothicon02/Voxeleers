@@ -88,8 +88,10 @@ public class GUI {
         buttons.clear();
         sliders.clear();
     }
+    public static Object objectOnPrev = null;
 
     public static void tick(Window window) {
+        boolean shouldSetObjectOnPrev = true;
         Vector2i cursorPos = new Vector2i(cursorPxX(), cursorPxY());
         glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
         glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
@@ -101,7 +103,11 @@ public class GUI {
                 drawQuad(false, false, (float) button.bounds.x() / width, (float) button.bounds.y() / height, button.width, 16);
                 if (Main.isLMBClick) {
                     button.clicked();
+                } else if (objectOnPrev == null || !objectOnPrev.getClass().equals(button.getClass())) {
+                    AudioController.playHoverSound();
                 }
+                objectOnPrev = button;
+                shouldSetObjectOnPrev = false;
             }
         }
         for (Slider slider : sliders) {
@@ -110,11 +116,19 @@ public class GUI {
                 drawQuad(true, false, (float) cursorPos.x() / width, (float) slider.bounds.y() / height, 5, 16);
                 if (Main.wasLMBDown) {
                     slider.clicked(cursorPos.x());
+                } else if (objectOnPrev == null || !objectOnPrev.getClass().equals(slider.getClass())) {
+                    AudioController.playHoverSound();
                 }
+                objectOnPrev = slider;
+                shouldSetObjectOnPrev = false;
             }
+        }
+        if (shouldSetObjectOnPrev) {
+            objectOnPrev = null;
         }
     }
 
+    public static Vector4f menuBgColor = new Vector4f(1.f);
     public static void drawAlwaysVisible(Window window) {
         if (Main.isSaving || pauseMenuOpen) {
             glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
@@ -127,6 +141,7 @@ public class GUI {
                 if (Main.isSwappingWorldType) {
                     drawText(false, 0, 1, 2 + border.x(), -2 - border.y() - charHeight, ("Travelling to " + World.nextWorldType.getWorldTypeName() + " from " + World.worldType.getWorldTypeName()).toCharArray());
                 }
+                glUniform4f(Renderer.gui.uniforms.get("color"), menuBgColor.x(), menuBgColor.y(), menuBgColor.z(), menuBgColor.w());
                 glUniform1i(Renderer.gui.uniforms.get("layer"), 3); //frame
                 glUniform2i(Renderer.gui.uniforms.get("size"), 3840, 2160);
                 glUniform2i(Renderer.gui.uniforms.get("scale"), width, (int) (height * aspectRatio));
@@ -142,51 +157,55 @@ public class GUI {
         glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
         glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
         if (graphicsSettingMenuOpen) {
+            menuBgColor = new Vector4f(1.f, 1.f, 0.75f, 1.f);
             drawText(true, 0.5f, 1, 0, -10 - charHeight, "Graphics Settings".toCharArray());
             drawingButton = new BackButton();
-            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingSlider = new FoVSlider();
             sliderX = (Settings.baseFoV-30)/150;
-            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Field of View:"+String.format("%.1f", (sliderX*150)+30)).toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Field of View:"+String.format("%.1f", (sliderX*150)+30)).toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new DynamicFoVButton();
-            drawButton(true, 0.5f, 0.5f, -35.5f, charHeight, (Settings.dynamicFoV ? " FoV VFX " : "No FoV VFX").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, -35.5f, charHeight, (Settings.dynamicFoV ? " FoV VFX " : "No FoV VFX").toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new UpscaleButton();
-            drawButton(true, 0.5f, 0.5f, 35.5f, charHeight, (Renderer.upscale ? "Upscaled" : " Native ").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 35.5f, charHeight, (Renderer.upscale ? "Upscaled" : " Native ").toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new ShadowsButton();
-            drawButton(true, 0.5f, 0.5f, -35.5f, (-charHeight)-1, (Renderer.shadowsEnabled ? "Shadowed" : "Unshadowed").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, -35.5f, (-charHeight)-1, (Renderer.shadowsEnabled ? "Shadowed" : "Unshadowed").toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new TAAButton();
-            drawButton(true, 0.5f, 0.5f, 35.5f, (-charHeight)-1, (Renderer.taa ? "   TAA   " : "  No AA  ").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
-            drawButton(true, 0.5f, 0.5f, 0, (charHeight*-3)-2, (Renderer.reflectionsEnabled ? "Reflections Enabled" : "Reflections Disabled").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 35.5f, (-charHeight)-1, (Renderer.taa ? "   TAA   " : "  No AA  ").toCharArray(), menuBgColor, new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight*-3)-2, (Renderer.reflectionsEnabled ? "Reflections Enabled" : "Reflections Disabled").toCharArray(), menuBgColor, new Vector4f(1.f));
         } else if (controlsSettingMenuOpen) {
+            menuBgColor = new Vector4f(0.75f, 1.f, 0.75f, 1.f);
             drawText(true, 0.5f, 1, 0, -10 - charHeight, "Control Settings".toCharArray());
             drawingButton = new BackButton();
-            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingSlider = new SensitivitySlider();
             sliderX = Settings.MOUSE_SENSITIVITY;
-            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Sensitivity:"+String.format("%.1f", sliderX*100)+"%").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
-            drawButton(true, 0.5f, 0.5f, 0, charHeight, "Keybind Settings".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Sensitivity:"+String.format("%.1f", sliderX*100)+"%").toCharArray(), menuBgColor, new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, charHeight, "Keybind Settings".toCharArray(), menuBgColor, new Vector4f(1.f));
         } else if (audioSettingMenuOpen) {
+            menuBgColor = new Vector4f(0.9f, 0.75f, 1.f, 1.f);
             drawText(true, 0.5f, 1, 0, -10 - charHeight, "Audio Settings".toCharArray());
             drawingButton = new BackButton();
-            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingSlider = new VolumeSlider();
             sliderX = AudioController.masterVolume/2.f;
-            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Master Volume:"+String.format("%.1f", sliderX*200)+"%").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Master Volume:"+String.format("%.1f", sliderX*200)+"%").toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new MuteButton();
-            drawButton(true, 0.5f, 0.5f, -35.5f, charHeight, (AudioController.muted ? "  Muted  " :  " Unmuted ").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, -35.5f, charHeight, (AudioController.muted ? "  Muted  " :  " Unmuted ").toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new AudioChannelButton();
-            drawButton(true, 0.5f, 0.5f, 35.5f, charHeight, AudioController.getOutputModeAsTxt().toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 35.5f, charHeight, AudioController.getOutputModeAsTxt().toCharArray(), menuBgColor, new Vector4f(1.f));
         } else if (settingMenuOpen) {
+            menuBgColor = new Vector4f(0.75f, 0.75f, 1.f, 1.f);
             drawText(true, 0.5f, 1, 0, -10 - charHeight, "Settings".toCharArray());
             drawingButton = new BackButton();
-            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Main Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Main Menu".toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new AudioSettingsButton();
-            drawButton(true, 0.5f, 0.5f, -35.5f, (charHeight * 3) + 1, "  Audio  ".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, -35.5f, (charHeight * 3) + 1, "  Audio  ".toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new ControlsSettingsButton();
-            drawButton(true, 0.5f, 0.5f, 35.5f, (charHeight * 3) + 1, "Controls".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 35.5f, (charHeight * 3) + 1, "Controls".toCharArray(), menuBgColor, new Vector4f(1.f));
             drawingButton = new GraphicsSettingsButton();
-            drawButton(true, 0.5f, 0.5f, 0, charHeight, "    Graphics    ".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
-            drawButton(true, 0.5f, 0.5f, 0, (-charHeight)-1, "Accessibility".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, charHeight, "    Graphics    ".toCharArray(), menuBgColor, new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, (-charHeight)-1, "Accessibility".toCharArray(), menuBgColor, new Vector4f(1.f));
         } else if (pauseMenuOpen) {
             drawText(true, 0.5f, 1, 0, -10 - charHeight, "Paused".toCharArray());
             drawingButton = new BackButton();
@@ -202,6 +221,7 @@ public class GUI {
             drawingButton = new QuitToDesktopButton();
             drawButton(true, 0.5f, 0.5f, 0, (charHeight * -3) - 2, "Quit To Desktop".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
         }
+        menuBgColor = new Vector4f(1.f);
     }
 
     public static void drawDebug(Window window) {
@@ -256,8 +276,8 @@ public class GUI {
         drawingSlider = null;
         glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 272, 320);
         glUniform4f(Renderer.gui.uniforms.get("color"), bgColor.x(), bgColor.y(), bgColor.z(), 1);
-        float posX = (((sliderX-0.5f)*4)*borderData.x())/width;
-        drawSlot(true, false, offsetX+posX, offsetY, offsetPX - 1, offsetPY - 4, 0, 0, 5, 16);
+        float posX = (sliderX-0.5f)*borderData.x();
+        drawSlot(true, false, offsetX, offsetY, (offsetPX+posX) - 1, offsetPY - 4, 0, 0, 5, 16);
         sliderX = 0.f;
 
         glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text

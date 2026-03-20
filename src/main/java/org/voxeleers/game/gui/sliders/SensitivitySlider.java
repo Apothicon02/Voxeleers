@@ -1,6 +1,7 @@
 package org.voxeleers.game.gui.sliders;
 
 import org.voxeleers.game.Settings;
+import org.voxeleers.game.audio.AudioController;
 
 public class SensitivitySlider extends Slider {
     public SensitivitySlider() {}
@@ -12,5 +13,6 @@ public class SensitivitySlider extends Slider {
         if (relX > 0.495f && relX < 0.505f) {relX = 0.5f;}
         if (relX > 0.99f) {relX = 1.f;}
         Settings.MOUSE_SENSITIVITY = relX;
+        AudioController.playSliderSound();
     }
 }
