@@ -2,8 +2,10 @@ package org.voxeleers.game.world.types;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.joml.Matrix4f;
+import org.joml.Vector4i;
 import org.lwjgl.system.MemoryStack;
 import org.voxeleers.Main;
+import org.voxeleers.game.blocks.types.BlockType;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
 import org.voxeleers.game.noise.Noises;
@@ -21,6 +23,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.lwjgl.opengl.GL20.glUniform4f;
 import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
@@ -74,7 +78,7 @@ public class LunaWorldType extends WorldType {
     }
 
     @Override
-    public ExecutorService generate() throws IOException {
+    public ExecutorService generate() throws IOException, InterruptedException {
         ExecutorService executorService = null;
         for (Molecule molecule : globalAtmo.molecules) {
             globalElements.addLast(molecule.element);
@@ -84,28 +88,38 @@ public class LunaWorldType extends WorldType {
             executorService = loadWorld(getWorldPath()+"/");
         } else {
             long worldgenStarted = System.currentTimeMillis();
-            createNew();
+            executorService = createNew();
             System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-worldgenStarted)/1000.f)+"s to generate world.\n");
         }
-        generated = true;
         return executorService;
     }
 
     @Override
-    public void createNew() {
-        for (int x = 0; x < size; x++) {
-            for (int z = 0; z < size; z++) {
-                float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x, z) + 0.5f) / 2;
-                float baseCellularNoise = Noises.CELLULAR_NOISE.sample(x, z) / 2;
-                int surface = (int) (((200 * (Math.max(0.1f, baseCellularNoise) * basePerlinNoise)) + 70));
-                surface = Math.max(16, surface);
-                heightmap[condensePos(x, z)] = (short) (surface);
-                for (int y = surface; y >= 0; y--) {
-                    setBlock(x, y, z, BlockTypes.getId(BlockTypes.STONE), 0);
+    public ExecutorService createNew() throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        int threads = Runtime.getRuntime().availableProcessors();
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        int interval = size/threads;
+        for (int cX = 0; cX < size; cX+=interval) {
+            int startX = cX;
+            pool.submit(() -> {
+                for (int x = startX; x < startX + interval; x++) {
+                    for (int z = 0; z < size; z++) {
+                        float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x, z) + 0.5f) / 2;
+                        float baseCellularNoise = Noises.CELLULAR_NOISE.sample(x, z) / 2;
+                        int surface = (int) (((200 * (Math.max(0.1f, baseCellularNoise) * basePerlinNoise)) + 70));
+                        surface = Math.max(16, surface);
+                        heightmap[condensePos(x, z)] = (short) (surface);
+                        for (int y = surface; y >= 0; y--) {
+                            setBlock(x, y, z, BlockTypes.getId(BlockTypes.STONE), 0);
+                        }
+                    }
                 }
-            }
+            });
         }
+        System.out.print("Took "+(System.currentTimeMillis()-startTime)+"ms to generate heightmap from noise.");
 
+        startTime = System.currentTimeMillis();
         for (int x = 0; x < size; x++) {
             for (int z = 0; z < size; z++) {
                 int maxSteepness = 0;
@@ -131,6 +145,7 @@ public class LunaWorldType extends WorldType {
                 }
             }
         }
+        System.out.print("Took "+(System.currentTimeMillis()-startTime)+"ms to fill blocks.");
 
         for (int x = (size / 2) - 29; x <= size / 2; x++) {
             for (int z = (size / 2) - 29; z < size / 2; z++) {
@@ -172,36 +187,47 @@ public class LunaWorldType extends WorldType {
             }
         }
 
-        for (int x = 0; x < size; x++) {
-            for (int z = 0; z < size; z++) {
-                int surface = heightmap[(x * size) + z];
-                Vector2i blockOn = getBlock(x, surface, z);
-                float randomNumber = seededRand.nextFloat();
-                if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL) || randomNumber < 0.002f) {
-                    if (randomNumber < 0.03f) {
-                        Blob.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.MARBLE), 0, (int) (2 + (seededRand.nextFloat() * 8)));
+        startTime = System.currentTimeMillis();
+        threads = Runtime.getRuntime().availableProcessors();
+        pool = Executors.newFixedThreadPool(threads);
+        int featureInterval = size/threads;
+        Blob.generate(new Vector2i(), 550, heightmap[(550 * size) + 550]-15, 550, 0, 0, 100);
+        for (int cX = 0; cX < size; cX+=featureInterval) {
+            int startX = cX;
+            pool.submit(() -> {
+                for (int x = startX; x < startX + featureInterval; x++) {
+                    for (int z = 0; z < size; z++) {
+                        int surface = heightmap[(x * size) + z];
+                        Vector2i blockOn = getBlock(x, surface, z);
+                        float randomNumber = seededRand.nextFloat();
+                        if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL) || randomNumber < 0.002f) {
+                            if (randomNumber < 0.03f) {
+                                Blob.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.MARBLE), 0, (int) (2 + (seededRand.nextFloat() * 8)));
+                            }
+                        }
                     }
                 }
-            }
+            });
         }
+        pool.shutdown();
+        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        System.out.print("Took "+(System.currentTimeMillis()-startTime)+"ms to generate features.");
 
-        for (int x = 0; x < size; x++) {
-            for (int z = 0; z < size; z++) {
-                updateHeightmap(x, z);
-            }
-        }
-
-        for (int x = 0; x < size; x++) {
-            for (int z = 0; z < size; z++) {
-                for (int y = 0; y <= heightmap[(x * size) + z] + 1; y++) {
-                    Vector2i thisBlock = getBlock(x, y, z);
-                    if (BlockTypes.blockTypeMap.get(thisBlock.x) instanceof LightBlockType ||
-                            getLight(x, y, z + 1, false).w() > 0 || getLight(x + 1, y, z, false).w() > 0 || getLight(x, y, z - 1, false).w() > 0 ||
-                            getLight(x - 1, y, z, false).w() > 0 || getLight(x, y + 1, z, false).w() > 0 || getLight(x, y - 1, z, false).w() > 0) {
-                        LightHelper.updateLight(new Vector3i(x, y, z), getBlock(x, y, z), getLight(x, y, z));
+        threads = Runtime.getRuntime().availableProcessors();
+        pool = Executors.newFixedThreadPool(threads);
+        int heightInterval = size/threads;
+        for (int cX = 0; cX < size; cX+=heightInterval) {
+            int startX = cX;
+            pool.submit(() -> {
+                for (int x = startX; x < startX + heightInterval; x++) {
+                    for (int z = 0; z < size; z++) {
+                        updateHeightmap(x, z);
                     }
                 }
-            }
+            });
         }
+        pool.shutdown();
+
+        return pool;
     }
 }

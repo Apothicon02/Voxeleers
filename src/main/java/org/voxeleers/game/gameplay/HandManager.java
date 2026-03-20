@@ -68,13 +68,10 @@ public class HandManager {
                         }
                     } else {
                         lastBlockBrokenOrPlaced = Main.timeMS;
-                        int cornerData = World.getCorner((int) pos.x, (int) pos.y, (int) pos.z);
-                        int cornerIndex = (pos.y < (int)(pos.y)+0.5 ? 0 : 4) + (pos.z < (int)(pos.z)+0.5 ? 0 : 2) + (pos.x < (int)(pos.x)+0.5 ? 0 : 1);
                         if (lmbDown) {
-                            cornerData |= (1 << (cornerIndex - 1));
                             Vector2i blockBreaking = World.getBlock(pos.x, pos.y, pos.z);
                             BlockType breakingType = BlockTypes.blockTypeMap.get(blockBreaking.x);
-                            if (cornerData == -2147483521 || !player.crouching) {
+                            if (!player.crouching) {
                                 Vector3i intBreakingPos = new Vector3i((int) pos.x, (int) pos.y, (int) pos.z);
                                 boolean canBreak = breakingType.whilePlayerBreaking(intBreakingPos, blockBreaking, handBlock);
                                 if (canBreak && !BlockTags.cantBreakBlocks.tagged.contains(blockToPlace.x)) {
@@ -117,10 +114,7 @@ public class HandManager {
                             }
                         } else if (rmbDown) {
                             lastBlockPlaced = Main.timeMS;
-                            if (cornerData != 0) {
-                                cornerData &= (~(1 << (cornerIndex - 1)));
-                                //World.setCorner((int) pos.x, (int) pos.y, (int) pos.z, cornerData);
-                            } else if (blockToPlace.x > 0) {//player.stack[0] > 0) {
+                            if (blockToPlace.x > 0) {//player.stack[0] > 0) {
                                 Vector2i oldBlock = World.getBlock((int) pos.x, (int) pos.y, (int) pos.z);
                                 BlockProperties oldType = BlockTypes.blockTypeMap.get(oldBlock.x).blockProperties;
                                 if (oldType.isFluidReplaceable) {

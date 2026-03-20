@@ -26,19 +26,18 @@ public class WorldType {
     public boolean hasVisualAtmo() {return false;}
     public void renderCelestialBodies() {}
     public void tick() {}
-    public ExecutorService generate() throws IOException {
+    public ExecutorService generate() throws IOException, InterruptedException {
         ExecutorService executorService = null;
         generated = false;
         if (Files.exists(getWorldPath())) {
             executorService = loadWorld(getWorldPath()+"/");
         } else {
             long worldgenStarted = System.currentTimeMillis();
-            createNew();
+            executorService = createNew();
             System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-worldgenStarted)/1000.f)+"s to generate world.\n");
         }
-        generated = true;
         return executorService;
     }
 
-    public void createNew() {}
+    public ExecutorService createNew() throws InterruptedException {return null;}
 }

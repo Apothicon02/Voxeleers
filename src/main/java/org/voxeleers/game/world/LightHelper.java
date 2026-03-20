@@ -35,9 +35,8 @@ public class LightHelper {
     public static void updateLight(Vector3i pos, Vector2i block, Vector4i light, int stack) {
         stack++;
         BlockType blockType = BlockTypes.blockTypeMap.get(block.x);
-        int corners = getCorner(pos.x, pos.y, pos.z);
         boolean isLight = blockType instanceof LightBlockType;
-        if (!blocksLight(block, corners) || isLight) {
+        if (!blocksLight(block) || isLight) {
             int r = Math.max(light.x(), isLight ? ((LightBlockType) blockType).lightBlockProperties().r : 0);
             int g = Math.max(light.y(), isLight ? ((LightBlockType) blockType).lightBlockProperties().g : 0);
             int b = Math.max(light.z(), isLight ? ((LightBlockType) blockType).lightBlockProperties().b : 0);
@@ -51,7 +50,7 @@ public class LightHelper {
                 if (neighborLight != null) {
                     BlockType neighborBlockType = BlockTypes.blockTypeMap.get(neighbor.x);
                     boolean isNLight = neighborBlockType instanceof LightBlockType;
-                    if (!blocksLight(neighbor, getCorner(neighborPos.x, neighborPos.y, neighborPos.z)) || isNLight) {
+                    if (!blocksLight(neighbor) || isNLight) {
                         r = Math.max(r, Math.max(neighborLight.x(), isNLight ? ((LightBlockType) neighborBlockType).lightBlockProperties().r : 0) - 1);
                         g = Math.max(g, Math.max(neighborLight.y(), isNLight ? ((LightBlockType) neighborBlockType).lightBlockProperties().g : 0) - 1);
                         b = Math.max(b, Math.max(neighborLight.z(), isNLight ? ((LightBlockType) neighborBlockType).lightBlockProperties().b : 0) - 1);
@@ -81,29 +80,8 @@ public class LightHelper {
     public static boolean isDarker(int r, int g, int b, int s, Vector4i darker) {
         return r-2 > darker.x() || g-2 > darker.y() || b-2 > darker.z() || s-2 > darker.w();
     }
-    public static boolean blocksLight(Vector2i block, int corners) {
-        if (!BlockTypes.blockTypeMap.get(block.x).blocksLight(block)) {
-            return false;
-        } else {
-            int blocked = 0;
-            for (int x = 0; x <= 1; x++) {
-                for (int z = 0; z <= 2; z+=2) {
-                    for (int y = 0; y <= 4; y+=4) {
-                        int cornerIndex = y + z + x;
-                        int temp = corners;
-                        temp &= (~(1 << (cornerIndex - 1)));
-                        if (temp == corners) {
-                            blocked++;
-                        }
-                    }
-                }
-            }
-            if (blocked >= 8) {
-                return true;
-            } else {
-                return false;
-            }
-        }
+    public static boolean blocksLight(Vector2i block) {
+        return BlockTypes.blockTypeMap.get(block.x).blocksLight(block);
     }
 
     public static void recalculateLight(Vector3i pos, int r, int g, int b, int s) {
@@ -118,7 +96,7 @@ public class LightHelper {
             Vector2i neighbor = World.getBlock(neighborPos);
             if (neighbor != null) {
                 BlockType neighborBlockType = BlockTypes.blockTypeMap.get(neighbor.x);
-                if (!blocksLight(neighbor, getCorner(neighborPos.x, neighborPos.y, neighborPos.z)) || neighborBlockType instanceof LightBlockType) {
+                if (!blocksLight(neighbor) || neighborBlockType instanceof LightBlockType) {
                     Vector4i neighborLight = World.getLight(neighborPos);
                     if (neighborLight != null) {
                         if ((neighborLight.x() > 0 && neighborLight.x() < r) || (neighborLight.y() > 0 && neighborLight.y() < g) || (neighborLight.z() > 0 && neighborLight.z() < b) || (neighborLight.w() > 0 && neighborLight.w() < s)) {

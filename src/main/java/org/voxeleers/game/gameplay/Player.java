@@ -152,34 +152,28 @@ public class Player {
         if (block != null) {
             int typeId = block.x;
             if (BlockTypes.blockTypeMap.get(typeId).blockProperties.isCollidable) {
-                int cornerData = World.getCorner((int) x, (int) y, (int) z);
-                int cornerIndex = (y < (int)(y)+0.5 ? 0 : 4) + (z < (int)(z)+0.5 ? 0 : 2) + (x < (int)(x)+0.5 ? 0 : 1);
-                int temp = cornerData;
-                temp &= (~(1 << (cornerIndex - 1)));
-                if (temp == cornerData) {
-                    if (Renderer.collisionData[(1024 * ((typeId * 8) + (int) ((x - Math.floor(x)) * 8))) + (block.y() * 64) + ((Math.abs(((int) ((y - Math.floor(y)) * 8)) - 8) - 1) * 8) + (int) ((z - Math.floor(z)) * 8)]) {
-                        if (recordFriction) {
-                            if (typeId == 7) { //kyanite
-                                friction = Math.min(friction, 0.95f);
-                            } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 66 || typeId == 67) { //glass
-                                friction = Math.min(friction, 0.85f);
-                            } else if (BlockTags.planks.tagged.contains(block.x)) { //wood
-                                friction = Math.min(friction, 0.5f);
-                            } else if (BlockTypes.blockTypeMap.get(typeId).blockProperties.isCollidable) {
-                                friction = Math.min(friction, 0.75f);
-                            }
-                            blockOn = block;
-                            setSolidBlockOn = true;
+                if (Renderer.collisionData[(1024 * ((typeId * 8) + (int) ((x - Math.floor(x)) * 8))) + (block.y() * 64) + ((Math.abs(((int) ((y - Math.floor(y)) * 8)) - 8) - 1) * 8) + (int) ((z - Math.floor(z)) * 8)]) {
+                    if (recordFriction) {
+                        if (typeId == 7) { //kyanite
+                            friction = Math.min(friction, 0.95f);
+                        } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 66 || typeId == 67) { //glass
+                            friction = Math.min(friction, 0.85f);
+                        } else if (BlockTags.planks.tagged.contains(block.x)) { //wood
+                            friction = Math.min(friction, 0.5f);
+                        } else if (BlockTypes.blockTypeMap.get(typeId).blockProperties.isCollidable) {
+                            friction = Math.min(friction, 0.75f);
                         }
-                        if (recordBounciness) {
-                            if (typeId == 7) { //kyanite
-                                bounciness = Math.min(bounciness, -2f);
-                            } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 66 || typeId == 67) { //glass
-                                bounciness = Math.min(bounciness, -0.33f);
-                            }
-                        }
-                        return true;
+                        blockOn = block;
+                        setSolidBlockOn = true;
                     }
+                    if (recordBounciness) {
+                        if (typeId == 7) { //kyanite
+                            bounciness = Math.min(bounciness, -2f);
+                        } else if (typeId == 11 || typeId == 12 || typeId == 13 || typeId == 66 || typeId == 67) { //glass
+                            bounciness = Math.min(bounciness, -0.33f);
+                        }
+                    }
+                    return true;
                 }
             }
             if (!setSolidBlockOn && recordFriction) {

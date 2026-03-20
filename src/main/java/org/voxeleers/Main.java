@@ -5,7 +5,9 @@ import org.voxeleers.engine.Window;
 import org.voxeleers.game.ScheduledTicker;
 import org.voxeleers.game.audio.BlockSFX;
 import org.voxeleers.game.audio.Source;
+import org.voxeleers.game.blocks.types.BlockType;
 import org.voxeleers.game.blocks.types.BlockTypes;
+import org.voxeleers.game.blocks.types.LightBlockType;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.gameplay.Player;
 import org.voxeleers.game.audio.AudioController;
@@ -38,6 +40,7 @@ import static io.github.libsdl4j.api.scancode.SDL_Scancode.*;
 import static io.github.libsdl4j.api.video.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS;
 import static io.github.libsdl4j.api.video.SdlVideo.*;
 import static org.lwjgl.opengl.GL45.*;
+import static org.voxeleers.game.world.World.*;
 
 public class Main {
     public static String mainFolder = System.getenv("APPDATA")+"/Voxeleers/";
@@ -71,11 +74,7 @@ public class Main {
         Renderer.initGL();
         Models.loadModels();
 
-        if (worldPool != null) {
-            long worldLoadStarted = System.currentTimeMillis();
-            worldPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until world loading is done, since it is used in the next step (renderer initialization)
-            System.out.print("Waited " + String.format("%.2f", (System.currentTimeMillis() - worldLoadStarted) / 1000.f) + "s on world to finish loading. "+"Took " + String.format("%.2f", (System.currentTimeMillis() - mainStarted) / 1000.f) + "s before beginning renderer init.\n");
-        }
+        World.finishGenerating();
         Renderer.init(window);
         Player.create();
         //ItemTypes.pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until item textures are done filling to upload those textures
@@ -422,7 +421,8 @@ public class Main {
                         } else if (World.worldType instanceof LunaWorldType) {
                             World.worldType = new MarsWorldType();
                         }
-                        World.worldType.generate();
+                        worldPool = World.worldType.generate();
+                        World.finishGenerating();
                         Renderer.initiallyFillTextures(window, false);
                         isSwappingWorldType = false;
                     }

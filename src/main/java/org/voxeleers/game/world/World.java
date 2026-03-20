@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.voxeleers.engine.Utils.*;
 import static org.lwjgl.opengl.GL11.glBindTexture;
@@ -51,8 +52,8 @@ public class World {
     public static int height = 320;
     public static int seaLevel = 63;
     public static boolean generated = false;
-    public static WorldType worldType = WorldTypes.MARS;
-    public static WorldType nextWorldType = WorldTypes.LUNA;
+    public static WorldType worldType = WorldTypes.LUNA;
+    public static WorldType nextWorldType = WorldTypes.MARS;
     public static ObjectOpenHashSet<Item> items = new ObjectOpenHashSet<>();
     public static Int2ObjectOpenHashMap<BlockEntity> blockEntities = new Int2ObjectOpenHashMap<>();
     public static short[][] blocks;// = new short[height][(size*size)*2];
@@ -96,6 +97,30 @@ public class World {
         }
     }
 
+    public static void finishGenerating() throws InterruptedException {
+        if (Main.worldPool != null) {
+            long worldLoadStarted = System.currentTimeMillis();
+            Main.worldPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until world loading is done, since it is used in the next step (renderer initialization)
+            System.out.print("Waited " + String.format("%.2f", (System.currentTimeMillis() - worldLoadStarted) / 1000.f) + "s on world to finish loading. ");
+        }
+        long startTime = System.currentTimeMillis();
+        for (int x = 1; x < size-1; x++) {
+            for (int z = 1; z < size-1; z++) {
+                for (int y = Math.max(heightmap[(x * size) + z], Math.max(heightmap[((x-1) * size) + z], Math.max(heightmap[((x+1) * size) + z], Math.max(heightmap[(x * size) + (z-1)], heightmap[(x * size) + (z+1)])))) + 1; y >= 0; y--) {
+                    Vector2i thisBlock = getBlock(x, y, z);
+                    BlockType type = BlockTypes.blockTypeMap.get(thisBlock.x);
+                    if (type instanceof LightBlockType || !type.blocksLight(thisBlock)) {
+                        LightHelper.updateLight(new Vector3i(x, y, z), thisBlock, new Vector4i(0, 0, 0, 15));
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        System.out.print("Took "+(System.currentTimeMillis()-startTime)+"ms to fill lighting.\n");
+        World.generated = true;
+    }
+
     public static void dropItem(Item item) {
         World.items.add(item.clone().timeExisted(-2000).prevTickTime(Main.timeMS).moveTo(Main.player.getCameraMatrixWithoutPitch().invert().translate(0, -Main.player.eyeHeight + 0.2f, -1f).getTranslation(new Vector3f())));
     }
@@ -134,9 +159,6 @@ public class World {
     }
     public static Vector4i getLight(Vector3i pos) {
         return getLight(pos.x, pos.y, pos.z, true);
-    }
-    public static int getCorner(int x, int y, int z) {
-        return 0;
     }
 
     public static void updateLODS(int x, int y, int z) {
