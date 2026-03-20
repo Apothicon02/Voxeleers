@@ -1,6 +1,5 @@
 package org.voxeleers.game.gameplay;
 
-import org.lwjgl.openal.AL10;
 import org.voxeleers.Main;
 import org.voxeleers.engine.Camera;
 import org.voxeleers.engine.Utils;
@@ -44,7 +43,6 @@ public class Player {
     public float baseSpeed = Math.max(0.15f, 0.15f*scale);
     public float speed = baseSpeed;
     public float sprintSpeed = 1.5f;
-    public float baseFOV = 65.f;
     public boolean onGround = false;
     public boolean crawling = false;
     public boolean crouching = false;

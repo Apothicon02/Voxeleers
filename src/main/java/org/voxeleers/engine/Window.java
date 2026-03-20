@@ -7,6 +7,7 @@ import io.github.libsdl4j.api.mouse.SDL_ButtonMask;
 import io.github.libsdl4j.api.video.SDL_GLContext;
 import io.github.libsdl4j.api.video.SDL_Window;
 import org.voxeleers.Main;
+import org.voxeleers.game.Settings;
 import org.voxeleers.game.rendering.Renderer;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -174,9 +175,10 @@ public class Window {
     public Matrix4f updateProjectionMatrix() {
         float aspectRatio = (float) width /height;
         projectionMatrix.identity();
+        float FoV = (float)Math.toRadians(Main.player.camera.FOV);
         projectionMatrix.set(
-                1.f/Constants.FOV, 0.f, 0.f, 0.f,
-                0.f, aspectRatio/Constants.FOV, 0.f, 0.f,
+                1.f/FoV, 0.f, 0.f, 0.f,
+                0.f, aspectRatio/FoV, 0.f, 0.f,
                 0.f, 0.f, 0.f, -1.f,
                 0.f, 0.f, Constants.Z_NEAR, 0.f
         );

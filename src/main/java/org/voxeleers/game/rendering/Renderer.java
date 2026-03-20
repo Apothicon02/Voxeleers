@@ -739,8 +739,11 @@ public class Renderer {
                 glUniformMatrix4fv(Renderer.gui.uniforms.get("model"), false, new Matrix4f().get(stack.mallocFloat(16)));
             }
             draw();
-            if (showUI && !Main.isSwappingWorldType && !GUI.pauseMenuOpen) {
-                GUI.draw(window);
+            if (showUI && !Main.isSwappingWorldType) {
+                if (!GUI.pauseMenuOpen) {
+                    GUI.draw(window);
+                }
+                GUI.drawDebug(window);
             }
             GUI.drawAlwaysVisible(window);
             GUI.tick(window);

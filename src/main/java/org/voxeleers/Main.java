@@ -3,6 +3,7 @@ package org.voxeleers;
 import com.google.gson.Gson;
 import org.voxeleers.engine.Window;
 import org.voxeleers.game.ScheduledTicker;
+import org.voxeleers.game.Settings;
 import org.voxeleers.game.audio.BlockSFX;
 import org.voxeleers.game.audio.Source;
 import org.voxeleers.game.blocks.types.BlockType;
@@ -40,14 +41,13 @@ import static io.github.libsdl4j.api.scancode.SDL_Scancode.*;
 import static io.github.libsdl4j.api.video.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS;
 import static io.github.libsdl4j.api.video.SdlVideo.*;
 import static org.lwjgl.opengl.GL45.*;
-import static org.voxeleers.game.world.World.*;
+import static org.voxeleers.game.Settings.MOUSE_SENSITIVITY;
 
 public class Main {
     public static String mainFolder = System.getenv("APPDATA")+"/Voxeleers/";
     public static String resourcesPath = mainFolder+"resources/";
     public static Gson gson = new Gson();
     public static Player player;
-    private static final float MOUSE_SENSITIVITY = 0.01f;
     public static long mainStarted = 0;
     public static ExecutorService worldPool = null;
 
@@ -194,10 +194,10 @@ public class Main {
                         Renderer.upscale = !Renderer.upscale;
                     }
                     if (wasUpDown && !window.isKeyPressed(SDL_SCANCODE_UP)) {
-                        player.baseFOV += isShiftDown ? 10 : 5;
+                        Settings.baseFoV += isShiftDown ? 10 : 5;
                     }
                     if (wasDownDown && !window.isKeyPressed(SDL_SCANCODE_DOWN)) {
-                        player.baseFOV -= isShiftDown ? 10 : 5;
+                        Settings.baseFoV -= isShiftDown ? 10 : 5;
                     }
                 } else {
                     if (wasF1Down && !window.isKeyPressed(SDL_SCANCODE_F1)) {
@@ -271,8 +271,8 @@ public class Main {
                     } else {
                         SDL_SetRelativeMouseMode(true);
                         Vector2f displVec = new Vector2f(window.displVec);
-                        player.rotate((float) Math.toRadians(displVec.x * MOUSE_SENSITIVITY),
-                                (float) Math.toRadians(displVec.y * MOUSE_SENSITIVITY));
+                        player.rotate((float) Math.toRadians(displVec.x * (MOUSE_SENSITIVITY / 10)),
+                                (float) Math.toRadians(displVec.y * (MOUSE_SENSITIVITY / 10)));
                         HandManager.useHands(window);
 
                         player.sprint = isShiftDown;
@@ -383,10 +383,12 @@ public class Main {
             }
             interpolationTime = timePassed/tickTime;
             float speed = Utils.getInterpolatedFloat(player.dynamicSpeedOld, player.dynamicSpeed);
-            float dFOV = (float) Math.toRadians(Main.player.baseFOV+(30*Math.min(0.3f, speed*1.5f)));
-            Constants.FOV = Constants.FOV > dFOV ? Math.max(dFOV, Constants.FOV-(factor*1.5f)) : (Constants.FOV < dFOV ? Math.min(dFOV, Constants.FOV+(factor*1.5f)) : Constants.FOV);
+            if (Settings.dynamicFoV) {
+                float dFOV = Settings.baseFoV + (30 * Math.min(0.3f, speed * 1.5f));
+                player.camera.FOV = player.camera.FOV > dFOV ? Math.max(dFOV, player.camera.FOV - (factor * 30f)) : (player.camera.FOV < dFOV ? Math.min(dFOV, player.camera.FOV + (factor * 30f)) : player.camera.FOV);
+            }
             if (player.onGround) {
-                float bobbingInc = Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f));//((float) (factor*(1.5f+Math.random())))));
+                float bobbingInc = (float) (Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f))*timeMul);//((float) (factor*(1.5f+Math.random())))));
                 if (player.bobbingDir) {
                     player.bobbing += bobbingInc;
                     if (player.bobbing >= 0) {

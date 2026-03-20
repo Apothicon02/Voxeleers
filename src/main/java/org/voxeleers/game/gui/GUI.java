@@ -6,11 +6,14 @@ import org.voxeleers.Main;
 import org.voxeleers.engine.Engine;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.engine.Window;
+import org.voxeleers.game.Settings;
 import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.gameplay.HandManager;
 import org.voxeleers.game.gui.buttons.*;
+import org.voxeleers.game.gui.sliders.FoVSlider;
+import org.voxeleers.game.gui.sliders.SensitivitySlider;
 import org.voxeleers.game.gui.sliders.Slider;
 import org.voxeleers.game.gui.sliders.VolumeSlider;
 import org.voxeleers.game.items.Item;
@@ -138,7 +141,31 @@ public class GUI {
         glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 1.f);
         glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
         glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
-        if (audioSettingMenuOpen) {
+        if (graphicsSettingMenuOpen) {
+            drawText(true, 0.5f, 1, 0, -10 - charHeight, "Graphics Settings".toCharArray());
+            drawingButton = new BackButton();
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingSlider = new FoVSlider();
+            sliderX = (Settings.baseFoV-30)/150;
+            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Field of View:"+String.format("%.1f", (sliderX*150)+30)).toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new DynamicFoVButton();
+            drawButton(true, 0.5f, 0.5f, -35.5f, charHeight, (Settings.dynamicFoV ? " FoV VFX " : "No FoV VFX").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new UpscaleButton();
+            drawButton(true, 0.5f, 0.5f, 35.5f, charHeight, (Renderer.upscale ? "Upscaled" : " Native ").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new ShadowsButton();
+            drawButton(true, 0.5f, 0.5f, -35.5f, (-charHeight)-1, (Renderer.shadowsEnabled ? "Shadowed" : "Unshadowed").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new TAAButton();
+            drawButton(true, 0.5f, 0.5f, 35.5f, (-charHeight)-1, (Renderer.taa ? "   TAA   " : "  No AA  ").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight*-3)-2, (Renderer.reflectionsEnabled ? "Reflections Enabled" : "Reflections Disabled").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+        } else if (controlsSettingMenuOpen) {
+            drawText(true, 0.5f, 1, 0, -10 - charHeight, "Control Settings".toCharArray());
+            drawingButton = new BackButton();
+            drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingSlider = new SensitivitySlider();
+            sliderX = Settings.MOUSE_SENSITIVITY;
+            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Sensitivity:"+String.format("%.1f", sliderX*100)+"%").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawButton(true, 0.5f, 0.5f, 0, charHeight, "Keybind Settings".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+        } else if (audioSettingMenuOpen) {
             drawText(true, 0.5f, 1, 0, -10 - charHeight, "Audio Settings".toCharArray());
             drawingButton = new BackButton();
             drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
@@ -155,7 +182,9 @@ public class GUI {
             drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Main Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawingButton = new AudioSettingsButton();
             drawButton(true, 0.5f, 0.5f, -35.5f, (charHeight * 3) + 1, "  Audio  ".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new ControlsSettingsButton();
             drawButton(true, 0.5f, 0.5f, 35.5f, (charHeight * 3) + 1, "Controls".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingButton = new GraphicsSettingsButton();
             drawButton(true, 0.5f, 0.5f, 0, charHeight, "    Graphics    ".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawButton(true, 0.5f, 0.5f, 0, (-charHeight)-1, "Accessibility".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
         } else if (pauseMenuOpen) {
@@ -177,26 +206,25 @@ public class GUI {
 
     public static void drawDebug(Window window) {
         glUniform4f(Renderer.gui.uniforms.get("color"), 1.f, 1.f, 1.f, 0.5f);
-        if (!Main.isSwappingWorldType && !pauseMenuOpen) {
-            glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
-            drawText(false, 0, 1, 2, -2 - charHeight, ((long) (Engine.avgMS) + "fps ").toCharArray());
-            if (Main.showDebug) {
-                drawText(false, 0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
-                drawText(false, 0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
-                Room room = Rooms.getRoom(Main.player.blockPos);
-                Cell cell = new Cell(World.worldType.getGlobalAtmo());
-                if (room != null) {
-                    int xyz = Rooms.packCellPos(Main.player.blockPos);
-                    cell = room.cells.get(xyz);
-                }
-                double temperature = cell.getTemperature();
-                drawText(false, 0, 1, 2, -2 - (charHeight * 4), ("Pressure:" + String.format("%.2f", cell.getPressure() / 10000000.f) + "kPa Temperature:" + String.format("%.2f", temperature) + "K" + " Energy:" + cell.energy).toCharArray()); //258
-                int i = 0;
-                for (Molecule molecule : cell.molecules) {
-                    Element element = Elements.elementMap.get(molecule.element);
-                    String str = element.name + ":" + molecule.amount;
-                    drawText(false, 0, 1, 2, -2 - (charHeight * (5 + (i++))), str.toCharArray());
-                }
+        glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
+        glUniform1i(Renderer.gui.uniforms.get("tex"), 0); //use gui atlas
+        drawText(false, 0, 1, pauseMenuOpen ? 6 : 2, (pauseMenuOpen ? -6 : -2) - charHeight, ((long) (Engine.avgMS) + "fps ").toCharArray());
+        if (Main.showDebug && !pauseMenuOpen) {
+            drawText(false, 0, 1, 2, -2 - (charHeight * 2), (String.format("%.1f", 1000d / (Engine.avgMS)) + "ms").toCharArray());
+            drawText(false, 0, 1, 2, -2 - (charHeight * 3), ((int) Main.player.pos.x + "x," + (int) Main.player.pos.y + "y," + (int) Main.player.pos.z + "z").toCharArray());
+            Room room = Rooms.getRoom(Main.player.blockPos);
+            Cell cell = new Cell(World.worldType.getGlobalAtmo());
+            if (room != null) {
+                int xyz = Rooms.packCellPos(Main.player.blockPos);
+                cell = room.cells.get(xyz);
+            }
+            double temperature = cell.getTemperature();
+            drawText(false, 0, 1, 2, -2 - (charHeight * 4), ("Pressure:" + String.format("%.2f", cell.getPressure() / 10000000.f) + "kPa Temperature:" + String.format("%.2f", temperature) + "K" + " Energy:" + cell.energy).toCharArray()); //258
+            int i = 0;
+            for (Molecule molecule : cell.molecules) {
+                Element element = Elements.elementMap.get(molecule.element);
+                String str = element.name + ":" + molecule.amount;
+                drawText(false, 0, 1, 2, -2 - (charHeight * (5 + (i++))), str.toCharArray());
             }
         }
     }
@@ -401,7 +429,6 @@ public class GUI {
                 drawText(false, offX, offY, 1 + startOffset - (charWidth * 1.5f), 1 - charHeight, chars);
             }
         }
-        drawDebug(window);
     }
 
     public static void drawSlot(float offsetX, float offsetY, float offPxX, float offPxY, int x, int y, int sizeX, int sizeY) {

@@ -5,6 +5,7 @@ import org.joml.*;
 public class Camera {
     private final Matrix4f viewMatrix = new Matrix4f();
     public Quaternionf pitch = new Quaternionf();
+    public float FOV = 65.f;
 
     public void setViewMatrix(float[] matrix) {
         viewMatrix.set(matrix);
