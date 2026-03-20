@@ -105,7 +105,7 @@ public class GUI {
             if (cursorPos.x() > slider.bounds.x() && cursorPos.x() < slider.bounds.z() && cursorPos.y() > slider.bounds.y() && cursorPos.y() < slider.bounds.w()) {
                 glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 277, 320);
                 drawQuad(true, false, (float) cursorPos.x() / width, (float) slider.bounds.y() / height, 5, 16);
-                if (Main.isLMBClick) {
+                if (Main.wasLMBDown) {
                     slider.clicked(cursorPos.x());
                 }
             }
@@ -144,7 +144,7 @@ public class GUI {
             drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawingSlider = new VolumeSlider();
             sliderX = AudioController.masterVolume/2.f;
-            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Master Volume:"+String.format("%.2f", sliderX*200)+"%").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Master Volume:"+String.format("%.1f", sliderX*200)+"%").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawingButton = new MuteButton();
             drawButton(true, 0.5f, 0.5f, -35.5f, charHeight, (AudioController.muted ? "  Muted  " :  " Unmuted ").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawingButton = new AudioChannelButton();
