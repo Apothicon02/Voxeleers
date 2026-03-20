@@ -262,10 +262,12 @@ public class Rooms {
     }
 
     private static void mergeRooms(Room mergedRoom) {
+        boolean wasRoomHereAlready = false;
         List<Room> roomsToRemove = new ArrayList<>();
         for (Room room : rooms) {
             for (int ogxyz : room.cells.keySet()) {
                 if (mergedRoom.cells.containsKey(ogxyz)) {
+                    wasRoomHereAlready = true;
                     for (int xyz : room.cells.keySet()) {
                         Cell cell = room.cells.get(xyz);
                         Cell mergedCell = mergedRoom.cells.get(xyz);
@@ -295,7 +297,7 @@ public class Rooms {
         }
         for (Map.Entry<Integer, Cell> entry : mergedRoom.cells.entrySet()) {
             if (entry.getValue() == null) {
-                entry.setValue(new Cell(World.worldType.getGlobalAtmo()));
+                entry.setValue(wasRoomHereAlready ? new Cell() : new Cell(World.worldType.getGlobalAtmo()));
             }
         }
         rooms.removeIf(roomsToRemove::contains);

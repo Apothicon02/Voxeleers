@@ -54,6 +54,7 @@ public class Main {
         pool.submit(World::init);
         Noises.init(pool);
         pool.shutdown();
+        AudioController.init();
 
         long noisesInitStarted = System.currentTimeMillis();
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); //wait until noises are done, since they are used in the next step (world generation)
@@ -67,7 +68,6 @@ public class Main {
     }
 
     public void init(Window window) throws Exception {
-        AudioController.init();
         Renderer.initGL();
         Models.loadModels();
 

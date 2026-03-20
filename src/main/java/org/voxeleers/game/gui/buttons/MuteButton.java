@@ -1,4 +1,4 @@
-package org.voxeleers.game.gui;
+package org.voxeleers.game.gui.buttons;
 
 import org.voxeleers.game.audio.AudioController;
 

@@ -27,6 +27,7 @@ public class AudioController {
     public static ALCapabilities alCapabilities;
     public static int outputMode = SOFTOutputMode.ALC_SURROUND_7_1_SOFT;
     public static boolean muted = false;
+    public static float masterVolume = 1.f;
 
     public static void init() {
         //long audioInitStarted = System.currentTimeMillis();
@@ -99,9 +100,9 @@ public class AudioController {
                     pressure = 0.f;
                 }
                 float gain = Math.clamp((float) (pressure / 500000000.f), 0.1f, 1.f);
-                AL10.alListenerf(AL10.AL_GAIN, gain);
+                AL10.alListenerf(AL10.AL_GAIN, gain*masterVolume);
             } else {
-                AL10.alListenerf(AL10.AL_GAIN, 1.f);
+                AL10.alListenerf(AL10.AL_GAIN, masterVolume);
             }
         }
     }

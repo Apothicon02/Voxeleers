@@ -10,6 +10,9 @@ import org.voxeleers.game.audio.AudioController;
 import org.voxeleers.game.elements.Element;
 import org.voxeleers.game.elements.Elements;
 import org.voxeleers.game.gameplay.HandManager;
+import org.voxeleers.game.gui.buttons.*;
+import org.voxeleers.game.gui.sliders.Slider;
+import org.voxeleers.game.gui.sliders.VolumeSlider;
 import org.voxeleers.game.items.Item;
 import org.voxeleers.game.items.ItemType;
 import org.voxeleers.game.items.ItemTypes;
@@ -33,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.lwjgl.openal.SOFTOutputMode.ALC_SURROUND_7_1_SOFT;
 import static org.voxeleers.game.gameplay.Inventory.invWidth;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.glDrawArrays;
@@ -64,6 +66,9 @@ public class GUI {
     public static boolean pauseMenuOpen = false;
     public static boolean inventoryOpen = false;
 
+    public static Slider drawingSlider = null;
+    public static float sliderX = 0.f;
+    public static List<Slider> sliders = new ArrayList<>();
     public static Button drawingButton = null;
     public static List<Button> buttons = new ArrayList<>();
 
@@ -78,6 +83,7 @@ public class GUI {
         guiScale = width / guiScaleMul;
         aspectRatio = (float) width / height;
         buttons.clear();
+        sliders.clear();
     }
 
     public static void tick(Window window) {
@@ -92,6 +98,15 @@ public class GUI {
                 drawQuad(false, false, (float) button.bounds.x() / width, (float) button.bounds.y() / height, button.width, 16);
                 if (Main.isLMBClick) {
                     button.clicked();
+                }
+            }
+        }
+        for (Slider slider : sliders) {
+            if (cursorPos.x() > slider.bounds.x() && cursorPos.x() < slider.bounds.z() && cursorPos.y() > slider.bounds.y() && cursorPos.y() < slider.bounds.w()) {
+                glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 277, 320);
+                drawQuad(true, false, (float) cursorPos.x() / width, (float) slider.bounds.y() / height, 5, 16);
+                if (Main.isLMBClick) {
+                    slider.clicked(cursorPos.x());
                 }
             }
         }
@@ -127,7 +142,9 @@ public class GUI {
             drawText(true, 0.5f, 1, 0, -10 - charHeight, "Audio Settings".toCharArray());
             drawingButton = new BackButton();
             drawButton(true, 0.5f, 0.5f, 0, (charHeight * 5) + 2, "Back To Settings Menu".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
-            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, "Master Volume:100%".toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
+            drawingSlider = new VolumeSlider();
+            sliderX = AudioController.masterVolume/2.f;
+            drawSlider(true, 0.5f, 0.5f, 0, (charHeight * 3) + 1, ("Master Volume:"+String.format("%.2f", sliderX*200)+"%").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawingButton = new MuteButton();
             drawButton(true, 0.5f, 0.5f, -35.5f, charHeight, (AudioController.muted ? "  Muted  " :  " Unmuted ").toCharArray(), new Vector4f(1.f), new Vector4f(1.f));
             drawingButton = new AudioChannelButton();
@@ -208,10 +225,12 @@ public class GUI {
         glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 0, borderData.y()+224);
         glUniform4f(Renderer.gui.uniforms.get("color"), bgColor.x(), bgColor.y(), bgColor.z(), bgColor.w());
         drawSlot(true, false, offsetX, offsetY, offsetPX - 1, offsetPY - 4, 0, 0, borderData.x() + 2, 16);
-        drawingButton = null;
+        drawingSlider = null;
         glUniform2i(Renderer.gui.uniforms.get("atlasOffset"), 272, 320);
         glUniform4f(Renderer.gui.uniforms.get("color"), bgColor.x(), bgColor.y(), bgColor.z(), 1);
-        drawSlot(true, false, offsetX, offsetY, offsetPX - 1, offsetPY - 4, 0, 0, 5, 16);
+        float posX = (((sliderX-0.5f)*4)*borderData.x())/width;
+        drawSlot(true, false, offsetX+posX, offsetY, offsetPX - 1, offsetPY - 4, 0, 0, 5, 16);
+        sliderX = 0.f;
 
         glUniform1i(Renderer.gui.uniforms.get("layer"), 0); //text
         glUniform4f(Renderer.gui.uniforms.get("color"), txtColor.x(), txtColor.y(), txtColor.z(), txtColor.w());
@@ -443,6 +462,10 @@ public class GUI {
             drawingButton.bounds = new Vector4i(offset.x(), offset.y(), offset.x() + scale.x(), offset.y() + scale.y());
             drawingButton.width = scaleX;
             buttons.add(drawingButton);
+        } else if (drawingSlider != null) {
+            drawingSlider.bounds = new Vector4i(offset.x(), offset.y(), offset.x() + scale.x(), offset.y() + scale.y());
+            drawingSlider.width = scaleX;
+            sliders.add(drawingSlider);
         }
         try (MemoryStack stack = MemoryStack.stackPush()) {
             glUniformMatrix4fv(Renderer.gui.uniforms.get("model"), false, new Matrix4f().translate(xOffset, yOffset, 0.f).scale(xScale, yScale, 1).get(stack.mallocFloat(16)));

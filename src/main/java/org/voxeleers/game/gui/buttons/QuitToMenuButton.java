@@ -1,4 +1,4 @@
-package org.voxeleers.game.gui;
+package org.voxeleers.game.gui.buttons;
 
 public class QuitToMenuButton extends Button {
     public QuitToMenuButton() {}
