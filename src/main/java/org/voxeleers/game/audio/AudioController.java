@@ -56,7 +56,7 @@ public class AudioController {
         AudioController.setListenerData(new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), new float[6]);
         hoverSource = new Source(new Vector3f(), 0.15f, 1.6f, 1.f, 0);
         buttonSource = new Source(new Vector3f(), 0.3f, 1.1f, 1.f, 0);
-        sliderSource = new Source(new Vector3f(), 0.3f, 1.1f, 1.f, 0);
+        sliderSource = new Source(new Vector3f(), 1.f, 1.1f, 1.f, 1);
         //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-audioInitStarted)/1000.f)+"s to init openAL.\n");
     }
 
@@ -66,17 +66,18 @@ public class AudioController {
     public static void playButtonSound() {
         buttonSource.play(Math.random() > 0.5f ? Sounds.ROCK_PLACE1 : Sounds.ROCK_PLACE2, true);
     }
+    public static boolean playedSliderSound = false;
     public static float prevX = 0;
-    public static long timeLastPlayedButtonSound = 0;
     public static void playSliderSound() {
-        if (System.currentTimeMillis() - timeLastPlayedButtonSound > 300) {
-            timeLastPlayedButtonSound = System.currentTimeMillis();
-            float x = Engine.window.currentPos.x();
-            float gain = Math.min(1.f, (Math.abs(x-prevX))/10.f);
+        playedSliderSound = true;
+        float x = Engine.window.currentPos.x();
+        float gain = (Math.abs(x-prevX))/2.f;
+        if (gain > 0.f) {
+            gain = Math.clamp(gain, 0.8f, 1.f);
             sliderSource.setGain(gain);
-            sliderSource.play(Math.random() > 0.5f ? Sounds.METAL_SMALL_PLACE1 : Sounds.METAL_SMALL_PLACE2, true);
-            prevX = x;
+            sliderSource.play(Sounds.GEARS_TURNING, false);
         }
+        prevX = x;
     }
 
     public static String getOutputModeAsTxt() {
@@ -101,7 +102,12 @@ public class AudioController {
 //        if (alGetError() != AL_NO_ERROR) {
 //            boolean nothing = true;
 //        }
+        if (!playedSliderSound) {
+            sliderSource.stop();
+        }
         buttonSource.setPos(Main.player.pos);
+        hoverSource.setPos(Main.player.pos);
+        sliderSource.setPos(Main.player.pos);
         for (int i = 0; i < disposableSources.size(); i++) {
             Source source = disposableSources.get(i);
             if (!source.isPlaying()) {
@@ -110,6 +116,7 @@ public class AudioController {
                 disposableSources.remove(i--);
             }
         }
+        playedSliderSound = false;
     }
 
     public static void setListenerData(Vector3f pos, Vector3f vel, float[] orientation) {

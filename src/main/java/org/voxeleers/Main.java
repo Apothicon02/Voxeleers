@@ -379,7 +379,6 @@ public class Main {
                 player.tick();
                 Rooms.tick();
                 ScheduledTicker.tick();
-                AudioController.tick();
                 if (ticksDone >= 3) {
                     timePassed = tickTime-1;
                 }
@@ -411,6 +410,7 @@ public class Main {
                     }
                 }
             }
+            AudioController.tick();
             Renderer.render(window);
             LightHelper.iterateLightQueue();
             if (isSaving) {
