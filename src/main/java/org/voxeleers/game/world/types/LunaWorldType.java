@@ -5,6 +5,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector4i;
 import org.lwjgl.system.MemoryStack;
 import org.voxeleers.Main;
+import org.voxeleers.engine.VoxeleersMath;
 import org.voxeleers.game.blocks.types.BlockType;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
@@ -116,7 +117,7 @@ public class LunaWorldType extends WorldType {
                     for (int z = 0; z < size; z++) {
                         float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x, z) + 0.5f) / 2;
                         float baseCellularNoise = Noises.CELLULAR_NOISE.sample(x, z) / 2;
-                        int surface = (int) (((40 * (Math.max(0.1f, baseCellularNoise) * basePerlinNoise)) + 70));
+                        int surface = (int) (((100 * (Math.max(0.1f, baseCellularNoise) * basePerlinNoise)) + 70));
                         double craterSurfMul = 1.f;
                         double craterSurfMaxMul = 1.f;
                         for (Vector3i crater : craters) {
@@ -126,9 +127,11 @@ public class LunaWorldType extends WorldType {
                                 craterDist /= radius;
                                 craterDist = Math.pow(craterDist, 2);
                                 craterDist *= 0.5f; //depth
-                                craterDist += 0.7f;
-                                if (craterDist > 1.1f) { //ridges
-                                    craterDist -= ((craterDist-1.1f)*2.f);
+                                double antiRidge = VoxeleersMath.gradient(Math.clamp(surface, 70, 96), 70, 96, 0.2f, 0.f);
+                                craterDist += 0.7f-antiRidge;
+                                double ridgePeak = 1.1f-(antiRidge/2);
+                                if (craterDist > ridgePeak) { //ridges
+                                    craterDist -= ((craterDist-ridgePeak)*2.f);
                                 }
                                 craterSurfMul = Math.min(craterDist, craterSurfMul);
                                 craterSurfMaxMul = Math.max(craterDist, craterSurfMaxMul);
