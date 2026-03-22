@@ -177,7 +177,7 @@ vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess,
     float sunSetness = min(1.f, max(abs(sunHeight), adjustedTime));
     float whiteY = max(ogY, 200)-135.f;
     float skyWhiteness = mix(max(0.33f, gradient(lightPos.y, (whiteY/4)+47, (whiteY/2)+436, 0, 0.8)), 0.9f, clamp(abs(1-sunSetness), 0, 1.f));
-    float sunBrightness = clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 0.9f);
+    float sunBrightness = clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 0.98f);
     lighting.rgb = max(vec3(0), lighting.rgb-(sunBrightness*lighting.a));
     if (negateSun) {
         lighting.a = 0;

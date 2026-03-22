@@ -445,7 +445,7 @@ public class Renderer {
                 float b = Math.max(0.25f, brightness - (cloudRand.nextFloat() / 2));
                 Vector3f pos = new Vector3f(0, 0, 2000 * (cloudRand.nextFloat() + 0.05f)).rotateY((float) ((cloudRand.nextFloat() * 10) + (time * (3 + cloudRand.nextInt(2)))));
                 try (MemoryStack stack = MemoryStack.stackPush()) {
-                    modelBuffer.put(new Matrix4f().rotateY(cloudRand.nextFloat() / 10).setTranslation(pos.set(pos.x + 512, cloudRand.nextInt(200) + 320 - ((Math.abs(pos.x) + Math.abs(pos.z)) / 10), pos.z + 512)).scale(10 + cloudRand.nextInt(10), 3 + cloudRand.nextInt(6), 10 + cloudRand.nextInt(10)).get(stack.mallocFloat(16)));
+                    modelBuffer.put(new Matrix4f().rotateY(cloudRand.nextFloat() / 10).setTranslation(pos.set(pos.x + 512, cloudRand.nextInt(200) + 320 - ((Math.abs(pos.x) + Math.abs(pos.z)) / 10), pos.z + 512)).scale(5 + cloudRand.nextInt(5), 1 + cloudRand.nextInt(2), 5 + cloudRand.nextInt(5)).get(stack.mallocFloat(16)));
                 }
                 colorBuffer.put(b);
                 colorBuffer.put(b);

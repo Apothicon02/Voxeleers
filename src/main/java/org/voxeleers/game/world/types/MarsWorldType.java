@@ -17,6 +17,7 @@ import org.voxeleers.game.world.World;
 import org.voxeleers.game.world.shapes.Blob;
 import org.joml.Vector2i;
 import org.joml.Vector3i;
+import org.voxeleers.game.world.shapes.Cube;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,7 +34,6 @@ import static org.voxeleers.engine.Utils.condensePos;
 import static org.voxeleers.engine.Utils.distance;
 import static org.voxeleers.game.rendering.Renderer.*;
 import static org.voxeleers.game.world.World.*;
-import static org.voxeleers.game.world.World.getLight;
 
 public class MarsWorldType extends WorldType {
     private Path worldPath = Path.of(Main.mainFolder+"world0/mars");
@@ -124,7 +124,8 @@ public class MarsWorldType extends WorldType {
                 for (int x = startX; x < startX+interval; x++) {
                     for (int z = 0; z < size; z++) {
                         float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x*2, z*2) + 0.5f) / 2;
-                        float baseCellularNoise = Noises.CELLULAR_NOISE.sample(x, z) / 2;
+                        float cellScale = 1+(((float) z / size)*0.33f);
+                        float baseCellularNoise = Noises.CELLULAR_NOISE.sample((int) (x*cellScale), (int) (z*cellScale)) / 2;
                         int surface = (int) (((100 * Math.max(Math.abs(baseCellularNoise/4), Math.sqrt(Math.max(0, baseCellularNoise-0.33f)*(Math.clamp(((float) x+z) / size, 0.85f, 0.9f)-0.848f)*24))) + 70));
                         surface += basePerlinNoise*VoxeleersMath.gradient(surface, 80, 120, 32, 0);
                         double craterSurfMul = 1.f;
@@ -179,7 +180,7 @@ public class MarsWorldType extends WorldType {
                         setBlock(x, newY, z, BlockTypes.getId(BlockTypes.SAND), 0);
                     }
                 } else {
-                    for (int newY = surface; newY >= surface - 5; newY--) {
+                    for (int newY = surface; newY >= surface - 17; newY--) {
                         setBlock(x, newY, z, BlockTypes.getId(BlockTypes.GRAVEL), 0);
                     }
                 }
@@ -242,7 +243,7 @@ public class MarsWorldType extends WorldType {
                         float randomNumber = seededRand.nextFloat();
                         if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL) || randomNumber < 0.0005f) {
                             if (randomNumber < 0.2f) {
-                                Blob.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0, (int) (2 + (seededRand.nextFloat() * 16)));
+                                Cube.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0, (int) (1 + (seededRand.nextFloat() * 4)));
                             }
                         }
                     }
