@@ -177,7 +177,7 @@ vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess,
     float sunSetness = min(1.f, max(abs(sunHeight), adjustedTime));
     float whiteY = max(ogY, 200)-135.f;
     float skyWhiteness = mix(max(0.33f, gradient(lightPos.y, (whiteY/4)+47, (whiteY/2)+436, 0, 0.8)), 0.9f, clamp(abs(1-sunSetness), 0, 1.f));
-    float sunBrightness = clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 0.98f);
+    float sunBrightness = clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 1);
     lighting.rgb = max(vec3(0), lighting.rgb-(sunBrightness*lighting.a));
     if (negateSun) {
         lighting.a = 0;
@@ -825,9 +825,9 @@ void main() {
         lighting.a*=waterDepth;
         vec4 lightingColor = getLightingColor(lightPos, lighting, isSky, fogginess, false);
         fragColor.rgb *= lightingColor.rgb;
-        fragColor.rgb = mix(fragColor.rgb, lightingColor.rgb, fogginess);
+        fragColor.rgb = mix(fragColor.rgb*1.2f, lightingColor.rgb, fogginess);
     }
-    if (tint.a > 0) {
+    if (tint.a < 1) {
         source = sun.y > 0 ? sun : mun;
         source.y = max(source.y, 500);
         normal = tintNormal;
@@ -842,7 +842,7 @@ void main() {
         tint.rgb = mix(tint.rgb, firstTintAddition, 0.5f);
         tint.rgb *= lightingColor.rgb;
         tint.rgb = mix(tint.rgb, lightingColor.rgb, fogginess);
-        fragColor.rgb = mix(fragColor.rgb, tint.rgb, mix(abs(1-tint.a), 1.f, reflectivity));
+        fragColor.rgb = mix(fragColor.rgb, tint.rgb*1.2f, mix(abs(1-tint.a), 1.f, reflectivity));
     }
 
     if (hitBlock == selected && ui) {

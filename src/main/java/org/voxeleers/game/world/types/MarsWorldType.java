@@ -232,7 +232,6 @@ public class MarsWorldType extends WorldType {
         threads = Runtime.getRuntime().availableProcessors();
         pool = Executors.newFixedThreadPool(threads);
         int featureInterval = size/threads;
-        Blob.generate(new Vector2i(), 550, heightmap[(550 * size) + 550]-15, 550, 0, 0, 100);
         for (int cX = 0; cX < size; cX+=featureInterval) {
             int startX = cX;
             pool.submit(() -> {
