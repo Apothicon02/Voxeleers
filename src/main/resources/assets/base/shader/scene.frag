@@ -780,7 +780,7 @@ void main() {
         isLight = true;
     }
     isSky = skyChecks();
-    if (mapPos.y <= 63 && fragColor.a < alphaMax) {
+    if (mapPos.y < 0 && fragColor.a < alphaMax) {
         fragColor = vec4(1.0f, 0.0f, 0.0f, 1.f);
         isSky = false;
     }

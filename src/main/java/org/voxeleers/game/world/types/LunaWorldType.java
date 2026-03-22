@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import static org.lwjgl.opengl.GL20.glUniform4f;
 import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
 import static org.voxeleers.engine.Utils.condensePos;
+import static org.voxeleers.engine.Utils.distance;
 import static org.voxeleers.game.rendering.Renderer.*;
 import static org.voxeleers.game.world.World.*;
 import static org.voxeleers.game.world.World.getLight;
@@ -97,6 +98,14 @@ public class LunaWorldType extends WorldType {
     @Override
     public ExecutorService createNew() throws InterruptedException {
         long startTime = System.currentTimeMillis();
+        Vector3i[] craters = new Vector3i[50];
+        for (int i = 0; i < craters.length; i++) {
+            int radius = rand().nextInt(90) + 10;
+            int borderOffset = radius*2;
+            int x = rand().nextInt(size-borderOffset) + (borderOffset/2);
+            int z = rand().nextInt(size-borderOffset) + (borderOffset/2);
+            craters[i] = new Vector3i(x, radius, z);
+        }
         int threads = Runtime.getRuntime().availableProcessors();
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         int interval = size/threads;
@@ -107,8 +116,25 @@ public class LunaWorldType extends WorldType {
                     for (int z = 0; z < size; z++) {
                         float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x, z) + 0.5f) / 2;
                         float baseCellularNoise = Noises.CELLULAR_NOISE.sample(x, z) / 2;
-                        int surface = (int) (((200 * (Math.max(0.1f, baseCellularNoise) * basePerlinNoise)) + 70));
-                        surface = Math.max(16, surface);
+                        int surface = (int) (((40 * (Math.max(0.1f, baseCellularNoise) * basePerlinNoise)) + 70));
+                        double craterSurfMul = 1.f;
+                        double craterSurfMaxMul = 1.f;
+                        for (Vector3i crater : craters) {
+                            double craterDist = distance(crater.x(), crater.z(), x, z);
+                            int radius = crater.y();
+                            if (craterDist < radius) {
+                                craterDist /= radius;
+                                craterDist = Math.pow(craterDist, 2);
+                                craterDist *= 0.5f; //depth
+                                craterDist += 0.7f;
+                                if (craterDist > 1.1f) { //ridges
+                                    craterDist -= ((craterDist-1.1f)*2.f);
+                                }
+                                craterSurfMul = Math.min(craterDist, craterSurfMul);
+                                craterSurfMaxMul = Math.max(craterDist, craterSurfMaxMul);
+                            }
+                        }
+                        surface = (int) Math.max(16, surface*(craterSurfMul >= 1.f ? craterSurfMaxMul : craterSurfMul));
                         heightmap[condensePos(x, z)] = (short) (surface);
                         for (int y = surface; y >= 0; y--) {
                             setBlock(x, y, z, BlockTypes.getId(BlockTypes.STONE), 0);
@@ -117,6 +143,8 @@ public class LunaWorldType extends WorldType {
                 }
             });
         }
+        pool.shutdown();
+        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         System.out.print("Took "+(System.currentTimeMillis()-startTime)+"ms to generate heightmap from noise.");
 
         startTime = System.currentTimeMillis();
@@ -140,58 +168,57 @@ public class LunaWorldType extends WorldType {
                     }
                 } else {
                     for (int newY = surface; newY >= surface - 5; newY--) {
-                        setBlock(x, newY, z, BlockTypes.getId(BlockTypes.GRAVEL), 0);
+                        setBlock(x, newY, z, BlockTypes.getId(BlockTypes.STONE), 0);
                     }
                 }
             }
         }
         System.out.print("Took "+(System.currentTimeMillis()-startTime)+"ms to fill blocks.");
-
-        for (int x = (size / 2) - 29; x <= size / 2; x++) {
-            for (int z = (size / 2) - 29; z < size / 2; z++) {
-                setBlock(x, 100, z, 11, 0);
-                boolean xWall = x == (size / 2) - 29 || x == (size / 2);
-                if (xWall || z == (size / 2) - 29 || z == (size / 2) - 1) {
-                    int block = xWall ? (x > 500 ? BlockTypes.getId(BlockTypes.RED_STAINED_GLASS) : BlockTypes.getId(BlockTypes.MAGENTA_STAINED_GLASS)) : (z > 500 ? BlockTypes.getId(BlockTypes.BLUE_STAINED_GLASS) : BlockTypes.getId(BlockTypes.LIME_STAINED_GLASS));
-                    setBlock(x, 99, z, block, 0);
-                    setBlock(x, 98, z, block, 0);
-                    setBlock(x, 97, z, block, 0);
-                    setBlock(x, 96, z, block, 0);
-                    setBlock(x, 95, z, block, 0);
-                    setBlock(x, 94, z, block, 0);
-                    setBlock(x, 93, z, block, 0);
-                    setBlock(x, 92, z, block, 0);
-                    setBlock(x, 91, z, block, 0);
-                    setBlock(x, 90, z, block, 0);
-                    setBlock(x, 89, z, block, 0);
-                    setBlock(x, 88, z, block, 0);
-                    setBlock(x, 87, z, block, 0);
-                    setBlock(x, 86, z, block, 0);
-                    setBlock(x, 85, z, block, 0);
-                    setBlock(x, 84, z, block, 0);
-                    setBlock(x, 83, z, block, 0);
-                    setBlock(x, 82, z, block, 0);
-                    setBlock(x, 81, z, block, 0);
-                    setBlock(x, 80, z, block, 0);
-                    setBlock(x, 79, z, block, 0);
-                    setBlock(x, 78, z, block, 0);
-                    setBlock(x, 77, z, block, 0);
-                    setBlock(x, 76, z, block, 0);
-                    setBlock(x, 75, z, block, 0);
-                    setBlock(x, 74, z, block, 0);
-                    setBlock(x, 73, z, block, 0);
-                    setBlock(x, 72, z, block, 0);
-                    setBlock(x, 71, z, block, 0);
-                    setBlock(x, 70, z, block, 0);
-                }
-            }
-        }
+//
+//        for (int x = (size / 2) - 29; x <= size / 2; x++) {
+//            for (int z = (size / 2) - 29; z < size / 2; z++) {
+//                setBlock(x, 100, z, 11, 0);
+//                boolean xWall = x == (size / 2) - 29 || x == (size / 2);
+//                if (xWall || z == (size / 2) - 29 || z == (size / 2) - 1) {
+//                    int block = xWall ? (x > 500 ? BlockTypes.getId(BlockTypes.RED_STAINED_GLASS) : BlockTypes.getId(BlockTypes.MAGENTA_STAINED_GLASS)) : (z > 500 ? BlockTypes.getId(BlockTypes.BLUE_STAINED_GLASS) : BlockTypes.getId(BlockTypes.LIME_STAINED_GLASS));
+//                    setBlock(x, 99, z, block, 0);
+//                    setBlock(x, 98, z, block, 0);
+//                    setBlock(x, 97, z, block, 0);
+//                    setBlock(x, 96, z, block, 0);
+//                    setBlock(x, 95, z, block, 0);
+//                    setBlock(x, 94, z, block, 0);
+//                    setBlock(x, 93, z, block, 0);
+//                    setBlock(x, 92, z, block, 0);
+//                    setBlock(x, 91, z, block, 0);
+//                    setBlock(x, 90, z, block, 0);
+//                    setBlock(x, 89, z, block, 0);
+//                    setBlock(x, 88, z, block, 0);
+//                    setBlock(x, 87, z, block, 0);
+//                    setBlock(x, 86, z, block, 0);
+//                    setBlock(x, 85, z, block, 0);
+//                    setBlock(x, 84, z, block, 0);
+//                    setBlock(x, 83, z, block, 0);
+//                    setBlock(x, 82, z, block, 0);
+//                    setBlock(x, 81, z, block, 0);
+//                    setBlock(x, 80, z, block, 0);
+//                    setBlock(x, 79, z, block, 0);
+//                    setBlock(x, 78, z, block, 0);
+//                    setBlock(x, 77, z, block, 0);
+//                    setBlock(x, 76, z, block, 0);
+//                    setBlock(x, 75, z, block, 0);
+//                    setBlock(x, 74, z, block, 0);
+//                    setBlock(x, 73, z, block, 0);
+//                    setBlock(x, 72, z, block, 0);
+//                    setBlock(x, 71, z, block, 0);
+//                    setBlock(x, 70, z, block, 0);
+//                }
+//            }
+//        }
 
         startTime = System.currentTimeMillis();
         threads = Runtime.getRuntime().availableProcessors();
         pool = Executors.newFixedThreadPool(threads);
         int featureInterval = size/threads;
-        Blob.generate(new Vector2i(), 550, heightmap[(550 * size) + 550]-15, 550, 0, 0, 100);
         for (int cX = 0; cX < size; cX+=featureInterval) {
             int startX = cX;
             pool.submit(() -> {
@@ -200,9 +227,10 @@ public class LunaWorldType extends WorldType {
                         int surface = heightmap[(x * size) + z];
                         Vector2i blockOn = getBlock(x, surface, z);
                         float randomNumber = seededRand.nextFloat();
-                        if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL) || randomNumber < 0.002f) {
-                            if (randomNumber < 0.03f) {
-                                Blob.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.MARBLE), 0, (int) (2 + (seededRand.nextFloat() * 8)));
+                        if (blockOn.x == BlockTypes.getId(BlockTypes.STONE) || randomNumber < 0.001f) {
+                            if (randomNumber < 0.005f) {
+                                boolean crater = rand().nextBoolean();
+                                Blob.generate(blockOn, x, crater ? surface+2 : surface, z, crater ? 0 : BlockTypes.getId(BlockTypes.MARBLE), 0, (int) (2 + (seededRand.nextFloat() * 14)));
                             }
                         }
                     }
