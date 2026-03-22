@@ -52,8 +52,8 @@ public class World {
     public static int height = 320;
     public static int seaLevel = 63;
     public static boolean generated = false;
-    public static WorldType worldType = WorldTypes.LUNA;
-    public static WorldType nextWorldType = WorldTypes.MARS;
+    public static WorldType worldType = WorldTypes.MARS;
+    public static WorldType nextWorldType = WorldTypes.LUNA;
     public static ObjectOpenHashSet<Item> items = new ObjectOpenHashSet<>();
     public static Int2ObjectOpenHashMap<BlockEntity> blockEntities = new Int2ObjectOpenHashMap<>();
     public static short[][] blocks;// = new short[height][(size*size)*2];
@@ -106,13 +106,12 @@ public class World {
         long startTime = System.currentTimeMillis();
         for (int x = 1; x < size-1; x++) {
             for (int z = 1; z < size-1; z++) {
-                for (int y = Math.max(heightmap[(x * size) + z], Math.max(heightmap[((x-1) * size) + z], Math.max(heightmap[((x+1) * size) + z], Math.max(heightmap[(x * size) + (z-1)], heightmap[(x * size) + (z+1)])))) + 1; y >= 0; y--) {
+                for (int y = Math.max(heightmap[(x * size) + z], Math.max(heightmap[((x-1) * size) + z], Math.max(heightmap[((x+1) * size) + z], Math.max(heightmap[(x * size) + (z-1)], heightmap[(x * size) + (z+1)])))) + 1;
+                     y >= Math.min(heightmap[(x * size) + z], Math.min(heightmap[((x-1) * size) + z], Math.min(heightmap[((x+1) * size) + z], Math.min(heightmap[(x * size) + (z-1)], heightmap[(x * size) + (z+1)])))); y--) {
                     Vector2i thisBlock = getBlock(x, y, z);
                     BlockType type = BlockTypes.blockTypeMap.get(thisBlock.x);
                     if (type instanceof LightBlockType || !type.blocksLight(thisBlock)) {
-                        LightHelper.updateLight(new Vector3i(x, y, z), thisBlock, new Vector4i(0, 0, 0, 15));
-                    } else {
-                        break;
+                        LightHelper.updateLight(new Vector3i(x, y, z), thisBlock, new Vector4i(0, 0, 0, 16));
                     }
                 }
             }

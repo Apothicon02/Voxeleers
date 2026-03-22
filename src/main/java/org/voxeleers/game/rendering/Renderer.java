@@ -708,6 +708,7 @@ public class Renderer {
             glBindTextureUnit(0, Textures.sceneColorOld.id);
             glBindTextureUnit(1, Textures.scene.id);
             draw();
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, window.getWidth(), window.getHeight(), 0);
 
             glBindFramebuffer(GL_FRAMEBUFFER, blurryFBOId);

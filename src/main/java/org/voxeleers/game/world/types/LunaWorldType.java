@@ -101,10 +101,10 @@ public class LunaWorldType extends WorldType {
         long startTime = System.currentTimeMillis();
         Vector3i[] craters = new Vector3i[50];
         for (int i = 0; i < craters.length; i++) {
-            int radius = rand().nextInt(90) + 10;
+            int radius = seededRand.nextInt(90) + 10;
             int borderOffset = radius*2;
-            int x = rand().nextInt(size-borderOffset) + (borderOffset/2);
-            int z = rand().nextInt(size-borderOffset) + (borderOffset/2);
+            int x = seededRand.nextInt(size-borderOffset) + (borderOffset/2);
+            int z = seededRand.nextInt(size-borderOffset) + (borderOffset/2);
             craters[i] = new Vector3i(x, radius, z);
         }
         int threads = Runtime.getRuntime().availableProcessors();
@@ -232,7 +232,7 @@ public class LunaWorldType extends WorldType {
                         float randomNumber = seededRand.nextFloat();
                         if (blockOn.x == BlockTypes.getId(BlockTypes.STONE) || randomNumber < 0.001f) {
                             if (randomNumber < 0.005f) {
-                                boolean crater = rand().nextBoolean();
+                                boolean crater = seededRand.nextBoolean();
                                 Blob.generate(blockOn, x, crater ? surface+2 : surface, z, crater ? 0 : BlockTypes.getId(BlockTypes.MARBLE), 0, (int) (2 + (seededRand.nextFloat() * 14)));
                             }
                         }

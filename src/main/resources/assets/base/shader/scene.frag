@@ -174,24 +174,25 @@ vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess,
     float sunDist = (distance(lightPos.xz, sun.xz)/(size*1.5f));
     float adjustedTime = clamp((sunDist*abs(1-clamp(sunHeight, 0.05f, 0.5f)))+scattering, 0.f, 1.f);
     float thickness = gradient(lightPos.y, 128, 1500-max(0, sunHeight*1000), 0.33+(sunHeight/2), 1);
-    float sunSetness = min(1.f, max(abs(sunHeight*1.1f), adjustedTime));
+    float sunSetness = min(1.f, max(abs(sunHeight), adjustedTime));
     float whiteY = max(ogY, 200)-135.f;
-    float skyWhiteness = mix(max(0.33f, gradient(lightPos.y, (whiteY/4)+47, (whiteY/2)+436, 0, 0.9)), 0.9f, clamp(abs(1-sunSetness), 0, 1.f));
-    float sunBrightness = mix(0.f, clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 1.f), clamp(skyWhiteness+0.3f, 0, 0.85f));
+    float skyWhiteness = mix(max(0.33f, gradient(lightPos.y, (whiteY/4)+47, (whiteY/2)+436, 0, 0.8)), 0.9f, clamp(abs(1-sunSetness), 0, 1.f));
+    float sunBrightness = clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 0.9f);
     lighting.rgb = max(vec3(0), lighting.rgb-(sunBrightness*lighting.a));
     if (negateSun) {
         lighting.a = 0;
     }
-    float whiteness = isSky ? skyWhiteness : mix(0.9f, skyWhiteness, max(0, fogginess-0.8f)*5.f);
-    sunColor = mix(mix(vec3(0.25, 0.65f, 1)*(1+((10*clamp(sunHeight, 0.f, 0.1f))*(15*min(0.5f, abs(1-sunBrightness))))), vec3(0.5f, 0.56f, 0.7f)*sunBrightness, sunSetness), vec3(sunBrightness), whiteness);
-    return vec4(max(lighting.rgb, min(fromLinear(mix(vec3(1), vec3(1, 0.95f, 0.85f), sunSetness/4)), lighting.a*sunColor)).rgb, thickness);
+    float whiteness = isSky ? skyWhiteness : mix(0.8f, skyWhiteness, max(0, fogginess-0.8f)*5.f);
+    sunColor = mix(mix(vec3(0.65, 0.65f, 1)*(1+((10*clamp(sunHeight, 0.f, 0.1f))*(15*min(0.5f, abs(1-sunBrightness))))), vec3(0.56f, 0.56f, 0.7f)*sunBrightness, sunSetness), vec3(sunBrightness), whiteness);
+    vec4 color = vec4(max(lighting.rgb, min(fromLinear(mix(vec3(1), vec3(1, 0.95f, 0.85f), sunSetness/4)), lighting.a*sunColor)).rgb, thickness);
+    return isSky ? color*gradient(lightPos.y, 72, 320, 0.66f, 1) : color;
 }
 vec4 powLighting(vec4 lighting) {
     return vec4(lighting.r, lighting.g, lighting.b, pow(lighting.a, 2));
 }
 
 bool shouldSelectBlock = true;
-ivec3 hitBlock = ivec3(0);
+ivec3 hitBlock = ivec3(-1);
 vec3 hitPos = vec3(0);
 vec3 solidHitPos = vec3(0);
 vec3 mapPos = vec3(0);
@@ -412,7 +413,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                 if (hitPos == vec3(0)) {
                     hitPos = solidHitPos;
                 }
-                if (hitBlock == ivec3(0) && block.x > 1) { //dont detect water
+                if (hitBlock == ivec3(-1) && block.x > 1) { //dont detect water
                     hitBlock = ivec3(mapPos);
                 }
                 if (voxelColor.a < alphaMax) {
@@ -532,9 +533,9 @@ vec4 traceLOD(vec3 rayPos, vec3 iMask, float chunkDist) {
 
     for (int i = 0; lodPos.x < 4.0 && lodPos.x >= 0.0 && lodPos.y < 4.0 && lodPos.y >= 0.0 && lodPos.z < 4.0 && lodPos.z >= 0.0 && i < 4*3; i++) {
         mapPos = (lod2Pos*16)+(lodPos*4);
-        if (distance(ogRayPos, mapPos)>lodSize.x+lodSize.x) {
-            return vec4(-1);
-        }
+//        if (distance(ogRayPos, mapPos)>lodSize.x+lodSize.x) {
+//            return vec4(-1);
+//        }
         int lod = texelFetch(blocks, ivec3(lodPos.z, lodPos.y, lodPos.x), 2).x;
         if (lod > 0) {
             vec3 uv3d = vec3(0);
@@ -767,11 +768,11 @@ void main() {
     vec4 clipSpace = vec4((inverse(projection) * vec4(uv, 1.f, 1.f)).xyz, 0);
     ogDir = roundDir(normalize((invView*clipSpace).xyz));
     ogPos = invView[3].xyz;
-    vec4 rasterColor = texture(raster_color, pos/res);
-    vec4 rasterPos = texture(raster_pos, pos/res);
+    vec4 rasterColor = texture(raster_color, normalizedPos);
+    vec4 rasterPos = texture(raster_pos, normalizedPos);
     source = sun.y > 0 ? sun : mun;
     source.y = max(source.y, 500);
-    bool isSky = rasterColor.a <= 0.f;
+    bool isSky = true;
     bool isLight = false;
     updateLightFog(ogPos);
     fragColor = raytrace(ogPos, ogDir);
@@ -780,15 +781,12 @@ void main() {
         isLight = true;
     }
     isSky = skyChecks();
-    if (mapPos.y < 0 && fragColor.a < alphaMax) {
-        fragColor = vec4(1.0f, 0.0f, 0.0f, 1.f);
-        isSky = false;
-    }
     shouldSelectBlock = false;
     vec4 lighting = vec4(-1);
     lightPos = ogPos + ogDir * size;//this is only used if it's the sky
     bool isTracedObject = true;
-    if ((rasterColor.rgb != vec3(0) && distance(ogPos, rasterPos.xyz) < distance(ogPos, hitPos+(normal/2))) || fragColor.a < alphaMax) {
+    float rasterBrightness = max(rasterColor.r, max(rasterColor.g, rasterColor.b));
+    if ((distance(ogPos, rasterPos.xyz) < distance(ogPos, hitPos+(normal/2)) || isSky) && rasterBrightness > 0.f) {
         isTracedObject = false;
         fragColor.rgb = fromLinear(rasterColor).rgb;
         fragColor.a = rasterColor.a;
@@ -800,7 +798,7 @@ void main() {
             objectOutOfWorld = true;
         }
         isSky = false;
-        isLight = max(rasterColor.r, max(rasterColor.g, rasterColor.b)) >= 1.f;
+        isLight = rasterBrightness >= 1.f;
     }
     vec3 dPos = solidHitPos+(normal/2)-ogPos;
     float depth = nearClip/max(0, dot(dPos, ogDir));
@@ -854,5 +852,5 @@ void main() {
         fragColor.rgb += lightFog.rgb;
     }
     fragColor = toLinear(fragColor);
-    fragColor.a = fragColor.a >= 1 ? depth : 0.f;
+    fragColor.a = depth;
 }

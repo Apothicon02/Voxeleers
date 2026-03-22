@@ -5,6 +5,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector4i;
 import org.lwjgl.system.MemoryStack;
 import org.voxeleers.Main;
+import org.voxeleers.engine.VoxeleersMath;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.blocks.types.LightBlockType;
 import org.voxeleers.game.elements.Elements;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import static org.lwjgl.opengl.GL20.glUniform4f;
 import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
 import static org.voxeleers.engine.Utils.condensePos;
+import static org.voxeleers.engine.Utils.distance;
 import static org.voxeleers.game.rendering.Renderer.*;
 import static org.voxeleers.game.world.World.*;
 import static org.voxeleers.game.world.World.getLight;
@@ -105,6 +107,14 @@ public class MarsWorldType extends WorldType {
     @Override
     public ExecutorService createNew() throws InterruptedException {
         long startTime = System.currentTimeMillis();
+        Vector3i[] craters = new Vector3i[5];
+        for (int i = 0; i < craters.length; i++) {
+            int radius = seededRand.nextInt(90) + 10;
+            int borderOffset = radius*2;
+            int x = seededRand.nextInt(size-borderOffset) + (borderOffset/2);
+            int z = seededRand.nextInt(size-borderOffset) + (borderOffset/2);
+            craters[i] = new Vector3i(x, radius, z);
+        }
         int threads = Runtime.getRuntime().availableProcessors();
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         int interval = size/threads;
@@ -113,10 +123,30 @@ public class MarsWorldType extends WorldType {
             pool.submit(() -> {
                 for (int x = startX; x < startX+interval; x++) {
                     for (int z = 0; z < size; z++) {
-                        float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x, z) + 0.5f) / 2;
+                        float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x*2, z*2) + 0.5f) / 2;
                         float baseCellularNoise = Noises.CELLULAR_NOISE.sample(x, z) / 2;
-                        int surface = (int) (((200 * (Math.max(0.1f, baseCellularNoise) * basePerlinNoise)) + 70));
-                        surface = Math.max(16, surface);
+                        int surface = (int) (((100 * Math.max(Math.abs(baseCellularNoise/4), Math.sqrt(Math.max(0, baseCellularNoise-0.33f)*(Math.clamp(((float) x+z) / size, 0.85f, 0.9f)-0.848f)*24))) + 70));
+                        surface += basePerlinNoise*VoxeleersMath.gradient(surface, 80, 120, 32, 0);
+                        double craterSurfMul = 1.f;
+                        double craterSurfMaxMul = 1.f;
+                        for (Vector3i crater : craters) {
+                            double craterDist = distance(crater.x(), crater.z(), x, z);
+                            int radius = crater.y();
+                            if (craterDist < radius) {
+                                craterDist /= radius;
+                                craterDist = Math.pow(craterDist, 2);
+                                craterDist *= 0.5f; //depth
+                                double antiRidge = VoxeleersMath.gradient(Math.clamp(surface, 70, 96), 70, 96, 0.2f, 0.f);
+                                craterDist += 0.7f-antiRidge;
+                                double ridgePeak = 1.1f-(antiRidge/2);
+                                if (craterDist > ridgePeak) { //ridges
+                                    craterDist -= ((craterDist-ridgePeak)*2.f);
+                                }
+                                craterSurfMul = Math.min(craterDist, craterSurfMul);
+                                craterSurfMaxMul = Math.max(craterDist, craterSurfMaxMul);
+                            }
+                        }
+                        surface = (int) Math.max(16, surface*(craterSurfMul >= 1.f ? craterSurfMaxMul : craterSurfMul));
                         heightmap[condensePos(x, z)] = (short) (surface);
                         for (int y = surface; y >= 0; y--) {
                             setBlock(x, y, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0);
@@ -143,7 +173,7 @@ public class MarsWorldType extends WorldType {
                     int steepness = Math.abs(surface - nY);
                     maxSteepness = Math.max(maxSteepness, steepness);
                 }
-                boolean flat = maxSteepness < 3;
+                boolean flat = maxSteepness < 4;
                 if (flat) {
                     for (int newY = surface; newY >= surface - 5; newY--) {
                         setBlock(x, newY, z, BlockTypes.getId(BlockTypes.SAND), 0);
@@ -210,9 +240,9 @@ public class MarsWorldType extends WorldType {
                         int surface = heightmap[(x * size) + z];
                         Vector2i blockOn = getBlock(x, surface, z);
                         float randomNumber = seededRand.nextFloat();
-                        if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL)) {
-                            if (randomNumber < 0.08f) {
-                                Blob.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0, (int) (2 + (seededRand.nextFloat() * 8)));
+                        if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL) || randomNumber < 0.0005f) {
+                            if (randomNumber < 0.2f) {
+                                Blob.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0, (int) (2 + (seededRand.nextFloat() * 16)));
                             }
                         }
                     }
