@@ -51,7 +51,7 @@ public class Textures {
             GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
             GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
     },Constants.width, Constants.height);
-    public static Texture atlas = create(552, 64, 1024/64);
+    public static Texture atlas = create(560, 64, 1024/64);
     public static Texture blocks = create(new int[]{
             GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
             GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,

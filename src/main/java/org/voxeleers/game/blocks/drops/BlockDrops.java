@@ -19,6 +19,7 @@ public class BlockDrops {
             Map.entry(BlockTypes.PORECAP, LootTables.PORECAP),
             Map.entry(BlockTypes.GRASS, LootTables.GRASSY_DIRT),
             Map.entry(BlockTypes.DIRT, LootTables.DIRT),
+            Map.entry(BlockTypes.MARTIAN_REGOLITH, LootTables.MARTIAN_REGOLITH),
             Map.entry(BlockTypes.REGOLITH, LootTables.REGOLITH),
             Map.entry(BlockTypes.SAND, LootTables.SAND),
             Map.entry(BlockTypes.SANDSTONE, LootTables.SANDSTONE),
@@ -27,6 +28,8 @@ public class BlockDrops {
             Map.entry(BlockTypes.GRAVEL, LootTables.GRAVEL),
             Map.entry(BlockTypes.FLINT, LootTables.FLINT),
             Map.entry(BlockTypes.KYANITE, LootTables.KYANITE),
+            Map.entry(BlockTypes.IRON_ORE, LootTables.IRON_ORE),
+            Map.entry(BlockTypes.COPPER_ORE, LootTables.COPPER_ORE),
             Map.entry(BlockTypes.GLASS, LootTables.GLASS),
             Map.entry(BlockTypes.LIME_STAINED_GLASS, LootTables.LIME_STAINED_GLASS),
             Map.entry(BlockTypes.MAGENTA_STAINED_GLASS, LootTables.MAGENTA_STAINED_GLASS),
@@ -59,9 +62,11 @@ public class BlockDrops {
         ArrayList<Item> drops = new ArrayList<>();
         Map<Pair<Float, Integer>[], Item> items = blockTypeDropTable.get(BlockTypes.blockTypeMap.get(block.x));
         if (items != null) {
+            boolean droppedAnything = false;
             for (Pair<Float, Integer>[] drop : items.keySet()) {
                 for (Pair<Float, Integer> chance : drop) {
-                    if (Math.random() < chance.component1()) {
+                    if ((!(chance.component1() >= 1.f && droppedAnything)) && Math.random() < chance.component1()) {
+                        droppedAnything = true;
                         drops.add(items.get(drop).clone());
                     }
                 }

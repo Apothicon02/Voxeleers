@@ -7,7 +7,7 @@ import org.voxeleers.game.items.ItemTypes;
 import java.util.Map;
 
 public class LootTables {
-    public static Map<Pair<Float, Integer>[], Item>  //order of chance pairs matters, lower chances should be first
+    public static Map<Pair<Float, Integer>[], Item>  //must have any kind of "guaranteed" drop last.
             STONE = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.STONE)),
             MARBLE = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.MARBLE)),
             GRASS = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.GRASS)),
@@ -16,6 +16,7 @@ public class LootTables {
             PORECAP = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.PORECAP)),
             GRASSY_DIRT = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.GRASSY_DIRT)),
             DIRT = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.DIRT)),
+            MARTIAN_REGOLITH = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.MARTIAN_REGOLITH)),
             REGOLITH = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.REGOLITH)),
             SAND = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.SAND)),
             SANDSTONE = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.SANDSTONE)),
@@ -26,6 +27,8 @@ public class LootTables {
                     new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.GRAVEL)),
             KYANITE = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.KYANITE)),
             FLINT = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.FLINT)),
+            IRON_ORE = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.IRON_ORE)),
+            COPPER_ORE = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.COPPER_ORE)),
             GLASS = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.GLASS)),
             LIME_STAINED_GLASS = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.LIME_STAINED_GLASS)),
             MAGENTA_STAINED_GLASS = Map.of(new Pair[]{new Pair<>(1.f, 1)}, new Item().type(ItemTypes.MAGENTA_STAINED_GLASS)),

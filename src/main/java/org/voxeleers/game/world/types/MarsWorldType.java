@@ -150,7 +150,7 @@ public class MarsWorldType extends WorldType {
                         surface = (int) Math.max(16, surface*(craterSurfMul >= 1.f ? craterSurfMaxMul : craterSurfMul));
                         heightmap[condensePos(x, z)] = (short) (surface);
                         for (int y = surface; y >= 0; y--) {
-                            setBlock(x, y, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0);
+                            setBlock(x, y, z, craterSurfMul < 0.95f ? BlockTypes.getId(BlockTypes.MARTIAN_REGOLITH) : BlockTypes.getId(BlockTypes.SANDSTONE), 0);
                         }
                     }
                 }
@@ -176,8 +176,10 @@ public class MarsWorldType extends WorldType {
                 }
                 boolean flat = maxSteepness < 4;
                 if (flat) {
-                    for (int newY = surface; newY >= surface - 5; newY--) {
-                        setBlock(x, newY, z, BlockTypes.getId(BlockTypes.SAND), 0);
+                    if (getBlock(x, surface, z).x() != BlockTypes.getId(BlockTypes.MARTIAN_REGOLITH)) {
+                        for (int newY = surface; newY >= surface - 5; newY--) {
+                            setBlock(x, newY, z, BlockTypes.getId(BlockTypes.SAND), 0);
+                        }
                     }
                 } else {
                     for (int newY = surface; newY >= surface - 17; newY--) {
@@ -242,7 +244,8 @@ public class MarsWorldType extends WorldType {
                         float randomNumber = seededRand.nextFloat();
                         if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL) || randomNumber < 0.0005f) {
                             if (randomNumber < 0.2f) {
-                                Cube.generate(blockOn, x, surface, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0, (int) (1 + (seededRand.nextFloat() * 4)));
+                                float material = seededRand.nextFloat();
+                                Cube.generate(blockOn, x, surface, z, material < 0.002f ? BlockTypes.getId(BlockTypes.IRON_ORE) : (material < 0.004f ? BlockTypes.getId(BlockTypes.COPPER_ORE) : BlockTypes.getId(BlockTypes.SANDSTONE)), 0, (int) (1 + (seededRand.nextFloat() * 4)));
                             }
                         }
                     }

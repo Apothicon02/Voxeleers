@@ -103,17 +103,21 @@ public class BlockTypes {
                     new SFX[]{Sounds.MUD_STEP1, Sounds.MUD_STEP2}, 0.66f, 0.66f))),
             CLAY = create(List.of(BlockTags.sediment), new BlockType(MUD.blockProperties)),
             OBSIDIAN = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties.copy().ttb(2000).blocksLight(true))),
-            STEAM = create(new BlockType(new BlockProperties().isSolid(false).blocksLight(false).isCollidable(false).obstructsHeightmap(false).isGas(true))), //60
-            WATER_BUCKET = create(List.of(BlockTags.buckets, BlockTags.cantBreakBlocks), new FullBucketBlockType(BUCKET.blockProperties)),
+            IRON_ORE = create(new BlockType(new BlockProperties().blockSFX(new SFX[]{Sounds.METAL_SMALL_PLACE1, Sounds.METAL_SMALL_PLACE2}, 0.66f, 0.66f,
+                    new SFX[]{Sounds.METAL_SMALL_PLACE1, Sounds.METAL_SMALL_PLACE2}, 0.66f, 0.66f))), //60
+            COPPER_ORE = create(new BlockType(IRON_ORE.blockProperties.copy())),
             STICK = create(new BlockType(new BlockProperties().isSolid(false).blocksLight(false).obstructsHeightmap(false).isFluidReplaceable(true).blockSFX(new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1,
                     new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1))),
             STICK_PLATFORM = create(new BlockType(STICK.blockProperties.copy().isCollidable(true))),
-            STEEL_FRAME = create(new BlockType(new BlockProperties().blocksLight(false).obstructsHeightmap(false).permeable(true))),
-            POWERED_VENT = create(new BlockType(new BlockProperties())), //65
+            STEEL_FRAME = create(new BlockType(new BlockProperties().blocksLight(false).obstructsHeightmap(false).permeable(true).blockSFX(new SFX[]{Sounds.METAL_SMALL_PLACE1, Sounds.METAL_SMALL_PLACE2}, 0.66f, 0.66f,
+                    new SFX[]{Sounds.METAL_SMALL_PLACE1, Sounds.METAL_SMALL_PLACE2}, 0.66f, 0.66f))),
+            POWERED_VENT = create(new BlockType(new BlockProperties().blockSFX(new SFX[]{Sounds.METAL_SMALL_PLACE1, Sounds.METAL_SMALL_PLACE2}, 0.66f, 0.66f,
+                    new SFX[]{Sounds.METAL_SMALL_PLACE1, Sounds.METAL_SMALL_PLACE2}, 0.66f, 0.66f))), //65
             BLUE_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
             RED_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
             REGOLITH = create(List.of(BlockTags.sediment), new PowderBlockType(GRAVEL.blockProperties.copy().blockSFX(new SFX[]{Sounds.GRAVEL_STEP1, Sounds.GRAVEL_STEP2}, 0.4f, 1,
-                    new SFX[]{Sounds.GRAVEL_STEP1, Sounds.GRAVEL_STEP2}, 0.4f, 1)));
+                    new SFX[]{Sounds.GRAVEL_STEP1, Sounds.GRAVEL_STEP2}, 0.4f, 1))),
+            MARTIAN_REGOLITH = create(List.of(BlockTags.sediment), new PowderBlockType(REGOLITH.blockProperties.copy()));
 
     private static BlockType create(List<BlockTag> tags, BlockType type) {
         for (BlockTag tag : tags) {

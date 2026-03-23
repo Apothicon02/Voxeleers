@@ -5,21 +5,16 @@ import org.voxeleers.game.audio.SFX;
 import org.voxeleers.game.audio.Sounds;
 import org.voxeleers.game.blocks.types.BlockTypes;
 import org.voxeleers.game.elements.Elements;
-import org.voxeleers.game.rendering.Renderer;
 import org.voxeleers.game.rendering.Texture3D;
 import org.voxeleers.game.rendering.Textures;
 
-import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.GL_RGBA;
@@ -87,9 +82,12 @@ public class ItemTypes {
             HYDRANGEA = create(new ItemType("plant/texture/hydrangea").blockToPlace(BlockTypes.getId(BlockTypes.HYDRANGEA), 0).maxStackSize(64).sfx(new ItemSFX(new SFX[]{Sounds.GRASS_STEP1, Sounds.GRASS_STEP2, Sounds.GRASS_STEP3}, 0.45f, 1.f))),
             KYANITE = create(new ItemType("resource/texture/kyanite").blockToPlace(BlockTypes.getId(BlockTypes.KYANITE), 0).maxStackSize(64).sfx(new ItemSFX(new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 0.6f, 1.2f))),
             FLINT = create(new ItemType("resource/texture/flint").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.FLINT), 0).sfx(new ItemSFX(new SFX[]{Sounds.ROCK_PLACE1, Sounds.ROCK_PLACE2}, 0.5f, 1.05f))),
+            IRON_ORE = create(new ItemType("resource/texture/iron").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.IRON_ORE), 0).sfx(new ItemSFX(new SFX[]{Sounds.METAL_SMALL_PLACE1, Sounds.METAL_SMALL_PLACE2}, 0.6f, 0.6f))),
+            COPPER_ORE = create(new ItemType("resource/texture/copper").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.COPPER_ORE), 0).sfx(new ItemSFX(new SFX[]{Sounds.METAL_SMALL_PLACE1, Sounds.METAL_SMALL_PLACE2}, 0.6f, 0.6f))),
             GRAVEL = create(new ItemType("resource/texture/gravel").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.GRAVEL), 0).sfx(new ItemSFX(new SFX[]{Sounds.GRAVEL_STEP1, Sounds.GRAVEL_STEP2}, 0.4f, 1.f))),
             SANDSTONE = create(new ItemType("resource/texture/sandstone").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.SANDSTONE), 0).sfx(new ItemSFX(new SFX[]{Sounds.ROCK_PLACE1, Sounds.ROCK_PLACE2}, 0.5f, 1.f))),
             SAND = create(new ItemType("resource/texture/sand").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.SAND), 0).sfx(new ItemSFX(new SFX[]{Sounds.SAND_STEP1, Sounds.SAND_STEP2}, 0.4f, 1.f))),
+            MARTIAN_REGOLITH = create(new ItemType("resource/texture/martian_regolith").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.MARTIAN_REGOLITH), 0).sfx(new ItemSFX(new SFX[]{Sounds.SAND_STEP1, Sounds.SAND_STEP2}, 0.4f, 1.f))),
             REGOLITH = create(new ItemType("resource/texture/regolith").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.REGOLITH), 0).sfx(new ItemSFX(new SFX[]{Sounds.SAND_STEP1, Sounds.SAND_STEP2}, 0.4f, 1.f))),
             DIRT = create(new ItemType("resource/texture/dirt").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.DIRT), 0).sfx(new ItemSFX(new SFX[]{Sounds.DIRT_STEP1, Sounds.DIRT_STEP2, Sounds.DIRT_STEP3}, 0.5f, 1.f))),
             GRASSY_DIRT = create(new ItemType("resource/texture/grassy_dirt").maxStackSize(64).blockToPlace(BlockTypes.getId(BlockTypes.GRASS), 0).sfx(new ItemSFX(new SFX[]{Sounds.DIRT_STEP1, Sounds.DIRT_STEP2, Sounds.DIRT_STEP3}, 0.5f, 1.f))),
