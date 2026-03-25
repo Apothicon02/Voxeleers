@@ -8,32 +8,39 @@ import org.joml.Vector2i;
 import org.joml.Vector3i;
 import org.joml.Vector4i;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Queue;
 
 import static org.voxeleers.game.world.World.*;
 
 public class LightHelper {
-    public static ArrayList<Vector3i> lightQueue = new ArrayList<>();
+    public static ArrayDeque<Vector3i> lightQueue = new ArrayDeque<>();
+    public static HashSet<Vector3i> lightSet = new HashSet<>();
 
-    public static boolean queueLightUpdate(Vector3i pos) {
-        boolean exists = lightQueue.contains(pos);
+    public static void queueLightUpdate(Vector3i pos) {
+        boolean exists = lightSet.contains(pos);
         if (!exists) {
+            lightSet.add(pos);
             lightQueue.add(pos);
-            return true;
         }
-        return false;
     }
 
     public static void iterateLightQueue() {
+        long timeStarted = System.currentTimeMillis();
+        boolean shouldPrint = !lightQueue.isEmpty();
         while (!lightQueue.isEmpty()) {
-            Vector3i pos = lightQueue.getFirst();
-            lightQueue.removeFirst();
+            Vector3i pos = lightQueue.pollFirst();
             updateLight(pos, getBlock(pos), getLight(pos));
+            lightSet.remove(pos);
+        }
+        if (shouldPrint) {
+            long timeSpent = (System.currentTimeMillis() - timeStarted);
+            System.out.print("Took " + timeSpent + "ms to do light queue. \n");
         }
     }
 
-    public static void updateLight(Vector3i pos, Vector2i block, Vector4i light, int stack) {
-        stack++;
+    public static void updateLight(Vector3i pos, Vector2i block, Vector4i light) {
         BlockType blockType = BlockTypes.blockTypeMap.get(block.x);
         boolean isLight = blockType instanceof LightBlockType;
         if (!blocksLight(block) || isLight) {
@@ -66,16 +73,11 @@ public class LightHelper {
                 Vector4i nLight = getLight(neighborPos);
                 if (nLight != null) {
                     if (isDarker(r, g, b, s, nLight)) {
-                        if (stack < 10000) {
-                            updateLight(neighborPos, World.getBlock(neighborPos), nLight, stack);
-                        }
+                        queueLightUpdate(neighborPos);
                     }
                 }
             }
         }
-    }
-    public static void updateLight(Vector3i pos, Vector2i block, Vector4i light) {
-        updateLight(pos, block, light, 0);
     }
     public static boolean isDarker(int r, int g, int b, int s, Vector4i darker) {
         return r-2 > darker.x() || g-2 > darker.y() || b-2 > darker.z() || s-2 > darker.w();

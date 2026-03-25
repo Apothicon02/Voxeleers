@@ -34,6 +34,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
@@ -128,6 +129,7 @@ public class World {
         return (x >= 0 && x < size && y >= 0 && y < height && z >= 0 && z < size);
     }
 
+    public static ByteBuffer smallLightBuffer = ByteBuffer.allocateDirect(4);
     public static void setLight(int x, int y, int z, int r, int b, int g, int s) {
         if (inBounds(x, y, z)) {
             int pos = condensePos(x, z)*4;
@@ -138,7 +140,7 @@ public class World {
             if (generated) {
                 unsavedLights[y] = true;
                 glBindTexture(GL_TEXTURE_3D, Textures.lights.id);
-                glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, ByteBuffer.allocateDirect(4).put((byte)r).put((byte)b).put((byte)g).put((byte)s).flip());
+                glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, smallLightBuffer.put((byte)r).put((byte)b).put((byte)g).put((byte)s).flip());
                 updateLODS(x, y, z);
             }
         }
@@ -160,6 +162,7 @@ public class World {
         return getLight(pos.x, pos.y, pos.z, true);
     }
 
+    public static IntBuffer smallLodBuffer = ByteBuffer.allocateDirect(16).asIntBuffer();
     public static void updateLODS(int x, int y, int z) {
         glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
         byte[] firstLight = null;
@@ -178,7 +181,8 @@ public class World {
                 }
             }
         }
-        glTexSubImage3D(GL_TEXTURE_3D, 2, z/4, y/4, x/4, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, new int[]{clear ? 0 : 1, 0, 0, 0});
+        smallLodBuffer.clear();
+        glTexSubImage3D(GL_TEXTURE_3D, 2, z/4, y/4, x/4, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, smallLodBuffer.put(clear ? 0 : 1).flip());
         blocksLOD[y/4][condensePosLOD(x, z)] = (short)(clear ? 0 : 1);
         if (clear) {
             firstLight = null;
@@ -197,7 +201,8 @@ public class World {
                 }
             }
         }
-        glTexSubImage3D(GL_TEXTURE_3D, 4, z/16, y/16, x/16, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, new int[]{clear ? 0 : 1, 0, 0, 0});
+        smallLodBuffer.clear();
+        glTexSubImage3D(GL_TEXTURE_3D, 4, z/16, y/16, x/16, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, smallLodBuffer.put(clear ? 0 : 1).flip());
         blocksLOD2[y/16][condensePosLOD2(x, z)] = (short)(clear ? 0 : 1);
     }
 
