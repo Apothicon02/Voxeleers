@@ -2,6 +2,7 @@ package org.voxeleers.game.world;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.voxeleers.Main;
 import org.voxeleers.engine.Utils;
@@ -37,6 +38,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -129,6 +131,7 @@ public class World {
         return (x >= 0 && x < size && y >= 0 && y < height && z >= 0 && z < size);
     }
 
+//    public static IntOpenHashSet lightUpdates = new IntOpenHashSet();
     public static ByteBuffer smallLightBuffer = ByteBuffer.allocateDirect(4);
     public static void setLight(int x, int y, int z, int r, int b, int g, int s) {
         if (inBounds(x, y, z)) {
@@ -139,6 +142,10 @@ public class World {
             lights[y][pos+3] = (byte)s;
             if (generated) {
                 unsavedLights[y] = true;
+//                lightUpdates.add(x);
+//                lightUpdates.add(y);
+//                lightUpdates.add(z);
+//                lightUpdates.add(Utils.packColor(r, g, b, s));
                 glBindTexture(GL_TEXTURE_3D, Textures.lights.id);
                 glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, smallLightBuffer.put((byte)r).put((byte)b).put((byte)g).put((byte)s).flip());
                 updateLODS(x, y, z);
@@ -162,7 +169,7 @@ public class World {
         return getLight(pos.x, pos.y, pos.z, true);
     }
 
-    public static IntBuffer smallLodBuffer = ByteBuffer.allocateDirect(16).asIntBuffer();
+    public static IntBuffer smallLodBuffer = ByteBuffer.allocateDirect(32).asIntBuffer();
     public static void updateLODS(int x, int y, int z) {
         glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
         byte[] firstLight = null;
@@ -181,9 +188,11 @@ public class World {
                 }
             }
         }
-        smallLodBuffer.clear();
-        glTexSubImage3D(GL_TEXTURE_3D, 2, z/4, y/4, x/4, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, smallLodBuffer.put(clear ? 0 : 1).flip());
-        blocksLOD[y/4][condensePosLOD(x, z)] = (short)(clear ? 0 : 1);
+        if (clear == (blocksLOD[y / 4][condensePosLOD(x, z)] != 0)) {
+            smallLodBuffer.clear();
+            glTexSubImage3D(GL_TEXTURE_3D, 2, z / 4, y / 4, x / 4, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, smallLodBuffer.put(clear ? 0 : 1).flip());
+            blocksLOD[y / 4][condensePosLOD(x, z)] = (short) (clear ? 0 : 1);
+        }
         if (clear) {
             firstLight = null;
             loop:
@@ -201,9 +210,11 @@ public class World {
                 }
             }
         }
-        smallLodBuffer.clear();
-        glTexSubImage3D(GL_TEXTURE_3D, 4, z/16, y/16, x/16, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, smallLodBuffer.put(clear ? 0 : 1).flip());
-        blocksLOD2[y/16][condensePosLOD2(x, z)] = (short)(clear ? 0 : 1);
+        if (clear == (blocksLOD2[y / 16][condensePosLOD2(x, z)] != 0)) {
+            smallLodBuffer.clear();
+            glTexSubImage3D(GL_TEXTURE_3D, 4, z / 16, y / 16, x / 16, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, smallLodBuffer.put(clear ? 0 : 1).flip());
+            blocksLOD2[y / 16][condensePosLOD2(x, z)] = (short) (clear ? 0 : 1);
+        }
     }
 
     public static boolean setBlock(int x, int y, int z, int block, int blockSubType, boolean replace, boolean priority, int tickDelay, boolean silent) {

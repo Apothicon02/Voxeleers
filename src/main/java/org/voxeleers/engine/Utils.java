@@ -204,6 +204,9 @@ public class Utils {
     public static short packColor(Vector4i color) {
         return (short) (color.x() << 8 | color.y() << 4 | color.z() | color.w() << 12);
     }
+    public static short packColor(int r, int g, int b, int s) {
+        return (short) (r << 8 | g << 4 | b | s << 12);
+    }
     public static Vector4i unpackColor(int color) {
         return new Vector4i(0xFF & color >> 16, 0xFF & color >> 8, 0xFF & color, 0xFF & color >> 24);
     }
