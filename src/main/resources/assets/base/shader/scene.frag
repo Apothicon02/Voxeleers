@@ -802,9 +802,9 @@ void main() {
         isSky = false;
         isLight = rasterBrightness >= 1.f;
     }
-    vec3 dPos = solidHitPos+(normal/2);
     //vec4 posCS = view*projection*vec4(dPos, 1);/(((posCS.z)+1)/2)/posCS.w
-    float depth = objectOutOfWorld || isSky ? 0.f : (nearClip/max(0, dot(dPos-ogPos, normalize(-invView[2].xyz))));
+    vec3 dPos = ogPos + (rayDir*distance(ogPos, solidHitPos+(normal/2)));
+    float depth = objectOutOfWorld || isSky ? 0.f : (nearClip/max(0.0001f, dot(dPos-ogPos, normalize(-invView[2].xyz))));
     finalNormal = vec4(normal, depth);
     if (inBounds(solidHitPos, worldSize)) {
         lighting = (getLight(solidHitPos.x, solidHitPos.y, solidHitPos.z));

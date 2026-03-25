@@ -29,7 +29,13 @@ public class Textures {
     },Constants.width, Constants.height);
     public static Texture atlas = create(560, 64, 1024/64);
     public static Texture blocks = create( World.size, World.height, World.size);
-    public static Texture lights = create( World.size, World.height, World.size);
+    public static Texture lights = create(new int[]{
+            GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_LINEAR,
+            GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_LINEAR,
+            GL40.GL_TEXTURE_WRAP_S, GL40.GL_CLAMP_TO_EDGE,
+            GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
+            GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
+    }, World.size, World.height, World.size);
     public static Texture noises = create(new int[]{
             GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
             GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,

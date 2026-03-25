@@ -648,9 +648,9 @@ public class Renderer {
                 tiltShift = true;
             }
 
-            upscale = false;
-            shadowsEnabled = false;
-            taa = false;
+//            upscale = false;
+//            shadowsEnabled = false;
+//            taa = false;
 
             glBindFramebuffer(GL_FRAMEBUFFER, rasterFBOId);
             glDrawBuffers(new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2});
@@ -673,25 +673,25 @@ public class Renderer {
             glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
             World.worldType.renderCelestialBodies();
             drawCenter();
-            Vector3f hitPos = new Vector3f(472, 84, 520);
-            Vector3f norm = new Vector3f(0, 1, 0).normalize();
-            Vector3f randomVec = new Vector3f(1);//(float) Math.random(), (float) Math.random(), (float) Math.random());
-            Vector3f tangent = new Vector3f(randomVec).sub(norm).mul(new Vector3f(randomVec).dot(norm)).normalize();
-            Vector3f bitangent = new Vector3f(norm).cross(tangent);
-            Matrix3f TBN = new Matrix3f(tangent, bitangent, norm);
-            for (int i = 0; i < kernel.length; i+=3) {
-                Vector3f offset = new Vector3f(kernel[i], kernel[i+1], kernel[i+2]);
-                Vector3f pos = new Vector3f(hitPos).add(offset.mul(TBN).mul(0.5f).add(new Vector3f(norm).div(16)));
-                try(MemoryStack stack = MemoryStack.stackPush()) {
-                    glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(pos).scale(0.01f).get(stack.mallocFloat(16)));
-                }
-                drawCube();
-            }
-            try(MemoryStack stack = MemoryStack.stackPush()) {
-                glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(hitPos.x(), hitPos.y(), hitPos.z()).scale(0.01f).get(stack.mallocFloat(16)));
-            }
-            glUniform4f(raster.uniforms.get("color"), norm.x(), norm.y(), norm.z(), 1);
-            drawCube();
+//            Vector3f hitPos = new Vector3f(472, 84, 520);
+//            Vector3f norm = new Vector3f(0, 1, 0).normalize();
+//            Vector3f randomVec = new Vector3f(1.f);//(float) Math.random(), (float) Math.random(), (float) Math.random());
+//            Vector3f tangent = new Vector3f(randomVec).sub(norm).mul(new Vector3f(randomVec).dot(norm)).normalize();
+//            Vector3f bitangent = new Vector3f(norm).cross(tangent);
+//            Matrix3f TBN = new Matrix3f(tangent, bitangent, norm);
+//            for (int i = 0; i < kernel.length; i+=3) {
+//                Vector3f offset = new Vector3f(kernel[i], kernel[i+1], kernel[i+2]);
+//                Vector3f pos = new Vector3f(hitPos).add(offset.mul(TBN).mul(0.5f).add(new Vector3f(norm).div(16)));
+//                try(MemoryStack stack = MemoryStack.stackPush()) {
+//                    glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(pos).scale(0.01f).get(stack.mallocFloat(16)));
+//                }
+//                drawCube();
+//            }
+//            try(MemoryStack stack = MemoryStack.stackPush()) {
+//                glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(hitPos.x(), hitPos.y(), hitPos.z()).scale(0.01f).get(stack.mallocFloat(16)));
+//            }
+//            glUniform4f(raster.uniforms.get("color"), norm.x(), norm.y(), norm.z(), 1);
+//            drawCube();
             drawDebugWheel();
 //            drawHuman();
             drawPlayer();
