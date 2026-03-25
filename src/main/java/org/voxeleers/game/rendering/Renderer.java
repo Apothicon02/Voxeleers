@@ -681,7 +681,7 @@ public class Renderer {
             Matrix3f TBN = new Matrix3f(tangent, bitangent, norm);
             for (int i = 0; i < kernel.length; i+=3) {
                 Vector3f offset = new Vector3f(kernel[i], kernel[i+1], kernel[i+2]);
-                Vector3f pos = new Vector3f(hitPos).add(offset.mul(TBN).mul(0.5f));
+                Vector3f pos = new Vector3f(hitPos).add(offset.mul(TBN).mul(0.5f).add(new Vector3f(norm).div(16)));
                 try(MemoryStack stack = MemoryStack.stackPush()) {
                     glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(pos).scale(0.01f).get(stack.mallocFloat(16)));
                 }

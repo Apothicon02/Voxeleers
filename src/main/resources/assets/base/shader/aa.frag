@@ -3,7 +3,7 @@ const float[16] yOffsets = float[16](0.0f, 0.166667f, -0.388889f, -0.055556f, 0.
 const float nearClip = 0.01f;
 const int kernelSize = 64;
 const float aoRadius = 0.5f;
-const float bias = 0.f;
+const float bias = 0.000001f;
 const float aoDarkness = 0.5/kernelSize;
 
 uniform mat4 projection;
@@ -61,21 +61,27 @@ void main() {
     float fragDepth = currentColor.w;
     if (fragDepth > 0.f) {
         vec3 pos = inverse(view)[3].xyz + (getDir() * (nearClip/currentColor.w));
-        vec3 norm = normalize(texture(in_normal, texCoords).xyz);
-        vec3 randDir = vec3(1);
-        vec3 tangent  = normalize((randDir - norm) * dot(randDir, norm));
-        vec3 bitangent = cross(norm, tangent);
-        mat3 TBN = mat3(tangent, bitangent, norm);
-        float ao = 1.0;
-        for (int i = 0; i < kernelSize; ++i){
-            vec3 samplePos = TBN * kernelData[i];// from tangent to view-space
-            samplePos = pos + (samplePos * aoRadius);
-            vec2 scrPos = worldToScreenPos(samplePos);
-            vec4 samp = texture(in_color, scrPos);
-            float rangeCheck = smoothstep(0.0f, 1.0f, aoRadius / abs(fragDepth - samp.w));
-            ao -= (samp.w >= fragDepth + bias ? (aoDarkness*rangeCheck) : 0.0f);
+        vec3 norm = texture(in_normal, texCoords).xyz*-1;
+        if (norm == vec3(0.f)) {
+            currentColor.a = 1.f;
+        } else {
+            //norm = normalize(norm*mat3(view));
+            currentColor.rgb = vec3(1);
+            vec3 randDir = vec3(0.5f);
+            vec3 tangent  = normalize((randDir - norm) * dot(randDir, norm));
+            vec3 bitangent = cross(norm, tangent);
+            mat3 TBN = mat3(bitangent, tangent, norm);
+            float ao = 1.0;
+            for (int i = 0; i < kernelSize; ++i){
+                vec3 samplePos = TBN * kernelData[i];// from tangent to view-space
+                samplePos = pos + (samplePos * aoRadius);
+                vec2 scrPos = worldToScreenPos(samplePos+(norm/16));
+                vec4 samp = texture(in_color, scrPos);
+                float rangeCheck = smoothstep(0.0f, 1.0f, aoRadius / abs(fragDepth - samp.w));
+                ao -= (samp.w >= fragDepth ? (aoDarkness*rangeCheck) : 0.0f);
+            }
+            currentColor.a = pow(ao, 10.0);
         }
-        currentColor.a = pow(ao, 2.0);
     } else {
         currentColor.a = 1.f;
     }
