@@ -30,7 +30,8 @@ layout(std430, binding = 0) buffer playerSSBO
 
 in vec4 gl_FragCoord;
 
-out vec4 fragColor;
+layout (location = 0) out vec4 finalColor;
+layout (location = 1) out vec4 finalNormal;
 
 float lerp(float invLerpValue, float toValue, float fromValue) {
     return toValue + invLerpValue * (fromValue - toValue);
@@ -611,6 +612,7 @@ vec4 raytrace(vec3 ogPos, vec3 newRayDir) {
 bool objectOutOfWorld = false;
 vec3 lightPos = vec3(0);
 float shadowFactor = 1.f;
+vec3 vNorm = vec3(0);
 vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, float dist) {
     if (!shadowsEnabled) {
         actuallyCastShadowRay=false;
@@ -624,7 +626,7 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
     bool xHighest = subbed.x > subbed.y && subbed.x > subbed.z;
     bool yHighest = subbed.y > subbed.x && subbed.y > subbed.z;
     bool zHighest = subbed.z > subbed.x && subbed.z > subbed.y;
-    vec3 vNorm = normal;
+    vNorm = normal;
     vec3 shadowPosOffset = vec3(0);
     vec3 blockPos = ivec3(solidHitPos)+0.5f;
     if (castsFullShadow(block) && isTracedObject) {
@@ -735,7 +737,7 @@ bool skyChecks() {
     if (solidHitPos != vec3(0)) {
         isSky = false;
     }
-    if (fragColor.a < alphaMax) {
+    if (finalColor.a < alphaMax) {
         isSky = true;
     }
     if (isSky) {
@@ -775,9 +777,9 @@ void main() {
     bool isSky = true;
     bool isLight = false;
     updateLightFog(ogPos);
-    fragColor = raytrace(ogPos, ogDir);
+    finalColor = raytrace(ogPos, ogDir);
     if (isLightSource(block.xy) && max(texColor.r, max(texColor.g, texColor.b)) > 0.9f) {
-        fragColor.rgb *= 1.5f;
+        finalColor.rgb *= 1.5f;
         isLight = true;
     }
     isSky = skyChecks();
@@ -788,9 +790,9 @@ void main() {
     float rasterBrightness = max(rasterColor.r, max(rasterColor.g, rasterColor.b));
     if ((distance(ogPos, rasterPos.xyz) < distance(ogPos, hitPos+(normal/2)) || isSky) && rasterBrightness > 0.f) {
         isTracedObject = false;
-        fragColor.rgb = fromLinear(rasterColor).rgb;
-        fragColor.a = rasterColor.a;
-        texColor = fragColor;
+        finalColor.rgb = fromLinear(rasterColor).rgb;
+        finalColor.a = rasterColor.a;
+        texColor = finalColor;
         normal = texture(raster_norm, normalizedPos).xyz;
         solidHitPos = rasterPos.xyz-(normal/2);
         prevPos = rasterPos.xyz-(normal*0.002f);
@@ -800,8 +802,10 @@ void main() {
         isSky = false;
         isLight = rasterBrightness >= 1.f;
     }
-    vec3 dPos = solidHitPos+(normal/2)-ogPos;
-    float depth = nearClip/max(0, dot(dPos, ogDir));
+    vec3 dPos = solidHitPos+(normal/2);
+    //vec4 posCS = view*projection*vec4(dPos, 1);/(((posCS.z)+1)/2)/posCS.w
+    float depth = objectOutOfWorld || isSky ? 0.f : (nearClip/max(0, dot(dPos-ogPos, normalize(-invView[2].xyz))));
+    finalNormal = vec4(normal, depth);
     if (inBounds(solidHitPos, worldSize)) {
         lighting = (getLight(solidHitPos.x, solidHitPos.y, solidHitPos.z));
     } else {
@@ -809,23 +813,26 @@ void main() {
     }
     if (!isSky) {
         lightPos = solidHitPos;
-        vec4 shadowResult = getShadow(fragColor, !objectOutOfWorld, isTracedObject && !isSky && hitSolidVoxel, distance(ogPos, solidHitPos));
+        vec4 shadowResult = getShadow(finalColor, !objectOutOfWorld, isTracedObject && !isSky && hitSolidVoxel, distance(ogPos, solidHitPos));
         if (!isLight) {
-            fragColor = shadowResult;
-        } else if (fragColor.a >= 10) {
-            fragColor.a -= 10;
+            finalColor = shadowResult;
+        } else if (finalColor.a >= 10) {
+            finalColor.a -= 10;
             shadowFactor = 0.5f;
         }
+        //finalNormal = vec4(vNorm, depth);
+    } else {
+        //finalNormal = vec4(normal, depth);
     }
     float fogginess = hasAtmosphere ? clamp((clamp(sqrt(distance(ogPos, lightPos)/(size*0.66f))*gradient(lightPos.y, 63, 80, 1, 1+abs(noise(lightPos.xz)/3)), 0, 1)), 0.f, 1.f) : 0.f;
-    if (fragColor.a < 0 && !isSky) { fogginess *= 0.5f; }
+    if (finalColor.a < 0 && !isSky) { fogginess *= 0.5f; }
     lighting.a = mix(lighting.a*shadowFactor, (vec4(0, 0, 0, 1)).a, fogginess);
     lighting = powLighting(lighting);
     if (!isLight && !objectOutOfWorld) {
         lighting.a*=waterDepth;
         vec4 lightingColor = getLightingColor(lightPos, lighting, isSky, fogginess, false);
-        fragColor.rgb *= lightingColor.rgb;
-        fragColor.rgb = mix(fragColor.rgb*1.2f, lightingColor.rgb, fogginess);
+        finalColor.rgb *= lightingColor.rgb;
+        finalColor.rgb = mix(finalColor.rgb*1.2f, lightingColor.rgb, fogginess);
     }
     if (tint.a < 1) {
         source = sun.y > 0 ? sun : mun;
@@ -842,15 +849,14 @@ void main() {
         tint.rgb = mix(tint.rgb, firstTintAddition, 0.5f);
         tint.rgb *= lightingColor.rgb;
         tint.rgb = mix(tint.rgb, lightingColor.rgb, fogginess);
-        fragColor.rgb = mix(fragColor.rgb, tint.rgb*1.2f, mix(abs(1-tint.a), 1.f, reflectivity));
+        finalColor.rgb = mix(finalColor.rgb, tint.rgb*1.2f, mix(abs(1-tint.a), 1.f, reflectivity));
     }
 
     if (hitBlock == selected && ui) {
-        fragColor.rgb = mix(fragColor.rgb, vec3(0.7, 0.7, 1), 0.5f);
+        finalColor.rgb = mix(finalColor.rgb, vec3(0.7, 0.7, 1), 0.5f);
     }
     if (hasAtmosphere) {
-        fragColor.rgb += lightFog.rgb;
+        finalColor.rgb += lightFog.rgb;
     }
-    fragColor = toLinear(fragColor);
-    fragColor.a = depth;
+    finalColor = vec4(toLinear(finalColor.rgb), depth);
 }

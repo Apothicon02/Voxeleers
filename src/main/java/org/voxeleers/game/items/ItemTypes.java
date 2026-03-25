@@ -137,7 +137,7 @@ public class ItemTypes {
                     itemTextures[i++] = Utils.imageToBuffer(Utils.loadImage("item/"+itemType.name));
                     itemType.atlasOffset(xOffset, yOffset);
                     xOffset += itemTexSize;
-                    if (xOffset >= 4096) {
+                    if (xOffset >= 4096-itemTexSize) {
                         xOffset = 0;
                         yOffset += itemTexSize;
                     }

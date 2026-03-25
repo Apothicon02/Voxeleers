@@ -10,40 +10,16 @@ import java.util.List;
 public class Textures {
     public static int[] defaultParameters = new int[]{
             GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_MAG_FILTER,GL40. GL_NEAREST,
+            GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,
             GL40.GL_TEXTURE_WRAP_S, GL40.GL_CLAMP_TO_EDGE,
             GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
             GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE};
 
     public static List<Texture> textures = new ArrayList<>(List.of());
-    public static Texture rasterColor = create(new int[]{
-            GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_WRAP_S, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
-    },Constants.width, Constants.height);
-    public static Texture rasterPos = create(new int[]{
-            GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_WRAP_S, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
-    },Constants.width, Constants.height);
-    public static Texture rasterNorm = create(new int[]{
-            GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_WRAP_S, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
-    },Constants.width, Constants.height);
-    public static Texture rasterDepth = create(new int[]{
-            GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_WRAP_S, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
-    },Constants.width, Constants.height);
+    public static Texture rasterColor = create(Constants.width, Constants.height);
+    public static Texture rasterPos = create(Constants.width, Constants.height);
+    public static Texture rasterNorm = create(Constants.width, Constants.height);
+    public static Texture rasterDepth = create(Constants.width, Constants.height);
     public static Texture scene = create(new int[]{
             GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_LINEAR,
             GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_LINEAR,
@@ -52,20 +28,8 @@ public class Textures {
             GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
     },Constants.width, Constants.height);
     public static Texture atlas = create(560, 64, 1024/64);
-    public static Texture blocks = create(new int[]{
-            GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,
-            GL40.GL_TEXTURE_WRAP_S, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
-    }, World.size, World.height, World.size);
-    public static Texture lights = create(new int[]{
-            GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_LINEAR,
-            GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_LINEAR,
-            GL40.GL_TEXTURE_WRAP_S, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_T, GL40.GL_CLAMP_TO_EDGE,
-            GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
-    }, World.size, World.height, World.size);
+    public static Texture blocks = create( World.size, World.height, World.size);
+    public static Texture lights = create( World.size, World.height, World.size);
     public static Texture noises = create(new int[]{
             GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_NEAREST,
             GL40.GL_TEXTURE_MAG_FILTER,GL40.GL_NEAREST,
@@ -73,6 +37,8 @@ public class Textures {
             GL40.GL_TEXTURE_WRAP_T, GL40.GL_REPEAT
     }, 2048, 2048);
     public static Texture sceneColor = create(Constants.width, Constants.height);
+    public static Texture sceneNorm = create(Constants.width, Constants.height);
+    public static Texture scenePos = create(Constants.width, Constants.height);
     public static Texture sceneColorOld = create(Constants.width, Constants.height);
     public static Texture blurry = create(new int[]{
             GL40.GL_TEXTURE_MIN_FILTER , GL40.GL_LINEAR,
@@ -89,7 +55,7 @@ public class Textures {
             GL40.GL_TEXTURE_WRAP_R, GL40.GL_CLAMP_TO_EDGE
     },Constants.width, Constants.height);
     public static Texture gui = create(3840, 2160, 6);
-    public static Texture items = create(1024, 16, 1);
+    public static Texture items = create(4096, 16, 1);
 
     public static Texture create(int width, int height) {
         Texture texture = new Texture(defaultParameters, width, height);

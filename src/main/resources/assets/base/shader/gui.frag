@@ -25,7 +25,9 @@ void main() {
         vec4 blurriness = vec4(tiltShift ? max(0, sqrt(sqrt(abs(pos.y-0.5)*2))-0.5f)*2.f : 0); //tilt-shift
         blurriness = max(blurriness, vec4(dof ? mix(1, 0, clamp(baseColor.a*500, 0, 1)) : 0)); //dof
         fragColor = mix(baseColor, blurColor, min(vec4(1), blurriness));
-        fragColor = mix(fragColor, max(fragColor, blurColor), min(vec4(1), blurColor)); //bloom
+        //fragColor.rgb *= blurColor.a;
+        //fragColor.rgb = vec3(blurColor.a);
+        //fragColor = mix(fragColor, max(fragColor, blurColor), min(vec4(1), blurColor)); //bloom
     } else {
         vec4 guiColor = texelFetch(tex == 0 ? gui : item, ivec3(atlasOffset.x+(pos.x*size.x), atlasOffset.y+(abs(1-pos.y)*size.y), layer), 0)*color;
         if (guiColor.a > 0) {

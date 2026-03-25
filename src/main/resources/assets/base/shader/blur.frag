@@ -89,4 +89,5 @@ void main() {
         vec4 newResult = texelFetch(in_color, samplePos, 0);
         fragColor += newResult * weight;
     }
+    fragColor.a = texelFetch(in_color, ivec2(gl_FragCoord.xy), 0).a;//disables AO blurring.
 }

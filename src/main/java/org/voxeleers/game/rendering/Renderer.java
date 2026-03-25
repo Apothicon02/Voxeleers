@@ -48,6 +48,7 @@ public class Renderer {
     public static int modelsSSBOId;
     public static int colorsSSBOId;
     public static int atlasOffsetSSBOId;
+    public static int kernelSSBOId;
 
     public static boolean taa = true;
     public static boolean showUI = true;
@@ -92,7 +93,7 @@ public class Renderer {
             GUI.fillTexture();
         }
         glBindFramebuffer(GL_FRAMEBUFFER, rasterFBOId);
-
+        glDrawBuffers(new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2});
         glBindTexture(GL_TEXTURE_2D, Textures.rasterColor.id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Textures.rasterColor.id, 0);
@@ -105,12 +106,15 @@ public class Renderer {
         glBindTexture(GL_TEXTURE_2D, Textures.rasterDepth.id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, window.getWidth(), window.getHeight(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Textures.rasterDepth.id, 0);
-        glDrawBuffers(new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2});
 
         glBindFramebuffer(GL_FRAMEBUFFER, uncheckerFBOId);
+        glDrawBuffers(new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1});
         glBindTexture(GL_TEXTURE_2D, Textures.scene.id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Textures.scene.id, 0);
+        glBindTexture(GL_TEXTURE_2D, Textures.sceneNorm.id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, Textures.sceneNorm.id, 0);
 
         glBindTexture(GL_TEXTURE_2D, Textures.sceneColorOld.id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
@@ -158,6 +162,7 @@ public class Renderer {
             }
             //System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-started)/1000.f)+"s to upload world textures.\n");
         }
+
         glBindFramebuffer(GL_FRAMEBUFFER, sceneFBOId);
         glBindTexture(GL_TEXTURE_2D, Textures.sceneColor.id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, 0);
@@ -202,6 +207,10 @@ public class Renderer {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, atlasOffsetSSBOId);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, atlasOffsetSSBOId);
         glBufferData(GL_SHADER_STORAGE_BUFFER, new int[2], GL_DYNAMIC_DRAW);
+
+        kernelSSBOId = glCreateBuffers();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, kernelSSBOId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, kernelSSBOId);
     }
 
     public static void updateBuffers() {
@@ -360,7 +369,7 @@ public class Renderer {
     }
     public static void drawDebugWheel() {
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(512, 75, 512).scale(10).get(stack.mallocFloat(16)));//.translate(Main.player.pos).translate(10, 0, 0).get(stack.mallocFloat(16)));
+            glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(512, 80, 512).scale(10).get(stack.mallocFloat(16)));//.translate(Main.player.pos).translate(10, 0, 0).get(stack.mallocFloat(16)));
         }
         glUniform4f(raster.uniforms.get("color"), 0.5f, 0.5f, 0.5f, 1);
         glBindVertexArray(Models.TORUS.vaoId);
@@ -603,10 +612,20 @@ public class Renderer {
     public static int checkerStepX = 0;
     public static int checkerStepY = 0;
     public static boolean renderedAnyFrame = false;
+    public static float[] kernel = new float[64*3];
     public static void render(Window window) throws IOException {
         if (!renderedAnyFrame) {
             renderedAnyFrame = true;
             System.out.print("Took "+String.format("%.2f", (System.currentTimeMillis()-mainStarted)/1000.f)+"s from Main run to rendering first frame.\n");
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, kernelSSBOId);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, kernelSSBOId);
+            for (int i = 0; i < kernel.length; i+=3) {
+                Vector3f pos = new Vector3f((float) ((Math.random()*2)-1), (float) ((Math.random()*2)-1), (float) Math.random()).normalize().mul((float)Math.random());
+                kernel[i] = pos.x();
+                kernel[i+1] = pos.y();
+                kernel[i+2] = pos.z();
+            }
+            glBufferData(GL_SHADER_STORAGE_BUFFER, kernel, GL_DYNAMIC_DRAW);
         }
         if (!Main.isClosing) {
             offsetIdx++;
@@ -629,7 +648,12 @@ public class Renderer {
                 tiltShift = true;
             }
 
+            upscale = false;
+            shadowsEnabled = false;
+            taa = false;
+
             glBindFramebuffer(GL_FRAMEBUFFER, rasterFBOId);
+            glDrawBuffers(new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2});
             raster.bind();
             glClearColor(0, 0, 0, 0);
             glClearDepthf(0.f);
@@ -648,12 +672,32 @@ public class Renderer {
             glUniform1i(raster.uniforms.get("instanced"), 0);
             glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
             World.worldType.renderCelestialBodies();
-//            drawCenter();
-//            drawDebugWheel();
+            drawCenter();
+            Vector3f hitPos = new Vector3f(472, 84, 520);
+            Vector3f norm = new Vector3f(0, 1, 0).normalize();
+            Vector3f randomVec = new Vector3f(1);//(float) Math.random(), (float) Math.random(), (float) Math.random());
+            Vector3f tangent = new Vector3f(randomVec).sub(norm).mul(new Vector3f(randomVec).dot(norm)).normalize();
+            Vector3f bitangent = new Vector3f(norm).cross(tangent);
+            Matrix3f TBN = new Matrix3f(tangent, bitangent, norm);
+            for (int i = 0; i < kernel.length; i+=3) {
+                Vector3f offset = new Vector3f(kernel[i], kernel[i+1], kernel[i+2]);
+                Vector3f pos = new Vector3f(hitPos).add(offset.mul(TBN).mul(0.5f));
+                try(MemoryStack stack = MemoryStack.stackPush()) {
+                    glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(pos).scale(0.01f).get(stack.mallocFloat(16)));
+                }
+                drawCube();
+            }
+            try(MemoryStack stack = MemoryStack.stackPush()) {
+                glUniformMatrix4fv(raster.uniforms.get("model"), false, new Matrix4f().translate(hitPos.x(), hitPos.y(), hitPos.z()).scale(0.01f).get(stack.mallocFloat(16)));
+            }
+            glUniform4f(raster.uniforms.get("color"), norm.x(), norm.y(), norm.z(), 1);
+            drawCube();
+            drawDebugWheel();
 //            drawHuman();
             drawPlayer();
 
             glBindFramebuffer(GL_FRAMEBUFFER, upscale ? sceneFBOId : uncheckerFBOId);
+            glDrawBuffers(new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1});
             scene.bind();
             glClearColor(0, 0, 0, 0);
             glClearDepthf(0.f);
@@ -707,6 +751,9 @@ public class Renderer {
             glUniform1i(aa.uniforms.get("offsetIdxOld"), offsetIdxOld);
             glBindTextureUnit(0, Textures.sceneColorOld.id);
             glBindTextureUnit(1, Textures.scene.id);
+            glBindTextureUnit(2, Textures.sceneNorm.id);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, kernelSSBOId);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, kernelSSBOId);
             draw();
             glReadBuffer(GL_COLOR_ATTACHMENT0);
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, window.getWidth(), window.getHeight(), 0);
