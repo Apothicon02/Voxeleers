@@ -55,8 +55,8 @@ public class World {
     public static int height = 320;
     public static int seaLevel = 63;
     public static boolean generated = false;
-    public static WorldType worldType = WorldTypes.MARS;
-    public static WorldType nextWorldType = WorldTypes.LUNA;
+    public static WorldType worldType = WorldTypes.LUNA;
+    public static WorldType nextWorldType = WorldTypes.MARS;
     public static ObjectOpenHashSet<Item> items = new ObjectOpenHashSet<>();
     public static Int2ObjectOpenHashMap<BlockEntity> blockEntities = new Int2ObjectOpenHashMap<>();
     public static short[][] blocks;// = new short[height][(size*size)*2];
