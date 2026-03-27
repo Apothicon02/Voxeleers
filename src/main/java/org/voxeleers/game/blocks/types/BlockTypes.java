@@ -48,7 +48,7 @@ public class BlockTypes {
                     new SFX[]{Sounds.GLASS_STEP1, Sounds.GLASS_STEP2}, 1, 1).blocksLight(false).obstructsHeightmap(false))),
             MAGENTA_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
             LIME_STAINED_GLASS = create(List.of(BlockTags.blunt), new BlockType(GLASS.blockProperties)),
-            PORECAP = create(List.of(BlockTags.sediment), new PlantLightBlockType(((LightBlockProperties)TORCH.blockProperties.copy().ttb(50)).r(0).g(12).b(6))),
+            PORECAP = create(List.of(BlockTags.sediment), new PlantLightBlockType(((LightBlockProperties)TORCH.blockProperties.copy().ttb(50)).r(0).g(40).b(20))),
             OAK_PLANK = create(List.of(BlockTags.planks), new BlockType(new BlockProperties().ttb(200).blockSFX(new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1,
                     new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1))), //15
             OAK_LOG = create(new BlockType(new BlockProperties().ttb(200).blockSFX(new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1,

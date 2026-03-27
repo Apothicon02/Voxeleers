@@ -204,6 +204,9 @@ bool underwater = false;
 bool wasEverUnderwater = false;
 bool hitCaustic = false;
 bool isShadow = false;
+vec3 lightSourcePos = vec3(0);
+ivec3 lightSourceLODPos = ivec3(0);
+ivec3 lightSourceLOD2Pos = ivec3(0);
 
 vec3 ogRayPos = vec3(0);
 vec3 prevPos = vec3(0);
@@ -314,6 +317,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
 
     bool steppingBlock = true;
     bool firstStep = true;
+    bool isInsidePointLight = false;
     for (int i = 0; blockPos.x < 4.0 && blockPos.x >= 0.0 && blockPos.y < 4.0 && blockPos.y >= 0.0 && blockPos.z < 4.0 && blockPos.z >= 0.0 && i < (4*8)*3; i++) {
         vec4 tintAddition = vec4(0.f);
         if (steppingBlock) {
@@ -323,7 +327,8 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                 block = getBlock(mapPos.x, mapPos.y, mapPos.z);
             }
             updateLightFog(mapPos+0.5f);
-            if (block.x > 0 && !(block.x == 1 && underwater)) {
+            isInsidePointLight = ivec3(lightSourcePos) == ivec3(mapPos);
+            if (isInsidePointLight || (block.x > 0 && !(block.x == 1 && underwater))) {
                 steppingBlock = false;
                 mini = ((blockPos-rayPos) + 0.5 - 0.5*vec3(raySign))*deltaDist;
                 float blockDist = max(mini.x, max(mini.y, mini.z));
@@ -459,6 +464,10 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
             } else {
                 prevTintAddition = vec4(0);
             }
+
+            if (isInsidePointLight) {
+                return vec4(1);
+            }
             if (!steppingBlock) {
                 voxelMask = stepMask(voxelSideDist);
                 prevVoxelPos = voxelPos;
@@ -537,7 +546,7 @@ vec4 traceLOD(vec3 rayPos, vec3 iMask, float chunkDist) {
 //        if (distance(ogRayPos, mapPos)>lodSize.x+lodSize.x) {
 //            return vec4(-1);
 //        }
-        int lod = texelFetch(blocks, ivec3(lodPos.z, lodPos.y, lodPos.x), 2).x;
+        int lod = ivec3(mapPos/4) == lightSourceLODPos ? 1 : texelFetch(blocks, ivec3(lodPos.z, lodPos.y, lodPos.x), 2).x;
         if (lod > 0) {
             vec3 uv3d = vec3(0);
             vec3 intersect = vec3(0);
@@ -581,7 +590,7 @@ vec4 raytrace(vec3 ogPos, vec3 newRayDir) {
             break;
         }
         mapPos = lod2Pos*16;
-        int lod = texelFetch(blocks, ivec3(lod2Pos.z, lod2Pos.y, lod2Pos.x), 4).x;
+        int lod = ivec3(mapPos/16) == lightSourceLOD2Pos ? 1 : texelFetch(blocks, ivec3(lod2Pos.z, lod2Pos.y, lod2Pos.x), 4).x;
         if (lod > 0) {
             vec3 uv3d = vec3(0);
             vec3 intersect = vec3(0);
@@ -620,7 +629,7 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
     if (actuallyCastShadowRay) {
         shadowFactor = 1.f;
     }
-    float shadeNormOffFade = clamp(distance(ogRayPos, prevPos)/20, 1.f, 3.f);
+    float shadeNormOffFade = clamp(distance(ogPos, prevPos)/20, 1.f, 3.f);
     float normalRounding = eigth*shadeNormOffFade;
     vec3 subbed = vec3(dot(normal.x, ogDir.x), dot(normal.y, ogDir.y), dot(normal.z, ogDir.z));
     bool xHighest = subbed.x > subbed.y && subbed.x > subbed.z;
@@ -672,19 +681,24 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
             avgNColor.rgb += (west.rgb)*brightness;
             neighborsSolid+=1*brightness;
         }
-        if (!zHighest) {
-            vec4 north = fromLinear(getVoxelAndBlockWOLeavesOverride((solidHitPos+(normal*0.75f))+vec3(0, 0, normalRounding)));
-            if (north.a >= alphaMax) {
-                float brightness = max(north.r, max(north.g, north.b));
-                avgNColor.rgb += (north.rgb)*brightness;
-                neighborsSolid+=1*brightness;
-            }
-            vec4 south = fromLinear(getVoxelAndBlockWOLeavesOverride((solidHitPos+(normal*0.75f))-vec3(0, 0, normalRounding)));
-            if (south.a >= alphaMax) {
-                float brightness = max(south.r, max(south.g, south.b));
-                avgNColor.rgb += (south.rgb)*brightness;
-                neighborsSolid+=1*brightness;
-            }
+        bool wasZ = false;
+        vec4 north = fromLinear(getVoxelAndBlockWOLeavesOverride((solidHitPos+(normal*0.75f))+vec3(0, 0, normalRounding)));
+        if (north.a < alphaMax) {
+            vNorm.z = wasZ ? 0 : 1;
+            shadowPosOffset.z = wasZ ? 0 : -eigth;
+        } else if (!zHighest) {
+            float brightness = max(north.r, max(north.g, north.b));
+            avgNColor.rgb += (north.rgb)*brightness;
+            neighborsSolid+=1*brightness;
+        }
+        vec4 south = fromLinear(getVoxelAndBlockWOLeavesOverride((solidHitPos+(normal*0.75f))-vec3(0, 0, normalRounding)));
+        if (south.a < alphaMax) {
+            vNorm.z = wasZ ? 0 : 1;
+            shadowPosOffset.z = wasZ ? 0 : -eigth;
+        } else if (!zHighest) {
+            float brightness = max(south.r, max(south.g, south.b));
+            avgNColor.rgb += (south.rgb)*brightness;
+            neighborsSolid+=1*brightness;
         }
         if (neighborsSolid > 1) {
             avgNColor /= neighborsSolid;
@@ -699,7 +713,11 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
         vec3 sunDir = vec3(normalize(source - (worldSize/2)));
         vec3 prevFirstTint = firstTintAddition;
         vec4 prevTint = tint;
+        vec3 oldSolidHitPos = solidHitPos;
         vec3 oldHitPos = hitPos;
+        vec3 oldNormal = normal;
+        vec3 oldPrevPos = prevPos;
+        vec4 oldTexColor = texColor;
         clearVars();
         isShadow = true;
         bool solidCaster = raytrace(shadowPos, sunDir).a > 0.0f;
@@ -715,10 +733,58 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
         tint = prevTint*shadeTint;//mix(tint, prevTint, pow(shadowFactor, 10));
         if (prevFirstTint != vec3(0)) {firstTintAddition = prevFirstTint;} else {firstTintAddition = shadeTint.rgb;}
         hitPos = oldHitPos;
+        solidHitPos = oldSolidHitPos;
+        normal = oldNormal;
+        prevPos = oldPrevPos;
+        texColor = oldTexColor;
     }
     float brightness = (dot(vNorm, objectOutOfWorld ? sun : (source+vec3(0, height, 0)))*-0.0002f)*waterDepth;
     color.rgb *= clamp(0.75f+brightness, 0.5f, 1.f);
     return color;
+}
+
+vec3 traceLight(vec3 lightSource, vec3 lightColor) {
+    vec3 returnValue = vec3(0);
+    vec3 shadowPos = mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal));
+    float blockLightBrightness = max(lightColor.r, max(lightColor.g, lightColor.b));
+    if (distance(lightSource, shadowPos) < blockLightBrightness) {
+        lightSourcePos = lightSource;
+        lightSourceLODPos = ivec3(lightSource/4);
+        lightSourceLOD2Pos = ivec3(lightSource/16);
+        vec3 lightDir = vec3(normalize(lightSource - shadowPos));
+        vec3 prevFirstTint = firstTintAddition;
+        vec4 prevTint = tint;
+        vec3 oldSolidHitPos = solidHitPos;
+        vec3 oldHitPos = hitPos;
+        vec3 oldNormal = normal;
+        vec3 oldPrevPos = prevPos;
+        vec4 oldTexColor = texColor;
+        clearVars();
+        isShadow = true;
+        raytrace(shadowPos, lightDir);
+        if (ivec3(mapPos) == ivec3(lightSource)) {
+            returnValue = abs(1-clamp(sqrt(distance(lightSource, oldHitPos)/blockLightBrightness), 0, 1))*(lightColor/40);
+            normal = oldNormal;
+            if (oldTexColor.a < 1 && oldTexColor.a > alphaMax) {
+                normal *= 0;
+            }
+            float brightness = dot(normal, lightSource)*-0.002f;
+            returnValue.rgb *= clamp(0.75f+brightness, 0.5f, 1.f);;
+        }
+        isShadow = false;
+        vec4 shadeTint = (0.5f+(tint/2));
+        tint = prevTint*shadeTint;//mix(tint, prevTint, pow(shadowFactor, 10));
+        if (prevFirstTint != vec3(0)) { firstTintAddition = prevFirstTint; } else { firstTintAddition = shadeTint.rgb; }
+        hitPos = oldHitPos;
+        solidHitPos = oldSolidHitPos;
+        normal = oldNormal;
+        prevPos = oldPrevPos;
+        texColor = oldTexColor;
+        lightSourcePos = vec3(0);
+        lightSourceLODPos = ivec3(0);
+        lightSourceLOD2Pos = ivec3(0);
+    }
+    return returnValue;
 }
 
 const float[16] xOffsets = float[16](0.0f, -0.25f, 0.25f, -0.375f, 0.125f, -0.125f, 0.375f, -0.4375f, 0.0625f, -0.1875f, 0.3125f, -0.3125f, 0.1875f, -0.0625f, 0.4375f, -0.46875f);
@@ -807,7 +873,30 @@ void main() {
     float depth = objectOutOfWorld || isSky ? 0.f : (nearClip/max(0.0001f, dot(dPos-ogPos, normalize(-invView[2].xyz))));
     finalNormal = vec4(normal, depth);
     if (inBounds(solidHitPos, worldSize)) {
-        lighting = (getLight(solidHitPos.x, solidHitPos.y, solidHitPos.z));
+        lighting = getLight(solidHitPos.x, solidHitPos.y, solidHitPos.z)*vec4(0.5, 0.5, 0.5, 1); //flood fill
+        if (shadowsEnabled) {
+            lighting.rgb = max(lighting.rgb, traceLight(vec3(487.5f, 53.5f, 469.5f), vec3(40, 36, 26)));
+            lighting.rgb = max(lighting.rgb, traceLight(vec3(518.5f, 51.5f, 469.5f), vec3(0, 40, 20)));
+//
+//            for (int i = 0; i < 27; i++) {
+//                lighting.a += getLight(i, i, i).a;
+//            }
+//            for (int i = 0; i <= 3; i++) {
+//                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 512.5f), vec3(55, 57, i*20)));
+//                lighting.a += getLight(i*5, i, i*10).a;
+//                lighting.a += getLight(i*5, i, i*11).a;
+//            }
+//            for (int i = 0; i <= 3; i++) {
+//                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 448.5f), vec3(55, i*20, 57)));
+//                lighting.a += getLight(i, i*5, i*3).a;
+//                lighting.a += getLight(i, i*5, i*4).a;
+//            }
+//            for (int i = 0; i <= 3; i++) {
+//                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 576.5f), vec3(i*20, 57, 55)));
+//                lighting.a += getLight(i, i*9, i*5).a;
+//                lighting.a += getLight(i, i*9, i*6).a;
+//            }
+        }
     } else {
         lighting = (vec4(0, 0, 0, 1));
     }
