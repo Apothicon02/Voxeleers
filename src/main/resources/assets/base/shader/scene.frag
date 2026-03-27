@@ -681,24 +681,19 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
             avgNColor.rgb += (west.rgb)*brightness;
             neighborsSolid+=1*brightness;
         }
-        bool wasZ = false;
-        vec4 north = fromLinear(getVoxelAndBlockWOLeavesOverride((solidHitPos+(normal*0.75f))+vec3(0, 0, normalRounding)));
-        if (north.a < alphaMax) {
-            vNorm.z = wasZ ? 0 : 1;
-            shadowPosOffset.z = wasZ ? 0 : -eigth;
-        } else if (!zHighest) {
-            float brightness = max(north.r, max(north.g, north.b));
-            avgNColor.rgb += (north.rgb)*brightness;
-            neighborsSolid+=1*brightness;
-        }
-        vec4 south = fromLinear(getVoxelAndBlockWOLeavesOverride((solidHitPos+(normal*0.75f))-vec3(0, 0, normalRounding)));
-        if (south.a < alphaMax) {
-            vNorm.z = wasZ ? 0 : 1;
-            shadowPosOffset.z = wasZ ? 0 : -eigth;
-        } else if (!zHighest) {
-            float brightness = max(south.r, max(south.g, south.b));
-            avgNColor.rgb += (south.rgb)*brightness;
-            neighborsSolid+=1*brightness;
+        if (!zHighest) {
+            vec4 north = fromLinear(getVoxelAndBlockWOLeavesOverride((solidHitPos+(normal*0.75f))+vec3(0, 0, normalRounding)));
+            if (north.a >= alphaMax) {
+                float brightness = max(north.r, max(north.g, north.b));
+                avgNColor.rgb += (north.rgb)*brightness;
+                neighborsSolid+=1*brightness;
+            }
+            vec4 south = fromLinear(getVoxelAndBlockWOLeavesOverride((solidHitPos+(normal*0.75f))-vec3(0, 0, normalRounding)));
+            if (south.a >= alphaMax) {
+                float brightness = max(south.r, max(south.g, south.b));
+                avgNColor.rgb += (south.rgb)*brightness;
+                neighborsSolid+=1*brightness;
+            }
         }
         if (neighborsSolid > 1) {
             avgNColor /= neighborsSolid;
@@ -873,7 +868,7 @@ void main() {
     float depth = objectOutOfWorld || isSky ? 0.f : (nearClip/max(0.0001f, dot(dPos-ogPos, normalize(-invView[2].xyz))));
     finalNormal = vec4(normal, depth);
     if (inBounds(solidHitPos, worldSize)) {
-        lighting = getLight(solidHitPos.x, solidHitPos.y, solidHitPos.z)*vec4(0.5, 0.5, 0.5, 1); //flood fill
+        lighting = getLight(solidHitPos.x, solidHitPos.y, solidHitPos.z)*(shadowsEnabled ? vec4(0.4, 0.4, 0.4, 1) : vec4(1)); //flood fill
         if (shadowsEnabled) {
             lighting.rgb = max(lighting.rgb, traceLight(vec3(487.5f, 53.5f, 469.5f), vec3(40, 36, 26)));
             lighting.rgb = max(lighting.rgb, traceLight(vec3(518.5f, 51.5f, 469.5f), vec3(0, 40, 20)));
