@@ -3,6 +3,7 @@ package org.voxeleers.engine;
 import com.sun.jna.ptr.IntByReference;
 import io.github.libsdl4j.api.SdlSubSystemConst;
 import io.github.libsdl4j.api.event.SDL_Event;
+import io.github.libsdl4j.api.keycode.SDL_Keymod;
 import io.github.libsdl4j.api.mouse.SDL_ButtonMask;
 import io.github.libsdl4j.api.video.SDL_GLContext;
 import io.github.libsdl4j.api.video.SDL_Window;
@@ -20,6 +21,7 @@ import static io.github.libsdl4j.api.error.SdlError.*;
 import static io.github.libsdl4j.api.event.SDL_EventType.*;
 import static io.github.libsdl4j.api.event.SdlEvents.SDL_PollEvent;
 import static io.github.libsdl4j.api.keyboard.SdlKeyboard.SDL_GetKeyboardState;
+import static io.github.libsdl4j.api.keyboard.SdlKeyboard.SDL_GetModState;
 import static io.github.libsdl4j.api.log.SDL_LogCategory.*;
 import static io.github.libsdl4j.api.log.SdlLog.SDL_LogCritical;
 import static io.github.libsdl4j.api.mouse.SdlMouse.SDL_GetMouseState;
@@ -40,6 +42,7 @@ public class Window {
     private int width;
     private final Matrix4f projectionMatrix;
     public byte[] keys;
+    public int keyMods;
     public boolean tenBitColorMode = true;
 
     public Window(String title, WindowOptions opts, Callable<Void> resizeFunc) {
@@ -121,6 +124,7 @@ public class Window {
         middleButtonPressed = (SDL_GetMouseState(null, null)&SDL_ButtonMask.SDL_BUTTON_MMASK) > 0;
         IntByReference length = new IntByReference();
         keys = SDL_GetKeyboardState(length).getByteArray(0, length.getValue());
+        keyMods = SDL_GetModState();
     }
 
     public void pollEvents(SDL_Event event) {
@@ -175,7 +179,7 @@ public class Window {
     public Matrix4f updateProjectionMatrix() {
         float aspectRatio = (float) width /height;
         projectionMatrix.identity();
-        float FoV = (float)Math.toRadians(Main.player.camera.FOV);
+        float FoV = (float)Math.toRadians(73);//Main.player.camera.FOV);
         projectionMatrix.set(
                 1.f/FoV, 0.f, 0.f, 0.f,
                 0.f, aspectRatio/FoV, 0.f, 0.f,

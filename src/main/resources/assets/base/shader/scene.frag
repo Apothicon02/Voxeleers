@@ -3,6 +3,7 @@ uniform mat4 view;
 uniform ivec3 selected;
 uniform bool taa;
 uniform bool ui;
+uniform bool chiselMode;
 uniform bool upscale;
 uniform bool shadowsEnabled;
 uniform ivec2 res;
@@ -111,6 +112,8 @@ vec3 toLinear(vec3 sRGB)
 const int size = 1024;
 const int height = 320;
 const vec3 worldSize = vec3(size, height, size);
+const int blockSize = 4;
+const int blockTexSize = blockSize*2;
 const float alphaMax = 0.95f;
 const float one = fromLinear(vec4(1)).a;
 const float eigth = 1f/8f;
@@ -131,7 +134,10 @@ bool castsFullShadow(ivec4 block) {
 }
 
 vec4 getVoxel(int x, int y, int z, int bX, int bY, int bZ, int blockType, int blockSubtype) {
-    return texelFetch(atlas, ivec3(x+(blockType*8), ((abs(y-8)-1)*8)+z, blockSubtype), 0);
+    if ((bX & 1) != 0) { x += blockSize; }
+    if ((bY & 1) != 0) { y += blockSize; }
+    if ((bZ & 1) != 0) { z += blockSize; }
+    return texelFetch(atlas, ivec3(x+(blockType*8), ((abs(y-blockTexSize)-1)*blockTexSize)+z, blockSubtype), 0);
 }
 vec4 getVoxel(float x, float y, float z, float bX, float bY, float bZ, int blockType, int blockSubtype) {
     return getVoxel(int(x), int(y), int(z), int(bX), int(bY), int(bZ), blockType, blockSubtype);
@@ -246,7 +252,7 @@ bool isFullSemitransparentBlock(ivec2 block) {
     return block.x == 11 || block.x == 12 || block.x == 13;
 }
 bool isGlassSolid(vec3 mapPos, vec3 rayMapPos) {
-    float samp = whiteNoise(((vec2(mapPos.x, mapPos.z)*128)+(rayMapPos.y*8)+mapPos.y)+(vec2(rayMapPos.x, rayMapPos.z)*8));
+    float samp = whiteNoise(((vec2(mapPos.x, mapPos.z)*128)+(rayMapPos.y*blockSize)+mapPos.y)+(vec2(rayMapPos.x, rayMapPos.z)*blockSize));
     if (samp > -0.004 && samp < -0.002 || samp > 0 && samp < 0.002) {
         return true;
     }
@@ -264,7 +270,7 @@ void updateLightFog(vec3 pos) {
 
 vec4 getVoxelAndBlock(vec3 pos) {
     vec3 rayMapPos = floor(pos);
-    vec3 mapPos = (pos-rayMapPos)*8;
+    vec3 mapPos = (pos-rayMapPos)*blockSize;
     ivec2 block = getBlock(rayMapPos.x, rayMapPos.y, rayMapPos.z).xy;
     if (block.x <= 1) {
         return vec4(0.f);
@@ -275,7 +281,7 @@ vec4 getVoxelAndBlock(vec3 pos) {
 }
 vec4 getVoxelAndBlockWOLeavesOverride(vec3 pos) {
     vec3 rayMapPos = floor(pos);
-    vec3 mapPos = (pos-rayMapPos)*8;
+    vec3 mapPos = (pos-rayMapPos)*blockSize;
     ivec2 block = getBlock(rayMapPos.x, rayMapPos.y, rayMapPos.z).xy;
     if (block.x <= 1) {
         return vec4(0.f);
@@ -337,9 +343,9 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                 if (blockPos == floor(rayPos)) { // Handle edge case where camera origin is inside of block
                     voxelRayPos = rayPos - blockPos;
                 }
-                voxelRayPos *= 8;
+                voxelRayPos *= blockSize;
 
-                voxelPos = floor(clamp(voxelRayPos, vec3(0.0001f), vec3(7.9999f)));
+                voxelPos = floor(clamp(voxelRayPos, vec3(0.0001f), vec3(blockSize-0.0001f)));
                 voxelSideDist = ((voxelPos - voxelRayPos) + 0.5 + raySign * 0.5) * deltaDist;
                 voxelMask = mask;
                 prevVoxelPos = voxelPos+(stepMask(voxelSideDist+(voxelMask*(-raySign)*deltaDist))*(-raySign));
@@ -348,7 +354,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                 vec3 voxelMini = ((voxelPos-voxelRayPos) + 0.5 - 0.5*vec3(raySign))*deltaDist;
                 float voxelDist = max(voxelMini.x, max(voxelMini.y, voxelMini.z));
                 if (voxelDist > 0.0f) {
-                    rayLength += voxelDist/8;
+                    rayLength += voxelDist/blockSize;
                 }
                 if (blockDist > 0.0f) {
                     rayLength += blockDist;
@@ -365,7 +371,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
             } else {
                 prevTintAddition = vec4(0);
             }
-        } else if (voxelPos.x < 8.0 && voxelPos.x >= 0.0 && voxelPos.y < 8.0 && voxelPos.y >= 0.0 && voxelPos.z < 8.0 && voxelPos.z >= 0.0) {
+        } else if (voxelPos.x < blockSize && voxelPos.x >= 0.0 && voxelPos.y < blockSize && voxelPos.y >= 0.0 && voxelPos.z < blockSize && voxelPos.z >= 0.0) {
             vec3 offsetVoxelPos = voxelPos;
             if (block.x == 4 && offsetVoxelPos.y > 2.0) {
                 bool windDir = timeOfDay > 0.f;
@@ -393,16 +399,16 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
             vec4 baseColor = getVoxel(offsetVoxelPos.x, offsetVoxelPos.y, offsetVoxelPos.z, mapPos.x, mapPos.y, mapPos.z, block.x, block.y);
             vec4 voxelColor = baseColor;
             if (voxelColor.a > 0) {
-                vec3 voxelHitPos = mapPos+(voxelPos/8);
+                vec3 voxelHitPos = mapPos+(voxelPos/blockSize);
                 if (shouldSelectBlock && block.x > 1) {
                     if (ivec2(gl_FragCoord.xy) == (upscale ? ivec2(res/vec2(4)) : ivec2(res/2))) {
                         shouldSelectBlock = false;
                         playerData[0] = voxelHitPos.x;
                         playerData[1] = voxelHitPos.y;
                         playerData[2] = voxelHitPos.z;
-                        playerData[3] = (mapPos+(prevVoxelPos/8)).x;
-                        playerData[4] = (mapPos+(prevVoxelPos/8)).y;
-                        playerData[5] = (mapPos+(prevVoxelPos/8)).z;
+                        playerData[3] = (mapPos+(prevVoxelPos/blockSize)).x;
+                        playerData[4] = (mapPos+(prevVoxelPos/blockSize)).y;
+                        playerData[5] = (mapPos+(prevVoxelPos/blockSize)).z;
                     }
                 }
                 vec3 voxelMini = ((voxelPos-voxelRayPos) + 0.5 - 0.5*vec3(raySign))*deltaDist;
@@ -415,7 +421,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                 }
 
                 normal = ivec3(voxelPos - prevVoxelPos);
-                solidHitPos = (prevVoxelPos/8)+floor(mapPos)+(uv3d/8)-(normal/2);
+                solidHitPos = (prevVoxelPos/blockSize)+floor(mapPos)+(uv3d/blockSize)-(normal/2);
                 if (hitPos == vec3(0)) {
                     hitPos = solidHitPos;
                 }
@@ -430,7 +436,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                         voxelColor = mix(voxelColor, mix(vec4(1.f, 0.6f, 0.f, 0.95f), voxelColor, clamp(distance(sun.y, 64)/256, 0.f, 1.f)), lightFogLastCheck.a);
                         bool topVoxel = voxelPos.y >= 7; //-(block.y/16)
                         if (!underwater && getVoxel(voxelPos.x, topVoxel ? 0 : voxelPos.y+1, voxelPos.z, mapPos.x, mapPos.y + (topVoxel ? 1 : 0), mapPos.z, block.x, block.y).a <= 0) {
-                            float causticness = getCaustic(vec2(mapPos.x, mapPos.z)+(voxelPos.xz/8)+voxelPos.y);
+                            float causticness = getCaustic(vec2(mapPos.x, mapPos.z)+(voxelPos.xz/blockSize)+voxelPos.y);
                             if (causticness > -0.033 && causticness < 0.033) {
                                 hitCaustic = true;
                                 return vec4(fromLinear(vec3(1)), 1);
@@ -477,7 +483,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                 vec3 voxelMini = ((voxelPos-voxelRayPos) + 0.5 - 0.5*vec3(raySign))*deltaDist;
                 float voxelDist = max(voxelMini.x, max(voxelMini.y, voxelMini.z));
                 if (voxelDist > 0.0f) {
-                    rayLength += voxelDist/8;
+                    rayLength += voxelDist/blockSize;
                 }
                 if (blockDist > 0.0f) {
                     rayLength += blockDist;
@@ -703,7 +709,7 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
             vNorm *= 0;
         }
     }
-    vec3 shadowPos = underwater ? mix((floor(hitPos*8)+0.5f)/8, hitPos, abs(tintNormal)) : mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal))+(shadowPosOffset*shadeNormOffFade);//(mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal)));
+    vec3 shadowPos = underwater ? mix((floor(hitPos*blockSize)+0.5f)/blockSize, hitPos, abs(tintNormal)) : mix((floor(prevPos*blockSize)+0.5f)/blockSize, prevPos, abs(normal))+(shadowPosOffset*shadeNormOffFade);//(mix((floor(prevPos*blockSize)+0.5f)/blockSize, prevPos, abs(normal)));
     if (actuallyCastShadowRay) {
         vec3 sunDir = vec3(normalize(source - (worldSize/2)));
         vec3 prevFirstTint = firstTintAddition;
@@ -746,7 +752,7 @@ float manhattanDistance(vec3 pos1, vec3 pos2) {
 
 vec3 traceLight(vec3 lightSource, vec3 lightColor) {
     vec3 returnValue = vec3(0);
-    vec3 shadowPos = mix((floor(prevPos*8)+0.5f)/8, prevPos, abs(normal));
+    vec3 shadowPos = mix((floor(prevPos*blockSize)+0.5f)/blockSize, prevPos, abs(normal));
     float blockLightBrightness = max(lightColor.r, max(lightColor.g, lightColor.b));
     float shadowLightDist = manhattanDistance(lightSource, shadowPos);
     if (shadowLightDist < blockLightBrightness) {
@@ -948,7 +954,7 @@ void main() {
         finalColor.rgb = mix(finalColor.rgb, tint.rgb, mix(abs(1-tint.a), 1.f, reflectivity));
     }
 
-    if (hitBlock == selected && ui) {
+    if ((chiselMode ? hitBlock == selected : ivec3(hitBlock/2)*2 == ivec3(selected/2)*2) && ui) {
         finalColor.rgb = mix(finalColor.rgb, vec3(0.7, 0.7, 1), 0.5f);
     }
     if (hasAtmosphere) {

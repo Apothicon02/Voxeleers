@@ -244,7 +244,7 @@ public class Renderer {
         //long rendererInitStarted = System.currentTimeMillis();
         createGLDebugger();
         scene = new ShaderProgram("scene.vert", new String[]{"scene.frag"},
-                new String[]{"res", "projection", "view", "selected", "offsetIdx", "checkerStep", "reverseChecker", "taa", "ui", "upscale", "renderDistance", "aoQuality", "hasAtmosphere", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
+                new String[]{"res", "projection", "view", "selected", "offsetIdx", "checkerStep", "reverseChecker", "taa", "ui", "chiselMode", "upscale", "renderDistance", "aoQuality", "hasAtmosphere", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
         raster = new ShaderProgram("debug.vert", new String[]{"debug.frag"},
                 new String[]{"res", "projection", "view", "model", "selected", "offsetIdx", "color", "tex", "atlasOffset", "taa", "instanced", "ui", "alwaysUpfront", "renderDistance", "aoQuality", "timeOfDay", "time", "shadowsEnabled", "reflectionShadows", "sun", "mun"});
         unchecker = new ShaderProgram("scene.vert", new String[]{"unchecker.frag"},
@@ -279,7 +279,7 @@ public class Renderer {
     public static Matrix4f projMatrix = new Matrix4f();
     public static Matrix4f prevProjMatrix = new Matrix4f();
 
-    public static void  updateUniforms(ShaderProgram program, Window window) {
+    public static void updateUniforms(ShaderProgram program, Window window) {
         projMatrix = new Matrix4f(window.updateProjectionMatrix());
         try(MemoryStack stack = MemoryStack.stackPush()) {
             glUniformMatrix4fv(program.uniforms.get("projection"), false, projMatrix.get(stack.mallocFloat(16)));
@@ -703,6 +703,7 @@ public class Renderer {
             glClearDepthf(0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             updateUniforms(scene, window);
+            glUniform1i(scene.uniforms.get("chiselMode"), player.chiselMode ? 1 : 0);
             glUniform2i(scene.uniforms.get("res"), window.getWidth(), window.getHeight());
             glUniform1i(scene.uniforms.get("upscale"), upscale ? 1 : 0);
             glUniform1i(scene.uniforms.get("hasAtmosphere"), World.worldType.hasVisualAtmo() ? 1 : 0);
