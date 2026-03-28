@@ -2,13 +2,11 @@ package org.voxeleers.game.world;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.voxeleers.Main;
 import org.voxeleers.engine.Utils;
 import org.voxeleers.game.ScheduledTicker;
 import org.voxeleers.game.audio.AudioController;
-import org.voxeleers.game.audio.SFX;
 import org.voxeleers.game.audio.Sounds;
 import org.voxeleers.game.audio.Source;
 import org.voxeleers.game.blocks.entities.BlockEntity;
@@ -38,7 +36,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -124,7 +121,7 @@ public class World {
     }
 
     public static void dropItem(Item item) {
-        World.items.add(item.clone().timeExisted(-2000).prevTickTime(Main.timeMS).moveTo(Main.player.getCameraMatrixWithoutPitch().invert().translate(0, -Main.player.eyeHeight + 0.2f, -1f).getTranslation(new Vector3f())));
+        World.items.add(item.clone().timeExisted(-2000).prevTickTime(Main.timeMS).moveTo(Main.player.getCameraMatrixWithoutPitchTilt().invert().translate(0, -Main.player.eyeHeight + 0.2f, -1f).getTranslation(new Vector3f())));
     }
 
     public static boolean inBounds(int x, int y, int z) {

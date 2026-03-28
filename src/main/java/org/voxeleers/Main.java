@@ -35,8 +35,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static io.github.libsdl4j.api.keyboard.SdlKeyboard.SDL_GetKeyboardState;
-import static io.github.libsdl4j.api.keyboard.SdlKeyboard.SDL_GetModState;
 import static io.github.libsdl4j.api.keycode.SDL_Keymod.KMOD_CAPS;
 import static io.github.libsdl4j.api.mouse.SdlMouse.SDL_SetRelativeMouseMode;
 import static io.github.libsdl4j.api.scancode.SDL_Scancode.*;
@@ -237,7 +235,7 @@ public class Main {
                         GUI.inventoryOpen = !GUI.inventoryOpen;
                     }
 
-                    player.chiselMode = (window.keyMods & KMOD_CAPS) == 0;
+                    player.chiselMode = (window.keyMods & KMOD_CAPS) > 0;
 
                     if (!isF11Down && wasF11Down) {
                         if (!isFullScreen) {
@@ -393,7 +391,7 @@ public class Main {
                 player.camera.FOV = player.camera.FOV > dFOV ? Math.max(dFOV, player.camera.FOV - (factor * 30f)) : (player.camera.FOV < dFOV ? Math.min(dFOV, player.camera.FOV + (factor * 30f)) : player.camera.FOV);
             }
             if (player.onGround) {
-                float bobbingInc = (float) ((Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f))*timeMul)/player.scale);//((float) (factor*(1.5f+Math.random())))));
+                float bobbingInc = (float) ((Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f))*timeMul)/(player.scale*2));//((float) (factor*(1.5f+Math.random())))));
                 if (player.bobbingDir) {
                     player.bobbing += bobbingInc;
                     if (player.bobbing >= 0) {

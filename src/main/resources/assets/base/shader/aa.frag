@@ -119,7 +119,7 @@ void main() {
         vec2 reprojected = reprojectPrev(getPrevWorldPosFromDepth(oldColorUnjittered.w));
         vec4 oldColor = (reprojected.x >= 0.f && reprojected.x < 1.f && reprojected.y >= 0.f && reprojected.y < 1.f) ? texture(in_color_old, reprojected) : currentColor;
         float velocity = distance((reprojected*res), gl_FragCoord.xy);
-        int radius = velocity < 0.6f ? 2 : 1;
+        int radius = 2;
         vec3 boxMin = vec3(1);
         vec3 boxMax = vec3(0);
         for (int x = int(gl_FragCoord.x-radius); x < gl_FragCoord.x+radius; x++) {
@@ -129,9 +129,9 @@ void main() {
                 boxMax = max(boxMax, nearColor);
             }
         }
-        oldColor.rgb = clamp(oldColor.rgb, boxMin, boxMax);
+        oldColor.rgb = mix(oldColor.rgb, clamp(oldColor.rgb, boxMin, boxMax), clamp((velocity-0.6f)*2, 0, 1));
 
-        vec3 comparedColors = currentColor.rgb-oldColor.rgb;
+        vec3 comparedColors = abs(currentColor.rgb-oldColor.rgb);
         float brightDif = clamp(max(comparedColors.r, max(comparedColors.g, comparedColors.b))*6.66f, 0.f, 1.f);
         fragColor = mix(currentColor, oldColor, mix(0.95f, 0.85f, brightDif));
         fragColor.a = fragDepth;

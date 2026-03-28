@@ -593,7 +593,7 @@ public class Renderer {
             glUniform1i(raster.uniforms.get("tex"), 1); // rendering item
             glUniform4f(raster.uniforms.get("color"), 1, 1, 1, 1);
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitch().invert().translate(0.045f + Math.max(0, handTilt() * 0.03f), -0.115f + (player.bobbing * 0.05f) - Math.min(0, handTilt() * 0.1f), -0.03f + (handTilt() * 0.1f)).rotateY((float) Math.toRadians(-90.f)).rotateZ((float) Math.toRadians(55.f + (handTilt() < 0 ? (handTilt() * 80) : (handTilt() * 40)) + HandManager.getTilt())).scale(0.125f).get(stack.mallocFloat(16)));
+                glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitchTilt().invert().translate(0.045f + Math.max(0, handTilt() * 0.03f), -0.115f + (player.bobbing * 0.05f) - Math.min(0, handTilt() * 0.1f), -0.03f + (handTilt() * 0.1f)).rotateY((float) Math.toRadians(-90.f)).rotateZ((float) Math.toRadians(55.f + (handTilt() < 0 ? (handTilt() * 80) : (handTilt() * 40)) + HandManager.getTilt())).scale(0.125f).get(stack.mallocFloat(16)));
             }
             glUniform2i(raster.uniforms.get("atlasOffset"), item.type.atlasOffset.x(), item.type.atlasOffset.y());
             drawDoubleSidedPlane();
@@ -602,7 +602,7 @@ public class Renderer {
             if (showUI && !Main.isSwappingWorldType) {
                 glUniform4f(raster.uniforms.get("color"), 0.6f, 0.45f, 0.35f, 1);
                 try (MemoryStack stack = MemoryStack.stackPush()) {
-                    glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitch().invert().translate(0.55f, -0.35f + (player.bobbing * 0.325f), 0.f).rotateX((float) Math.toRadians((handTilt() * -88) + (HandManager.getTilt() / 2))).scale(0.1375f, 0.1375f, 0.5f).get(stack.mallocFloat(16)));
+                    glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitchTilt().invert().translate(0.55f, -0.35f + (player.bobbing * 0.325f), 0.f).rotateX((float) Math.toRadians((handTilt() * -88) + (HandManager.getTilt() / 2))).scale(0.1375f, 0.1375f, 0.5f).get(stack.mallocFloat(16)));
                 }
                 drawCube();
             }
@@ -812,7 +812,7 @@ public class Renderer {
     }
 
     public static float handTilt() {
-        return (player.getCameraMatrix().invert().translate(0, 0, 1).getTranslation(new Vector3f()).y()-(player.getCameraMatrixWithoutPitch().invert().getTranslation(new Vector3f()).y()));
+        return (player.getCameraMatrix().invert().translate(0, 0, 1).getTranslation(new Vector3f()).y()-(player.getCameraMatrixWithoutPitchTilt().invert().getTranslation(new Vector3f()).y()));
     }
 
     public static void screenshot(Window window) throws IOException {
