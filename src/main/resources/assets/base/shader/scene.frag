@@ -172,6 +172,13 @@ vec4 getLight(float x, float y, float z) {
 }
 vec3 ogPos = vec3(0);
 vec3 sunColor = vec3(0);
+
+vec3 sunsetColor = vec3(1, 0.65f, 0.25f); //vec3(0.65, 0.65f, 1)
+vec3 skyColor = vec3(0.36f, 0.54f, 1.2f); //vec3(0.56f, 0.56f, 0.7f)
+float skyWhiteline = 0.9f; //0.8
+float sunsetHeight = 1.5f; //1
+float skyDensity = 1.f; //0.66
+
 vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess, bool negateSun) {
     if (!hasAtmosphere) {
         fogginess = 0.f;
@@ -182,18 +189,18 @@ vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess,
     float sunDist = (distance(lightPos.xz, sun.xz)/(size*1.5f));
     float adjustedTime = clamp((sunDist*abs(1-clamp(sunHeight, 0.05f, 0.5f)))+scattering, 0.f, 1.f);
     float thickness = gradient(lightPos.y, 128, 1500-max(0, sunHeight*1000), 0.33+(sunHeight/2), 1);
-    float sunSetness = min(1.f, max(abs(sunHeight), adjustedTime));
+    float sunSetness = min(1.f, max(abs(sunHeight*sunsetHeight), adjustedTime));
     float whiteY = max(ogY, 200)-135.f;
-    float skyWhiteness = mix(max(0.33f, gradient(lightPos.y, (whiteY/4)+47, (whiteY/2)+436, 0, 0.8)), 0.9f, clamp(abs(1-sunSetness), 0, 1.f));
+    float skyWhiteness = mix(max(0.33f, gradient(lightPos.y, (whiteY/4)+47, (whiteY/2)+436, 0, skyWhiteline)), 0.9f, clamp(abs(1-sunSetness), 0, 1.f));
     float sunBrightness = clamp(sunHeight+0.5, mix(0.f, 0.33f, skyWhiteness), 1);
     if (negateSun) {
         lighting.a = 0;
     }
-    float whiteness = isSky ? skyWhiteness : mix(0.8f, skyWhiteness, max(0, fogginess-0.8f)*5.f);
-    sunColor = mix(mix(vec3(0.65, 0.65f, 1)*(1+((10*clamp(sunHeight, 0.f, 0.1f))*(15*min(0.5f, abs(1-sunBrightness))))), vec3(0.56f, 0.56f, 0.7f)*sunBrightness, sunSetness), vec3(sunBrightness), whiteness);
+    float whiteness = isSky ? skyWhiteness : mix(skyWhiteline, skyWhiteness, max(0, fogginess-0.8f)*5.f);
+    sunColor = mix(mix(sunsetColor*(1+((10*clamp(sunHeight, 0.f, 0.1f))*(15*min(0.5f, abs(1-sunBrightness))))), skyColor*sunBrightness, sunSetness), vec3(sunBrightness), whiteness);
     sunColor = min(fromLinear(mix(vec3(1), vec3(1, 0.95f, 0.85f), sunSetness/4)), lighting.a*sunColor);
     vec4 color = vec4(max(lighting.rgb, sunColor), thickness);
-    return isSky ? color*gradient(lightPos.y, 72, 320, 0.66f, 1) : color;
+    return isSky ? color*gradient(lightPos.y, 72, 320, skyDensity, 1) : color;
 }
 vec4 powLighting(vec4 lighting) {
     return vec4(lighting.r, lighting.g, lighting.b, pow(lighting.a, 2));
@@ -897,33 +904,33 @@ void main() {
     finalNormal = vec4(normal, depth);
     if (inBounds(solidHitPos, worldSize)) {
         lighting = getLight(solidHitPos.x, solidHitPos.y, solidHitPos.z)*(shadowsEnabled ? vec4(0.93, 0.93, 0.93, 1) : vec4(1)); //flood fill
-        if (shadowsEnabled) {
-            lighting.rgb = max(lighting.rgb, traceLight(vec3(487.5f, 53.5f, 469.5f), vec3(40, 36, 26)));
-            lighting.rgb = max(lighting.rgb, traceLight(vec3(518.5f, 51.5f, 469.5f), vec3(0, 40, 20)));
-            lighting.rgb = max(lighting.rgb, traceLight(vec3(510.5f, 77.5f, 594.5f), vec3(0, 20, 40)));
-            lighting.rgb = max(lighting.rgb, traceLight(vec3(500.5f, 78.5f, 585.5f), vec3(40, 36, 26)));
-//
-//            lighting.rgb = max(lighting.rgb, traceLight(vec3(518.5f, 55.5f, 429.5f), vec3(35, 36, 40)));
-//
-//            for (int i = 0; i < 27; i++) {
-//                lighting.a += getLight(i, i, i).a;
-//            }
-//            for (int i = 0; i <= 3; i++) {
-//                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 512.5f), vec3(55, 57, i*20)));
-//                lighting.a += getLight(i*5, i, i*10).a;
-//                lighting.a += getLight(i*5, i, i*11).a;
-//            }
-//            for (int i = 0; i <= 3; i++) {
-//                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 448.5f), vec3(55, i*20, 57)));
-//                lighting.a += getLight(i, i*5, i*3).a;
-//                lighting.a += getLight(i, i*5, i*4).a;
-//            }
-//            for (int i = 0; i <= 3; i++) {
-//                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 576.5f), vec3(i*20, 57, 55)));
-//                lighting.a += getLight(i, i*9, i*5).a;
-//                lighting.a += getLight(i, i*9, i*6).a;
-//            }
-        }
+//        if (shadowsEnabled) {
+//            lighting.rgb = max(lighting.rgb, traceLight(vec3(487.5f, 53.5f, 469.5f), vec3(40, 36, 26)));
+//            lighting.rgb = max(lighting.rgb, traceLight(vec3(518.5f, 51.5f, 469.5f), vec3(0, 40, 20)));
+//            lighting.rgb = max(lighting.rgb, traceLight(vec3(510.5f, 77.5f, 594.5f), vec3(0, 20, 40)));
+//            lighting.rgb = max(lighting.rgb, traceLight(vec3(500.5f, 78.5f, 585.5f), vec3(40, 36, 26)));
+////
+////            lighting.rgb = max(lighting.rgb, traceLight(vec3(518.5f, 55.5f, 429.5f), vec3(35, 36, 40)));
+////
+////            for (int i = 0; i < 27; i++) {
+////                lighting.a += getLight(i, i, i).a;
+////            }
+////            for (int i = 0; i <= 3; i++) {
+////                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 512.5f), vec3(55, 57, i*20)));
+////                lighting.a += getLight(i*5, i, i*10).a;
+////                lighting.a += getLight(i*5, i, i*11).a;
+////            }
+////            for (int i = 0; i <= 3; i++) {
+////                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 448.5f), vec3(55, i*20, 57)));
+////                lighting.a += getLight(i, i*5, i*3).a;
+////                lighting.a += getLight(i, i*5, i*4).a;
+////            }
+////            for (int i = 0; i <= 3; i++) {
+////                lighting.rgb = max(lighting.rgb, traceLight(vec3(512.5f+(i*20), 72.5f, 576.5f), vec3(i*20, 57, 55)));
+////                lighting.a += getLight(i, i*9, i*5).a;
+////                lighting.a += getLight(i, i*9, i*6).a;
+////            }
+//        }
     } else {
         lighting = (vec4(0, 0, 0, 1));
     }
