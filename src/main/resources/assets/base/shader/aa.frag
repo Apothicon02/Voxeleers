@@ -61,7 +61,7 @@ vec3 getPosFromDepth(float depth) {
     return worldPos.xyz;
 }
 vec3 getPrevWorldPosFromDepth(float depth) {
-    vec2 ndc = (((gl_FragCoord.xy+vec2(xOffsets[offsetIdxOld], yOffsets[offsetIdxOld]))/res)*2.f)-1.f;
+    vec2 ndc = ((gl_FragCoord.xy/res)*2.f)-1.f;
     vec4 clip = vec4(ndc, depth, 1.f);
     vec4 viewPos = inverse(projection)*clip;
     viewPos /= viewPos.w;
@@ -70,6 +70,9 @@ vec3 getPrevWorldPosFromDepth(float depth) {
 }
 vec2 reprojectPrev(vec3 worldPos) {
     vec4 projectionVec = prevProj * prevView * vec4(worldPos, 1.0f);
+    float xOff = xOffsets[offsetIdxOld]/res.x;
+    float yOff = yOffsets[offsetIdxOld]/res.y;
+    projectionVec.xy += vec2(xOff, yOff)*projectionVec.w;
     projectionVec.xyz /= projectionVec.w;
     projectionVec.xy = projectionVec.xy * 0.5f + 0.5f;
     return projectionVec.xy;
@@ -80,8 +83,8 @@ void main() {
     vec4 currentColor = texture(in_color, texCoords);
 
     float fragDepth = currentColor.w;
+    vec3 pos = getPosFromDepth(fragDepth);
 //    if (fragDepth > 0.f) {
-//        vec3 pos = getPosFromDepth(fragDepth);
 //
 //        currentColor = vec4(pos, 1);
 //        currentColor.a = 1.f;
@@ -116,7 +119,7 @@ void main() {
 
     if (taa) {
         vec4 oldColorUnjittered = texture(in_color_old, texCoords);
-        vec2 reprojected = reprojectPrev(getPrevWorldPosFromDepth(oldColorUnjittered.w));
+        vec2 reprojected = reprojectPrev(pos);
         vec4 oldColor = (reprojected.x >= 0.f && reprojected.x < 1.f && reprojected.y >= 0.f && reprojected.y < 1.f) ? texture(in_color_old, reprojected) : currentColor;
         float velocity = distance((reprojected*res), gl_FragCoord.xy);
         int radius = 2;
@@ -134,6 +137,7 @@ void main() {
         vec3 comparedColors = abs(currentColor.rgb-oldColor.rgb);
         float brightDif = clamp(max(comparedColors.r, max(comparedColors.g, comparedColors.b))*6.66f, 0.f, 1.f);
         fragColor = mix(currentColor, oldColor, mix(0.95f, 0.85f, brightDif));
+        //fragColor.rgb = mix(currentColor.rgb, oldColor.rgb, 0.99);
         fragColor.a = fragDepth;
     } else {
         fragColor = currentColor;

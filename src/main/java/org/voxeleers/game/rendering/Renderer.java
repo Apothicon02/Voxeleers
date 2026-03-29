@@ -50,7 +50,7 @@ public class Renderer {
     public static int atlasOffsetSSBOId;
     public static int kernelSSBOId;
 
-    public static boolean taa = true;
+    public static boolean taa = false;
     public static boolean showUI = true;
     public static boolean shadowsEnabled = true;
     public static boolean reflectionShadows = false;
@@ -61,7 +61,7 @@ public class Renderer {
     public static double time = 0.5f;
     public static boolean screenshot = false;
     public static boolean forceTiltShift = false;
-    public static boolean upscale = true;
+    public static boolean upscale = false;
 
     public static void createGLDebugger() {
         glEnable(GL_DEBUG_OUTPUT);
@@ -280,7 +280,6 @@ public class Renderer {
     public static Matrix4f prevProjMatrix = new Matrix4f();
 
     public static void updateUniforms(ShaderProgram program, Window window) {
-        projMatrix = new Matrix4f(window.updateProjectionMatrix());
         try(MemoryStack stack = MemoryStack.stackPush()) {
             glUniformMatrix4fv(program.uniforms.get("projection"), false, projMatrix.get(stack.mallocFloat(16)));
         }
@@ -632,6 +631,7 @@ public class Renderer {
             if (offsetIdx > 15) {
                 offsetIdx = 0;
             }
+            projMatrix = new Matrix4f(window.updateProjectionMatrix());
             boolean tiltShift = false;
             boolean dof = false;
             if (GUI.inventoryOpen || GUI.pauseMenuOpen) {
@@ -737,7 +737,7 @@ public class Renderer {
             glUniform1i(aa.uniforms.get("upscale"), upscale ? 1 : 0);
             glUniform1i(aa.uniforms.get("taa"), taa ? 1 : 0);
             try(MemoryStack stack = MemoryStack.stackPush()) {
-                glUniformMatrix4fv(aa.uniforms.get("projection"), false, window.updateProjectionMatrix().get(stack.mallocFloat(16)));
+                glUniformMatrix4fv(aa.uniforms.get("projection"), false, projMatrix.get(stack.mallocFloat(16)));
             }
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 glUniformMatrix4fv(aa.uniforms.get("view"), false, viewMatrix.get(stack.mallocFloat(16)));
