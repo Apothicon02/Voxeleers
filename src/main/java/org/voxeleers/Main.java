@@ -391,7 +391,7 @@ public class Main {
                 player.camera.FOV = player.camera.FOV > dFOV ? Math.max(dFOV, player.camera.FOV - (factor * 30f)) : (player.camera.FOV < dFOV ? Math.min(dFOV, player.camera.FOV + (factor * 30f)) : player.camera.FOV);
             }
             if (player.onGround) {
-                float bobbingInc = (float) ((Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f))*timeMul)/(player.scale*2));//((float) (factor*(1.5f+Math.random())))));
+                float bobbingInc = (float) ((Math.min(0.009f, 0.75f*speed*(player.height*factor*1.2f))*timeMul));//((float) (factor*(1.5f+Math.random())))));
                 if (player.bobbingDir) {
                     player.bobbing += bobbingInc;
                     if (player.bobbing >= 0) {

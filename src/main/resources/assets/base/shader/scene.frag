@@ -130,7 +130,7 @@ float whiteNoise(vec2 coords) {
     return (texture(noises, vec2(coords/1024)).g)-0.5f;
 }
 
-bool castsFullShadow(ivec4 block) {
+bool castsFullShadow(ivec2 block) {
     return block.x != 4 && block.x != 5 && block.x != 14 && block.x != 18 && block.x != 30 && block.x != 52 && block.x != 53 && block.x != 64 && block.x != 65;
 }
 
@@ -172,12 +172,14 @@ vec4 getLight(float x, float y, float z) {
 }
 vec3 ogPos = vec3(0);
 vec3 sunColor = vec3(0);
+vec3 source = vec3(0);
 
 vec3 sunsetColor = vec3(1, 0.65f, 0.25f); //vec3(0.65, 0.65f, 1)
 vec3 skyColor = vec3(0.36f, 0.54f, 1.2f); //vec3(0.56f, 0.56f, 0.7f)
 float skyWhiteline = 0.9f; //0.8
 float sunsetHeight = 1.5f; //1
 float skyDensity = 1.f; //0.66
+float sunBrightnessMul = 1.1f; //1
 
 vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess, bool negateSun) {
     if (!hasAtmosphere) {
@@ -199,6 +201,9 @@ vec4 getLightingColor(vec3 lightPos, vec4 lighting, bool isSky, float fogginess,
     float whiteness = isSky ? skyWhiteness : mix(skyWhiteline, skyWhiteness, max(0, fogginess-0.8f)*5.f);
     sunColor = mix(mix(sunsetColor*(1+((10*clamp(sunHeight, 0.f, 0.1f))*(15*min(0.5f, abs(1-sunBrightness))))), skyColor*sunBrightness, sunSetness), vec3(sunBrightness), whiteness);
     sunColor = min(fromLinear(mix(vec3(1), vec3(1, 0.95f, 0.85f), sunSetness/4)), lighting.a*sunColor);
+    if (!isSky && source.xz == sun.xz) {
+        sunColor*=min(sunBrightnessMul, sunBrightnessMul <= 1.f ? 1.f : max(1.f, sunBrightnessMul-fogginess));
+    }
     vec4 color = vec4(max(lighting.rgb, sunColor), thickness);
     return isSky ? color*gradient(lightPos.y, 72, 320, skyDensity, 1) : color;
 }
@@ -249,7 +254,6 @@ void clearVars() {
     texColor = vec4(0);
     hitSolidVoxel = false;
 }
-vec3 source = vec3(0);
 bool isBlockLeaves(ivec2 block) {
     return block.y == 0 && (block.x == 17 || block.x == 21 || block.x == 27 || block.x == 36 || block.x == 39 || block.x == 42 || block.x == 45 || block.x == 48 || block.x == 51);
 }
@@ -381,29 +385,29 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
             }
         } else if (voxelPos.x < blockSize && voxelPos.x >= 0.0 && voxelPos.y < blockSize && voxelPos.y >= 0.0 && voxelPos.z < blockSize && voxelPos.z >= 0.0) {
             vec3 offsetVoxelPos = voxelPos;
-            if (block.x == 4 && offsetVoxelPos.y > 2.0) {
-                bool windDir = timeOfDay > 0.f;
-                float windStr = noise(((vec2(mapPos.x, mapPos.z)/48) + (float(time) * 100)) * (16+(float(time)/(float(time)/32))))+0.5f;
-                if (windStr > 0.8) {
-                    offsetVoxelPos.x = offsetVoxelPos.x+((offsetVoxelPos.y > 5 ? 3 : (offsetVoxelPos.y > 4 ? 2 : 1)) * (windDir ? -1 : 1));
-                    if (block.y < 2) {
-                        offsetVoxelPos.z = offsetVoxelPos.z+(offsetVoxelPos.y > 4 ? 2 : 1);
-                    }
-                } else if (windStr > 0.4) {
-                    offsetVoxelPos.x = offsetVoxelPos.x+((offsetVoxelPos.y > 5 ? 3 : (offsetVoxelPos.y > 4 ? 2 : 1)) * (windDir ? -1 : 1));
-                    if (block.y < 2) {
-                        offsetVoxelPos.z = offsetVoxelPos.z+(offsetVoxelPos.y > 4 ? 1 : 0);
-                    }
-                } else if (windStr > -0.2) {
-                    offsetVoxelPos.x = offsetVoxelPos.x+((offsetVoxelPos.y > 4 ? 2 : 1) * (windDir ? -1 : 1));
-                    if (block.y < 2) {
-                        offsetVoxelPos.z = offsetVoxelPos.z+(offsetVoxelPos.y > 4 ? 1 : 0);
-                    }
-                } else if (windStr > -0.8) {
-                    offsetVoxelPos.x = offsetVoxelPos.x+((offsetVoxelPos.y > 4 ? 1 : 0) * (windDir ? -1 : 1));
-                }
-                offsetVoxelPos.xz = clamp(offsetVoxelPos.xz, 0, 7);
-            }
+//            if (block.x == 4 && offsetVoxelPos.y > 2.0) {
+//                bool windDir = timeOfDay > 0.f;
+//                float windStr = noise(((vec2(mapPos.x, mapPos.z)/48) + (float(time) * 100)) * (16+(float(time)/(float(time)/32))))+0.5f;
+//                if (windStr > 0.8) {
+//                    offsetVoxelPos.x = offsetVoxelPos.x+((offsetVoxelPos.y > 5 ? 3 : (offsetVoxelPos.y > 4 ? 2 : 1)) * (windDir ? -1 : 1));
+//                    if (block.y < 2) {
+//                        offsetVoxelPos.z = offsetVoxelPos.z+(offsetVoxelPos.y > 4 ? 2 : 1);
+//                    }
+//                } else if (windStr > 0.4) {
+//                    offsetVoxelPos.x = offsetVoxelPos.x+((offsetVoxelPos.y > 5 ? 3 : (offsetVoxelPos.y > 4 ? 2 : 1)) * (windDir ? -1 : 1));
+//                    if (block.y < 2) {
+//                        offsetVoxelPos.z = offsetVoxelPos.z+(offsetVoxelPos.y > 4 ? 1 : 0);
+//                    }
+//                } else if (windStr > -0.2) {
+//                    offsetVoxelPos.x = offsetVoxelPos.x+((offsetVoxelPos.y > 4 ? 2 : 1) * (windDir ? -1 : 1));
+//                    if (block.y < 2) {
+//                        offsetVoxelPos.z = offsetVoxelPos.z+(offsetVoxelPos.y > 4 ? 1 : 0);
+//                    }
+//                } else if (windStr > -0.8) {
+//                    offsetVoxelPos.x = offsetVoxelPos.x+((offsetVoxelPos.y > 4 ? 1 : 0) * (windDir ? -1 : 1));
+//                }
+//                offsetVoxelPos.xz = clamp(offsetVoxelPos.xz, 0, 7);
+//            }
             vec4 baseColor = getVoxel(offsetVoxelPos.x, offsetVoxelPos.y, offsetVoxelPos.z, mapPos.x, mapPos.y, mapPos.z, block.x, block.y);
             vec4 voxelColor = baseColor;
             if (voxelColor.a > 0) {
@@ -632,6 +636,10 @@ vec4 raytrace(vec3 ogPos, vec3 newRayDir) {
     return vec4(0);
 }
 
+bool isSolid(vec3 pos) {
+    return getVoxelAndBlockWOLeavesOverride(pos).a >= alphaMax;
+}
+
 vec3 getSmoothedNormal(vec3 pos) {
     vec3 smoothedNorm = vec3(0.0);
     for (int x = -1; x <= 1; x++) {
@@ -639,7 +647,7 @@ vec3 getSmoothedNormal(vec3 pos) {
             for (int z = -1; z <= 1; z++) {
                 if (!(x == 0 && y == 0 && z == 0)) { //dont count the voxel that was actually hit
                     vec3 offset = vec3(x, y, z)/2;
-                    bool solid = getVoxelAndBlockWOLeavesOverride(pos + offset).a >= alphaMax;
+                    bool solid = isSolid(pos + offset);
                     if (solid) {
                         smoothedNorm += offset;
                     }
@@ -670,7 +678,7 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
 //    vNorm = normal;
 //    vec3 shadowPosOffset = vec3(0);
 //    vec3 blockPos = ivec3(solidHitPos)+0.5f;
-//    if (castsFullShadow(block) && isTracedObject) {
+//    if (castsFullShadow(block.xy) && isTracedObject) {
 //        vec3 avgNColor = vec3(0);
 //        float neighborsSolid = 0.f;
 //        bool wasY = false;
@@ -735,7 +743,7 @@ vec4 getShadow(vec4 color, bool actuallyCastShadowRay, bool isTracedObject, floa
 //            vNorm *= 0;
 //        }
 //    }
-    vec3 quarterBlockPos =  (ivec3((solidHitPos+(normal/2))*2)/2.f)+0.25f;
+    vec3 quarterBlockPos =  (floor((solidHitPos+(normal/2))*2)/2.f)+0.25f;
     vec3 vNorm = isTracedObject ? getSmoothedNormal(quarterBlockPos) : normal; //solidHitPos+(normal/2)
     vec3 shadowPos = underwater ? hitPos : prevPos;//(quarterBlockPos-(vNorm/2));
     if (actuallyCastShadowRay) {

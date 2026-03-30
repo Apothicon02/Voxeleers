@@ -52,7 +52,7 @@ public class Renderer {
 
     public static boolean taa = false;
     public static boolean showUI = true;
-    public static boolean shadowsEnabled = true;
+    public static boolean shadowsEnabled = false;
     public static boolean reflectionShadows = false;
     public static boolean reflectionsEnabled = true;
     public static int renderDistanceMul = 8; //3
@@ -601,7 +601,7 @@ public class Renderer {
             if (showUI && !Main.isSwappingWorldType) {
                 glUniform4f(raster.uniforms.get("color"), 0.6f, 0.45f, 0.35f, 1);
                 try (MemoryStack stack = MemoryStack.stackPush()) {
-                    glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitchTilt().invert().translate(0.55f, -0.35f + (player.bobbing * 0.325f), 0.f).rotateX((float) Math.toRadians((handTilt() * -88) + (HandManager.getTilt() / 2))).scale(0.1375f, 0.1375f, 0.5f).get(stack.mallocFloat(16)));
+                    glUniformMatrix4fv(raster.uniforms.get("model"), false, player.getCameraMatrixWithoutPitchTilt().invert().translate(0.55f, -0.35f + (player.bobbing * 0.167f), 0.f).rotateX((float) Math.toRadians((handTilt() * -88) + (HandManager.getTilt() / 2))).scale(0.1375f, 0.1375f, 0.5f).get(stack.mallocFloat(16)));
                 }
                 drawCube();
             }
@@ -672,7 +672,7 @@ public class Renderer {
             glUniform1i(raster.uniforms.get("instanced"), 0);
             glUniform1i(raster.uniforms.get("tex"), 0); //not rendering item
             World.worldType.renderCelestialBodies();
-            drawCenter();
+//            drawCenter();
 //            Vector3f hitPos = new Vector3f(472, 84, 520);
 //            Vector3f norm = new Vector3f(0, 1, 0).normalize();
 //            Vector3f randomVec = new Vector3f(1.f);//(float) Math.random(), (float) Math.random(), (float) Math.random());
@@ -692,7 +692,7 @@ public class Renderer {
 //            }
 //            glUniform4f(raster.uniforms.get("color"), norm.x(), norm.y(), norm.z(), 1);
 //            drawCube();
-            drawDebugWheel();
+//            drawDebugWheel();
 //            drawHuman();
             drawPlayer();
 

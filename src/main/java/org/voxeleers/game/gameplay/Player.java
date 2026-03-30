@@ -478,7 +478,7 @@ public class Player {
     public Vector3f getCameraTranslation() {
         Vector3f translation = new Vector3f();
         camera.getViewMatrix().getTranslation(translation);
-        return translation.add(pos.x(), pos.y()+eyeHeight+bobbing, pos.z());
+        return translation.add(pos.x(), pos.y()+eyeHeight+(bobbing*1.5f), pos.z());
     }
     public Matrix4f getCameraWithoutPitchOrProcessing() {
         Vector3f camOffset = new Vector3f();

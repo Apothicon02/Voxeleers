@@ -3,7 +3,6 @@ package org.voxeleers.game.world.types;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.joml.Matrix4f;
 import org.joml.Vector2i;
-import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.voxeleers.Main;
 import org.voxeleers.engine.VoxeleersMath;
@@ -13,7 +12,8 @@ import org.voxeleers.game.noise.Noises;
 import org.voxeleers.game.rooms.Cell;
 import org.voxeleers.game.rooms.Molecule;
 import org.voxeleers.game.world.World;
-import org.voxeleers.game.world.shapes.Cube;
+import org.voxeleers.game.world.shapes.*;
+import org.voxeleers.game.world.trees.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,8 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.lwjgl.opengl.GL20.glUniform4f;
 import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
-import static org.voxeleers.engine.Utils.condensePos;
-import static org.voxeleers.engine.Utils.distance;
+import static org.voxeleers.engine.Utils.*;
 import static org.voxeleers.game.rendering.Renderer.*;
 import static org.voxeleers.game.world.World.*;
 
@@ -98,50 +97,28 @@ public class EarthWorldType extends WorldType {
     @Override
     public ExecutorService createNew() throws InterruptedException {
         long startTime = System.currentTimeMillis();
-        Vector3i[] craters = new Vector3i[5];
-        for (int i = 0; i < craters.length; i++) {
-            int radius = seededRand.nextInt(90) + 10;
-            int borderOffset = radius*2;
-            int x = seededRand.nextInt(size-borderOffset) + (borderOffset/2);
-            int z = seededRand.nextInt(size-borderOffset) + (borderOffset/2);
-            craters[i] = new Vector3i(x, radius, z);
-        }
         int threads = Runtime.getRuntime().availableProcessors();
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         int interval = size/threads;
         for (int cX = 0; cX < size; cX+=interval) {
             int startX = cX;
             pool.submit(() -> {
-                for (int x = startX; x < startX+interval; x++) {
-                    for (int z = 0; z < size; z++) {
-                        float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x*2, z*2) + 0.5f) / 2;
-                        float cellScale = 1+(((float) z / size)*0.33f);
-                        float baseCellularNoise = Noises.CELLULAR_NOISE.sample((int) (x*cellScale), (int) (z*cellScale)) / 2;
-                        int surface = (int) (((100 * Math.max(Math.abs(baseCellularNoise/4), Math.sqrt(Math.max(0, baseCellularNoise-0.33f)*(Math.clamp(((float) x+z) / size, 0.85f, 0.9f)-0.848f)*24))) + 70));
-                        surface += basePerlinNoise*VoxeleersMath.gradient(surface, 80, 120, 32, 0);
-                        double craterSurfMul = 1.f;
-                        double craterSurfMaxMul = 1.f;
-                        for (Vector3i crater : craters) {
-                            double craterDist = distance(crater.x(), crater.z(), x, z);
-                            int radius = crater.y();
-                            if (craterDist < radius) {
-                                craterDist /= radius;
-                                craterDist = Math.pow(craterDist, 2);
-                                craterDist *= 0.5f; //depth
-                                double antiRidge = VoxeleersMath.gradient(Math.clamp(surface, 70, 96), 70, 96, 0.2f, 0.f);
-                                craterDist += 0.7f-antiRidge;
-                                double ridgePeak = 1.1f-(antiRidge/2);
-                                if (craterDist > ridgePeak) { //ridges
-                                    craterDist -= ((craterDist-ridgePeak)*2.f);
-                                }
-                                craterSurfMul = Math.min(craterDist, craterSurfMul);
-                                craterSurfMaxMul = Math.max(craterDist, craterSurfMaxMul);
-                            }
-                        }
-                        surface = (int) Math.max(16, surface*(craterSurfMul >= 1.f ? craterSurfMaxMul : craterSurfMul));
+                for (int x = startX; x < startX+interval; x+=2) {
+                    for (int z = 0; z < size; z+=2) {
+                        float basePerlinNoise = (Noises.COHERERENT_NOISE.sample(x, z) + 0.5f) / 2;
+                        float baseCellularNoise = Noises.CELLULAR_NOISE.sample(x, z) / 2;
+                        float centDist = (float) (distance(x, z, size / 2.f, size / 2.f) / halfSize);
+                        float centDistExp = (Math.max(0.5f, centDist) - 0.5f);
+                        centDistExp *= centDistExp;
+                        int surface = (int) (((200 * (Math.max(0.1f, baseCellularNoise) * basePerlinNoise)) + 70) - (centDistExp * 300));
+                        surface = Math.max(14, surface);
+                        surface = (2*(int)(surface/2))-1;
                         heightmap[condensePos(x, z)] = (short) (surface);
-                        for (int y = surface; y >= 0; y--) {
-                            setBlock(x, y, z, craterSurfMul < 0.95f ? BlockTypes.getId(BlockTypes.MARTIAN_REGOLITH) : BlockTypes.getId(BlockTypes.SANDSTONE), 0);
+                        heightmap[condensePos(x+1, z)] = (short) (surface);
+                        heightmap[condensePos(x, z+1)] = (short) (surface);
+                        heightmap[condensePos(x+1, z+1)] = (short) (surface);
+                        for (int y = surface; y >= 0; y-=2) {
+                            setBlock(x, y, z, 3, 0);
                         }
                     }
                 }
@@ -152,8 +129,8 @@ public class EarthWorldType extends WorldType {
         System.out.print("Took "+(System.currentTimeMillis()-startTime)+"ms to generate heightmap from noise.");
 
         startTime = System.currentTimeMillis();
-        for (int x = 0; x < size; x++) {
-            for (int z = 0; z < size; z++) {
+        for (int x = 0; x < size; x+=2) {
+            for (int z = 0; z < size; z+=2) {
                 int maxSteepness = 0;
                 int minNeighborY = height - 1;
                 int condensedPos = condensePos(x, z);
@@ -167,59 +144,42 @@ public class EarthWorldType extends WorldType {
                 }
                 boolean flat = maxSteepness < 4;
                 if (flat) {
-                    if (getBlock(x, surface, z).x() != BlockTypes.getId(BlockTypes.MARTIAN_REGOLITH)) {
-                        for (int newY = surface; newY >= surface - 5; newY--) {
-                            setBlock(x, newY, z, BlockTypes.getId(BlockTypes.SAND), 0);
+                    if (surface < seaLevel) {
+                        setBlock(x, seaLevel, z, 1, 13);
+                        for (int y = 62; y > surface; y-=2) {
+                            setBlock(x, y, z, 1, 15);
+                        }
+                    } else if (surface < seaLevel + 3) {
+                        setBlock(x, surface, z, BlockTypes.getId(BlockTypes.SAND), 0);
+                        for (int newY = surface - 2; newY >= surface - 5; newY-=2) {
+                            setBlock(x, newY, z, BlockTypes.getId(BlockTypes.SANDSTONE), 0);
+                        }
+                    } else {
+                        setBlock(x, surface, z, 2, 0);
+                        double flowerChance = seededRand.nextDouble();
+                        if (flowerChance < 0.0001f) {
+                            setBlock(x, surface+1, z, BlockTypes.getId(BlockTypes.PORECAP), 0);
+                        } else {
+                            int flower = (flowerChance > 0.95f ? (flowerChance > 0.97f ? 14 : 1) : 0);
+                            if (flower > 0 || seededRand.nextFloat() < 0.33f) { //grass has 33% chance to place
+                                setBlock(x, surface + 1, z, 4 + flower, seededRand.nextInt(0, 3));
+                            }
                         }
                     }
                 } else {
-                    for (int newY = surface; newY >= surface - 17; newY--) {
-                        setBlock(x, newY, z, BlockTypes.getId(BlockTypes.GRAVEL), 0);
+                    if (surface < seaLevel) {
+                        setBlock(x, seaLevel, z, 1, 13);
+                        for (int y = 62; y > surface; y-=2) {
+                            setBlock(x, y, z, 1, 15);
+                        }
+                    }
+                    for (int newY = surface; newY >= surface - 5; newY-=2) {
+                        setBlock(x, newY, z, 55, 0);
                     }
                 }
             }
         }
         System.out.print("Took "+(System.currentTimeMillis()-startTime)+"ms to fill blocks.");
-
-        for (int x = (size / 2) - 29; x <= size / 2; x++) {
-            for (int z = (size / 2) - 29; z < size / 2; z++) {
-                setBlock(x, 100, z, 11, 0);
-                boolean xWall = x == (size / 2) - 29 || x == (size / 2);
-                if (xWall || z == (size / 2) - 29 || z == (size / 2) - 1) {
-                    int block = xWall ? (x > 500 ? BlockTypes.getId(BlockTypes.RED_STAINED_GLASS) : BlockTypes.getId(BlockTypes.MAGENTA_STAINED_GLASS)) : (z > 500 ? BlockTypes.getId(BlockTypes.BLUE_STAINED_GLASS) : BlockTypes.getId(BlockTypes.LIME_STAINED_GLASS));
-                    setBlock(x, 99, z, block, 0);
-                    setBlock(x, 98, z, block, 0);
-                    setBlock(x, 97, z, block, 0);
-                    setBlock(x, 96, z, block, 0);
-                    setBlock(x, 95, z, block, 0);
-                    setBlock(x, 94, z, block, 0);
-                    setBlock(x, 93, z, block, 0);
-                    setBlock(x, 92, z, block, 0);
-                    setBlock(x, 91, z, block, 0);
-                    setBlock(x, 90, z, block, 0);
-                    setBlock(x, 89, z, block, 0);
-                    setBlock(x, 88, z, block, 0);
-                    setBlock(x, 87, z, block, 0);
-                    setBlock(x, 86, z, block, 0);
-                    setBlock(x, 85, z, block, 0);
-                    setBlock(x, 84, z, block, 0);
-                    setBlock(x, 83, z, block, 0);
-                    setBlock(x, 82, z, block, 0);
-                    setBlock(x, 81, z, block, 0);
-                    setBlock(x, 80, z, block, 0);
-                    setBlock(x, 79, z, block, 0);
-                    setBlock(x, 78, z, block, 0);
-                    setBlock(x, 77, z, block, 0);
-                    setBlock(x, 76, z, block, 0);
-                    setBlock(x, 75, z, block, 0);
-                    setBlock(x, 74, z, block, 0);
-                    setBlock(x, 73, z, block, 0);
-                    setBlock(x, 72, z, block, 0);
-                    setBlock(x, 71, z, block, 0);
-                    setBlock(x, 70, z, block, 0);
-                }
-            }
-        }
 
         startTime = System.currentTimeMillis();
         threads = Runtime.getRuntime().availableProcessors();
@@ -228,15 +188,48 @@ public class EarthWorldType extends WorldType {
         for (int cX = 0; cX < size; cX+=featureInterval) {
             int startX = cX;
             pool.submit(() -> {
-                for (int x = startX; x < startX + featureInterval; x++) {
-                    for (int z = 0; z < size; z++) {
+                for (int x = startX; x < startX + featureInterval; x+=2) {
+                    for (int z = 0; z < size; z+=2) {
                         int surface = heightmap[(x * size) + z];
                         Vector2i blockOn = getBlock(x, surface, z);
+                        float basePerlinNoise = Noises.COHERERENT_NOISE.sample(x, z);
                         float randomNumber = seededRand.nextFloat();
-                        if (blockOn.x == BlockTypes.getId(BlockTypes.GRAVEL) || randomNumber < 0.0005f) {
-                            if (randomNumber < 0.2f) {
-                                float material = seededRand.nextFloat();
-                                Cube.generate(blockOn, x, surface, z, material < 0.002f ? BlockTypes.getId(BlockTypes.IRON_ORE) : (material < 0.004f ? BlockTypes.getId(BlockTypes.COPPER_ORE) : BlockTypes.getId(BlockTypes.SANDSTONE)), 0, (int) (1 + (seededRand.nextFloat() * 4)));
+                        if (blockOn.x == 2) {
+                            float foliageChanceExp = basePerlinNoise * basePerlinNoise;
+                            float foliageType = seededRand.nextFloat();
+                            if (randomNumber * 10 < foliageChanceExp && foliageType < VoxeleersMath.gradient(surface, 78, 86, 1, 0.002f)) {
+                                int maxHeight = seededRand.nextInt(16) + 12;
+                                int radius = seededRand.nextInt(2) + 3;
+                                boolean overgrown = seededRand.nextInt(4) == 0;
+                                JungleTree.generate(blockOn, x, surface, z, maxHeight, radius, BlockTypes.getId(BlockTypes.CHERRY_LOG), 0, BlockTypes.getId(BlockTypes.CHERRY_LEAVES), 0, overgrown);
+                            } else if (randomNumber * 10 < foliageChanceExp - 0.2f || randomNumber < 0.0002f) { //tree
+                                if (foliageType < 0.0015f) { //0.15% chance the tree is dead
+                                    int maxHeight = seededRand.nextInt(6) + 12;
+                                    DeadOakTree.generate(blockOn, x, surface, z, maxHeight, 47, 0);
+                                    Blob.generate(blockOn, x, surface, z, 3, 0, (int) ((rand().nextDouble() + 1) * 3), new int[]{2, 23}, true);
+                                } else {
+                                    int maxHeight = seededRand.nextInt(6) + 12;
+                                    int leavesHeight = seededRand.nextInt(3) + 3;
+                                    int radius = seededRand.nextInt(4) + 6;
+                                    OakTree.generate(blockOn, x, surface, z, maxHeight, radius, leavesHeight, 16, 0, 17, 0);
+                                }
+                            } else if (foliageChanceExp < 0.2f && foliageType < 0.0005f) { //0.05% chance to generate spruce tree
+                                int maxHeight = seededRand.nextInt(6) + 12;
+                                SpruceTree.generate(blockOn, x, surface, z, maxHeight, BlockTypes.getId(BlockTypes.SPRUCE_LOG), 0, BlockTypes.getId(BlockTypes.SPRUCE_LEAVES), 0);
+                            } else if ((randomNumber * 10) + 0.15f < basePerlinNoise - 0.2f || randomNumber < 0.0005f) { //bush
+                                int maxHeight = (int) (rand().nextDouble() + 1);
+                                OakShrub.generate(blockOn, x, surface, z, maxHeight, 3 + (maxHeight * 2), 16, 0, 17, 0);
+                            }
+                        } else if (blockOn.x == 23) {
+                            int foliageChance = seededRand.nextInt(0, 400);
+                            if (foliageChance == 0) { //tree
+                                PalmTree.generate(blockOn, x, surface, z, seededRand.nextInt(8, 22), 25, 0, 27, 0);
+                            } else if (randomNumber < 0.001f) {
+                                setBlock(x, surface + 1, z, BlockTypes.getId(BlockTypes.TORCH), 0);
+                            }
+                        } else if (blockOn.x == 55) {
+                            if (randomNumber < 0.08f) {
+                                Blob.generate(blockOn, x, surface, z, randomNumber < 0.001f ? BlockTypes.getId(BlockTypes.KYANITE) : 8, 0, (int) (2 + (seededRand.nextFloat() * 8)));
                             }
                         }
                     }

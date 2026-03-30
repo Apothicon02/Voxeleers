@@ -331,15 +331,39 @@ public class World {
     }
     public static void setBlock(int x, int y, int z, int block, int blockSubType) {
         if (inBounds(x, y, z)) {
-            int pos = condensePos(x, z)*2;
-            blocks[y][pos] = (short)(block);
-            blocks[y][pos+1] = (short)(blockSubType);
             if (generated) {
+                int pos = condensePos(x, z)*2;
+                blocks[y][pos] = (short)(block);
+                blocks[y][pos+1] = (short)(blockSubType);
                 unsavedBlocks[y] = true;
                 glBindTexture(GL_TEXTURE_3D, Textures.blocks.id);
                 glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, new int[]{block, blockSubType, 0, 0});
                 updateLODS(x, y, z);
             } else if (block > 0) {
+                int qX = ((int)(x/2))*2;
+                int qY = ((int)(y/2))*2;
+                int qZ = ((int)(z/2))*2;
+                int pos = condensePos(qX, qZ)*2;
+                blocks[qY][pos] = (short)(block);
+                blocks[qY][pos+1] = (short)(blockSubType);
+                blocks[qY+1][pos] = (short)(block);
+                blocks[qY+1][pos+1] = (short)(blockSubType);
+                pos = condensePos(qX+1, qZ)*2;
+                blocks[qY][pos] = (short)(block);
+                blocks[qY][pos+1] = (short)(blockSubType);
+                blocks[qY+1][pos] = (short)(block);
+                blocks[qY+1][pos+1] = (short)(blockSubType);
+                pos = condensePos(qX, qZ+1)*2;
+                blocks[qY][pos] = (short)(block);
+                blocks[qY][pos+1] = (short)(blockSubType);
+                blocks[qY+1][pos] = (short)(block);
+                blocks[qY+1][pos+1] = (short)(blockSubType);
+                pos = condensePos(qX+1, qZ+1)*2;
+                blocks[qY][pos] = (short)(block);
+                blocks[qY][pos+1] = (short)(blockSubType);
+                blocks[qY+1][pos] = (short)(block);
+                blocks[qY+1][pos+1] = (short)(blockSubType);
+
                 blocksLOD2[y/16][condensePosLOD2(x, z)] = (short)(block);
                 blocksLOD[y/4][condensePosLOD(x, z)] = (short)(block);
             }
