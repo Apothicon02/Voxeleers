@@ -168,7 +168,9 @@ ivec4 getBlock(float x, float y, float z) {
 }
 float waterDepth = 1.f;
 vec4 getLight(float x, float y, float z) {
-    return min(vec4(1.2f), texture(lights, vec3(z, y, x)/vec3(size, height, size), 0)*vec4(10, 10, 10, 20));
+    vec4 value = texture(lights, vec3(z, y, x)/vec3(size, height, size), 0)*20;
+    value.rgb -= max(vec3(0), (max(vec3(1), value.rgb)-1)*0.85f);
+    return min(vec4(1.125f, 1.125f, 1.125f, 2.f), value);
 }
 vec3 ogPos = vec3(0);
 vec3 sunColor = vec3(0);
@@ -233,7 +235,6 @@ vec3 lod2Pos = vec3(0);
 vec3 lodPos = vec3(0);
 ivec4 block = ivec4(0);
 vec4 texColor = vec4(0);
-vec4 lightFog = vec4(0);
 bool hitSolidVoxel = false;
 vec4 prevTintAddition = vec4(0);
 
@@ -269,15 +270,6 @@ bool isGlassSolid(vec3 blockPos, vec3 rayMapPos) {
         return true;
     }
     return false;
-}
-vec4 lightFogLastCheck = vec4(0);
-void updateLightFog(vec3 pos) {
-    if (!isShadow) {
-        lightFogLastCheck = (getLight(pos.x, pos.y, pos.z));
-        if (lightFogLastCheck.r > 0.f || lightFogLastCheck.g > 0.f || lightFogLastCheck.b > 0.f) {
-            lightFog = max(lightFog, getLightingColor(mapPos, lightFogLastCheck, false, 1, true)/2);
-        }
-    }
 }
 
 vec4 getVoxelAndBlock(vec3 pos) {
@@ -336,6 +328,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
     bool steppingBlock = true;
     bool firstStep = true;
     bool isInsidePointLight = false;
+    vec4 lastLight = vec4(0);
     for (int i = 0; blockPos.x < 4.0 && blockPos.x >= 0.0 && blockPos.y < 4.0 && blockPos.y >= 0.0 && blockPos.z < 4.0 && blockPos.z >= 0.0 && i < (4*8)*3; i++) {
         vec4 tintAddition = vec4(0.f);
         if (steppingBlock) {
@@ -344,10 +337,10 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                 mapPos = (lod2Pos*16)+(lodPos*4)+blockPos;
                 block = getBlock(mapPos.x, mapPos.y, mapPos.z);
             }
-            updateLightFog(mapPos+0.5f);
             isInsidePointLight = ivec3(lightSourcePos) == ivec3(mapPos);
             if (isInsidePointLight || (block.x > 0 && !(block.x == 1 && underwater))) {
                 steppingBlock = false;
+                lastLight = getLight(mapPos.x, mapPos.y, mapPos.z);
                 mini = ((blockPos-rayPos) + 0.5 - 0.5*vec3(raySign))*deltaDist;
                 float blockDist = max(mini.x, max(mini.y, mini.z));
                 vec3 intersect = rayPos + rayDir*blockDist;
@@ -445,7 +438,7 @@ vec4 traceBlock(vec3 rayPos, vec3 iMask, float subChunkDist, float chunkDist) {
                         tintNormal = normal;
                     }
                     if (block.x == 1) {
-                        voxelColor = mix(voxelColor, mix(vec4(1.f, 0.6f, 0.f, 0.95f), voxelColor, clamp(distance(sun.y, 64)/256, 0.f, 1.f)), lightFogLastCheck.a);
+                        voxelColor = mix(voxelColor, mix(vec4(1.f, 0.6f, 0.f, 0.95f), voxelColor, clamp(distance(sun.y, 64)/256, 0.f, 1.f)), lastLight.a);
                         bool topVoxel = voxelPos.y >= 7; //-(block.y/16)
                         if (!underwater && getVoxel(voxelPos.x, topVoxel ? 0 : voxelPos.y+1, voxelPos.z, mapPos.x, mapPos.y + (topVoxel ? 1 : 0), mapPos.z, block.x, block.y).a <= 0) {
                             float causticness = getCaustic(vec2(mapPos.x, mapPos.z)+(voxelPos.xz/blockSize)+voxelPos.y);
@@ -880,7 +873,6 @@ void main() {
     source.y = max(source.y, 500);
     bool isSky = true;
     bool isLight = false;
-    updateLightFog(ogPos);
     finalColor = raytrace(ogPos, ogDir);
     if (isLightSource(block.xy) && max(texColor.r, max(texColor.g, texColor.b)) > 0.9f) {
         finalColor.rgb *= 1.5f;
@@ -985,9 +977,6 @@ void main() {
 
     if ((chiselMode ? hitBlock == selected : ivec3(hitBlock/2)*2 == ivec3(selected/2)*2) && ui) {
         finalColor.rgb = mix(finalColor.rgb, vec3(0.7, 0.7, 1), 0.5f);
-    }
-    if (hasAtmosphere) {
-        finalColor.rgb += max(vec3(0), mix(lightFog.rgb, vec3(0), 1.2f*max(finalColor.r, max(finalColor.g, finalColor.b))));
     }
     finalColor = vec4(toLinear(finalColor.rgb), depth);
 }

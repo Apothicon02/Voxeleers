@@ -108,11 +108,7 @@ public class World {
             for (int z = 1; z < size-1; z++) {
                 for (int y = Math.max(heightmap[(x * size) + z], Math.max(heightmap[((x-1) * size) + z], Math.max(heightmap[((x+1) * size) + z], Math.max(heightmap[(x * size) + (z-1)], heightmap[(x * size) + (z+1)])))) + 1;
                      y >= Math.min(heightmap[(x * size) + z], Math.min(heightmap[((x-1) * size) + z], Math.min(heightmap[((x+1) * size) + z], Math.min(heightmap[(x * size) + (z-1)], heightmap[(x * size) + (z+1)])))); y--) {
-                    Vector2i thisBlock = getBlock(x, y, z);
-                    BlockType type = BlockTypes.blockTypeMap.get(thisBlock.x);
-                    if (type instanceof LightBlockType || !type.blocksLight(thisBlock)) {
-                        LightHelper.updateLight(new Vector3i(x, y, z), thisBlock, new Vector4i(0, 0, 0, 16));
-                    }
+                    LightHelper.updateLight(new Vector3i(x, y, z), getBlock(x, y, z), getLight(x, y, z));
                 }
             }
         }
@@ -145,7 +141,6 @@ public class World {
 //                lightUpdates.add(Utils.packColor(r, g, b, s));
                 glBindTexture(GL_TEXTURE_3D, Textures.lights.id);
                 glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, smallLightBuffer.put((byte)r).put((byte)b).put((byte)g).put((byte)s).flip());
-                updateLODS(x, y, z);
             }
         }
     }
@@ -302,7 +297,10 @@ public class World {
                 }
 
                 if (lightChanged) {
-                    LightHelper.recalculateLight(pos, Math.max(oldLight.x, r), Math.max(oldLight.y, g), Math.max(oldLight.z, b), oldLight.w);
+//                    long startTime = System.currentTimeMillis();
+                    LightHelper.recalculateLight(pos, oldLight.x(), oldLight.y(), oldLight.z(), oldLight.w());
+//                    System.out.println("Recalculation took: " + (System.currentTimeMillis() - startTime) + " ms");
+//                    LightHelper.print = true;
                 }
 
                 if (block == 0) {

@@ -12,6 +12,8 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Queue;
 
+import static org.voxeleers.engine.Utils.condensePos;
+import static org.voxeleers.engine.Utils.packInts;
 import static org.voxeleers.game.world.World.*;
 
 public class LightHelper {
@@ -26,18 +28,19 @@ public class LightHelper {
         }
     }
 
+    public static boolean print = false;
     public static void iterateLightQueue() {
-        long timeStarted = System.currentTimeMillis();
-        boolean shouldPrint = !lightQueue.isEmpty();
+//        long timeStarted = System.currentTimeMillis();
         while (!lightQueue.isEmpty()) {
             Vector3i pos = lightQueue.pollFirst();
             updateLight(pos, getBlock(pos), getLight(pos));
             lightSet.remove(pos);
         }
-        if (shouldPrint) {
-            long timeSpent = (System.currentTimeMillis() - timeStarted);
-            System.out.print("Took " + timeSpent + "ms to do light queue. \n");
-        }
+//        if (print) {
+//            long timeSpent = (System.currentTimeMillis() - timeStarted);
+//            System.out.print("Took " + timeSpent + "ms to do light queue. \n");
+//            print = false;
+//        }
     }
 
     public static void updateLight(Vector3i pos, Vector2i block, Vector4i light) {
@@ -86,37 +89,39 @@ public class LightHelper {
         return BlockTypes.blockTypeMap.get(block.x).blocksLight(block);
     }
 
-    public static void recalculateLight(Vector3i pos, int r, int g, int b, int s) {
-        for (Vector3i neighborPos : new Vector3i[]{
-                new Vector3i(pos.x, pos.y, pos.z + 1),
-                new Vector3i(pos.x + 1, pos.y, pos.z),
-                new Vector3i(pos.x, pos.y, pos.z - 1),
-                new Vector3i(pos.x - 1, pos.y, pos.z),
-                new Vector3i(pos.x, pos.y + 1, pos.z),
-                new Vector3i(pos.x, pos.y - 1, pos.z)
-        }) {
-            Vector2i neighbor = World.getBlock(neighborPos);
-            if (neighbor != null) {
-                BlockType neighborBlockType = BlockTypes.blockTypeMap.get(neighbor.x);
-                if (!blocksLight(neighbor) || neighborBlockType instanceof LightBlockType) {
-                    Vector4i neighborLight = World.getLight(neighborPos);
-                    if (neighborLight != null) {
-                        if ((neighborLight.x() > 0 && neighborLight.x() < r) || (neighborLight.y() > 0 && neighborLight.y() < g) || (neighborLight.z() > 0 && neighborLight.z() < b) || (neighborLight.w() > 0 && neighborLight.w() < s)) {
-                            byte nr = 0;
-                            byte ng = 0;
-                            byte nb = 0;
-                            if (neighborBlockType instanceof LightBlockType lBlock) {
-                                nr = lBlock.lightBlockProperties().r;
-                                ng = lBlock.lightBlockProperties().g;
-                                nb = lBlock.lightBlockProperties().b;
+    public static ArrayDeque<lightNode> removalQueue = new ArrayDeque<>();
+    public static HashSet<Vector3i> removalSet = new HashSet<>();
+    public static void recalculateLight(Vector3i ogPos, int r, int g, int b, int s) {
+        removalQueue.add(new lightNode(ogPos.x(), ogPos.y(), ogPos.z(), r, g, b, s));
+        removalSet.add(ogPos);
+
+        while (!removalQueue.isEmpty()) {
+            lightNode node = removalQueue.pollFirst();
+            Vector3i pos = new Vector3i(node.x, node.y, node.z);
+            Vector4i light = new Vector4i(node.r(), node.g(), node.b(), node.s());
+            if (light.x() > 0 || light.y() > 0 || light.z() > 0 || light.w() > 0) {
+                setLight(pos.x(), pos.y(), pos.z(), new Vector4i(0));
+                for (Vector3i neighborPos : new Vector3i[]{
+                        new Vector3i(pos.x, pos.y, pos.z + 1), new Vector3i(pos.x + 1, pos.y, pos.z), new Vector3i(pos.x, pos.y, pos.z - 1),
+                        new Vector3i(pos.x - 1, pos.y, pos.z), new Vector3i(pos.x, pos.y + 1, pos.z), new Vector3i(pos.x, pos.y - 1, pos.z)
+                }) {
+                    if (!removalSet.contains(neighborPos)) {
+                        lightQueue.add(neighborPos);
+                        lightSet.add(neighborPos);
+                        Vector4i nLight = getLight(neighborPos);
+                        if (nLight != null) {
+                            if ((nLight.x() > 0 && nLight.x() == light.x() - 1) || (nLight.y() > 0 && nLight.y() == light.y() - 1) ||
+                                    (nLight.z() > 0 && nLight.z() == light.z() - 1) || (nLight.w() > 0 && nLight.w() == light.w() - 1)) {
+                                removalQueue.add(new lightNode(neighborPos.x(), neighborPos.y(), neighborPos.z(), nLight.x(), nLight.y(), nLight.z(), nLight.w()));
+                                removalSet.add(neighborPos);
                             }
-                            World.setLight(neighborPos.x, neighborPos.y, neighborPos.z, nr, ng, nb, (byte) (neighborLight.w() == 15 ? 15 : 0));
-                            recalculateLight(neighborPos, neighborLight.x(), neighborLight.y(), neighborLight.z(), neighborLight.w());
                         }
-                        queueLightUpdate(pos);
                     }
                 }
             }
         }
+        removalSet.clear();
     }
+
+    public record lightNode(int x, int y, int z, int r, int g, int b, int s) {}
 }
