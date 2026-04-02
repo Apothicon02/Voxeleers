@@ -179,7 +179,7 @@ public class Window {
     public Matrix4f updateProjectionMatrix() {
         float aspectRatio = (float) width /height;
         projectionMatrix.identity();
-        float FoV = (float)Math.toRadians(73);//Main.player.camera.FOV);
+        float FoV = (float)Math.toRadians(Main.player.camera.FOV);
         projectionMatrix.set(
                 1.f/FoV, 0.f, 0.f, 0.f,
                 0.f, aspectRatio/FoV, 0.f, 0.f,
