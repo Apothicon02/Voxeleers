@@ -52,8 +52,8 @@ public class World {
     public static int height = 320;
     public static int seaLevel = 63;
     public static boolean generated = false;
-    public static WorldType worldType = WorldTypes.EARTH;
-    public static WorldType nextWorldType = WorldTypes.LUNA;
+    public static WorldType worldType = WorldTypes.LUNA;
+    public static WorldType nextWorldType = WorldTypes.MARS;
     public static ObjectOpenHashSet<Item> items = new ObjectOpenHashSet<>();
     public static Int2ObjectOpenHashMap<BlockEntity> blockEntities = new Int2ObjectOpenHashMap<>();
     public static short[][] blocks;// = new short[height][(size*size)*2];
@@ -338,30 +338,11 @@ public class World {
                 glTexSubImage3D(GL_TEXTURE_3D, 0, z, y, x, 1, 1, 1, GL_RGBA_INTEGER, GL_INT, new int[]{block, blockSubType, 0, 0});
                 updateLODS(x, y, z);
             } else if (block > 0) {
-                int qX = ((int)(x/2))*2;
-                int qY = ((int)(y/2))*2;
-                int qZ = ((int)(z/2))*2;
-                int pos = condensePos(qX, qZ)*2;
-                blocks[qY][pos] = (short)(block);
-                blocks[qY][pos+1] = (short)(blockSubType);
-                blocks[qY+1][pos] = (short)(block);
-                blocks[qY+1][pos+1] = (short)(blockSubType);
-                pos = condensePos(qX+1, qZ)*2;
-                blocks[qY][pos] = (short)(block);
-                blocks[qY][pos+1] = (short)(blockSubType);
-                blocks[qY+1][pos] = (short)(block);
-                blocks[qY+1][pos+1] = (short)(blockSubType);
-                pos = condensePos(qX, qZ+1)*2;
-                blocks[qY][pos] = (short)(block);
-                blocks[qY][pos+1] = (short)(blockSubType);
-                blocks[qY+1][pos] = (short)(block);
-                blocks[qY+1][pos+1] = (short)(blockSubType);
-                pos = condensePos(qX+1, qZ+1)*2;
-                blocks[qY][pos] = (short)(block);
-                blocks[qY][pos+1] = (short)(blockSubType);
-                blocks[qY+1][pos] = (short)(block);
-                blocks[qY+1][pos+1] = (short)(blockSubType);
-
+                int pos = condensePos(x, z)*2;
+                blocks[y][pos] = (short)(block);
+                blocks[y][pos+1] = (short)(blockSubType);
+                blocks[y+1][pos] = (short)(block);
+                blocks[y+1][pos+1] = (short)(blockSubType);
                 blocksLOD2[y/16][condensePosLOD2(x, z)] = (short)(block);
                 blocksLOD[y/4][condensePosLOD(x, z)] = (short)(block);
             }

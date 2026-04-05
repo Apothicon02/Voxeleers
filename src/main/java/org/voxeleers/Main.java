@@ -310,9 +310,6 @@ public class Main {
                 wasLMBDown = isLMBDown;
                 wasRMBDown = isRMBDown;
                 wasMMBDown = isMMBDown;
-                if (wasMMBDown) {
-                    boolean nothing = false;
-                }
                 wasF1Down = window.isKeyPressed(SDL_SCANCODE_F1);
                 wasF2Down = window.isKeyPressed(SDL_SCANCODE_F2);
                 wasF4Down = window.isKeyPressed(SDL_SCANCODE_F4);

@@ -35,7 +35,7 @@ public class BlockTypes {
             TALL_GRASS = create(List.of(BlockTags.survivesOnGrass), new PlantBlockType(GRASS.blockProperties.copy().ttb(50).obstructsHeightmap(false).isSolid(false).blocksLight(false).isCollidable(false).isFluidReplaceable(true)
                     .needsSupport(true))),
             ROSE = create(List.of(BlockTags.shortFlowers, BlockTags.flowers, BlockTags.survivesOnGrass), new PlantBlockType(TALL_GRASS.blockProperties)), //5
-            TORCH = create(new LightBlockType((LightBlockProperties) new LightBlockProperties().r(40).g(38).b(30).ttb(100).obstructsHeightmap(false).isSolid(false).blocksLight(false)
+            TORCH = create(List.of(BlockTags.smallBlock), new LightBlockType((LightBlockProperties) new LightBlockProperties().r(40).g(38).b(30).ttb(100).obstructsHeightmap(false).isSolid(false).blocksLight(false)
                     .isCollidable(false).isFluidReplaceable(true).needsSupport(true).blockSFX(new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1,
                             new SFX[]{Sounds.WOOD_STEP1, Sounds.WOOD_STEP2}, 1, 1))),
             KYANITE = create(List.of(BlockTags.rocks, BlockTags.crystals, BlockTags.blunt), new LightBlockType((LightBlockProperties) (new LightBlockProperties().r(4).g(20).b(40)

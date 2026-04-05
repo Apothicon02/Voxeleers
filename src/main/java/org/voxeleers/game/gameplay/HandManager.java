@@ -41,6 +41,11 @@ public class HandManager {
                 hotbarSlot = Inventory.invWidth-1;
             }
         }
+        Item selectedItem = player.inv.getItem(player.inv.selectedSlot);
+        Vector2i blockToPlace = selectedItem == null ? new Vector2i(0) : selectedItem.place();
+        if (BlockTags.smallBlock.tagged.contains(blockToPlace.x())) {
+            player.chiselMode = true;
+        }
         boolean lmbDown = window.leftButtonPressed;
         boolean mmbDown = window.middleButtonPressed;
         boolean rmbDown = window.rightButtonPressed;
@@ -51,8 +56,6 @@ public class HandManager {
         }
         if ((!player.creative || (Main.timeMS - lastBlockBrokenOrPlaced >= 200)) && (!rmbDown || Main.timeMS - lastBlockPlaced >= 200)) { //two tenth second minimum delay between breaking blocks in creative or when placing blocks
             if (lmbDown || mmbDown || rmbDown) {
-                Item selectedItem = player.inv.getItem(player.inv.selectedSlot);
-                Vector2i blockToPlace = selectedItem == null ? new Vector2i(0) : selectedItem.place();
                 Vector2i handBlock = new Vector2i(blockToPlace.x, blockToPlace.y);
                 BlockType handType = BlockTypes.blockTypeMap.get(blockToPlace.x);
                 Vector3f pos = lmbDown || mmbDown ? player.selectedBlock : player.prevSelectedBlock;
